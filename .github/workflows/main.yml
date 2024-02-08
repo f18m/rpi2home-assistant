@@ -1,0 +1,26 @@
+name: main CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: install pypi-packaged dependencies
+      run: sudo pip3 install build
+
+    # test Python tools
+    #- name: run python integration tests
+    #  run: |
+    #    make python_tests
+
+    # finally test Python packaging
+    - name: package the pypi
+      run: |
+        python3 -m build
