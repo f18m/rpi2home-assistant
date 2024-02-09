@@ -25,7 +25,7 @@ import lib16inpind
 # GLOBALs
 # =======================================================================================================
 
-THIS_SCRIPT_PYPI_PACKAGE = "malloctag-tools"
+THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
 
 
 # =======================================================================================================
@@ -48,26 +48,33 @@ class CfgFile:
             if not isinstance(self.config, dict):
                 raise ValueError("Invalid YAML format: root element must be a dictionary")
             if 'mqtt' not in self.config:
-                raise ValueError("Missing 'mqtt' section in the YAML file")
+                raise ValueError("Missing 'mqtt' section in the YAML config file")
             if 'broker' not in self.config['mqtt']:
-                raise ValueError("Missing 'mqtt.broker' field in the YAML file")
+                raise ValueError("Missing 'mqtt.broker' field in the YAML config file")
             if 'inputs' not in self.config:
-                raise ValueError("Missing 'inputs' section in the YAML file")
+                raise ValueError("Missing 'inputs' section in the YAML config file")
+            if self.config['inputs'] is None:
+                raise ValueError("Missing 'inputs' section in the YAML config file")
         except FileNotFoundError:
-            print(f"Error: File '{cfg_yaml}' not found.")
+            print(f"Error: configuration file '{cfg_yaml}' not found.")
             return False
         except yaml.YAMLError as e:
-            print(f"Error parsing YAML file '{cfg_yaml}': {e}")
+            print(f"Error parsing YAML config file '{cfg_yaml}': {e}")
             return False
         except ValueError as e:
-            print(f"Error in YAML file '{self.filename}': {e}")
+            print(f"Error in YAML config file '{cfg_yaml}': {e}")
+            return False
 
         try:
             # convert the 'inputs' part in a dictionary indexed by the DIGITAL INPUT CHANNEL NUMBER:
             self.inputs_map = {input_item['input_num']: input_item for input_item in self.config['inputs']}
             print(f"Loaded {len(self.inputs_map)} digital input configurations")
         except ValueError as e:
-            print(f"Error in YAML file '{self.filename}': {e}")
+            print(f"Error in YAML config file '{cfg_yaml}': {e}")
+            return False
+        except KeyError as e:
+            print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
+            return False
 
         return True
 
@@ -103,7 +110,7 @@ def parse_command_line():
     parser.add_argument(
         "-c",
         "--config",
-        help="YAML file specifying the software configuration.",
+        help="YAML file specifying the software configuration. Defaults to 'config.yaml'",
         default='config.yaml',
     )
     parser.add_argument(
