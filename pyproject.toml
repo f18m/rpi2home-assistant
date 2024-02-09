@@ -12,9 +12,14 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+# see
+#  https://github.com/sbtinstruments/aiomqtt
+#  https://github.com/SequentMicrosystems/16inpind-rpi
 dependencies = [
-  "asyncio-mqtt>=0.16.2",
+  "aiomqtt>=2.0.0",
   "SM16inpind>=1.0.1",
+  "PyYAML"
 ]
 
 [project.urls]

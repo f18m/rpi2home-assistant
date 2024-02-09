@@ -16,8 +16,10 @@ import argparse
 import os
 import sys
 import yaml
-import asyncio_mqtt as aiomqtt
-import paho.mqtt as mqtt
+import asyncio
+import aiomqtt
+#import paho.mqtt as mqtt
+import lib16inpind
 
 # =======================================================================================================
 # GLOBALs
@@ -36,37 +38,55 @@ class CfgFile:
     """
 
     def __init__(self):
-        self.rules = []
-
-    def load(self, cfg_yaml):
-        wholeyaml = {}
+        self.config: Optional[Dict[str, Any]] = None
+        self.inputs_map: Optional[Dict[int, Any]] = None
+    
+    def load(self, cfg_yaml: str) -> bool:
         try:
-            f = open(cfg_yaml, "r")
-            text = f.read()
-            f.close()
-            wholeyaml = yaml.safe_load(text)
-        except:
-        #except json.decoder.JSONDecodeError as err:
-            print(f"Invalid configuration YAML file '{cfg_yaml}': ")
-            sys.exit(1)
+            with open(cfg_yaml, 'r') as file:
+                self.config = yaml.safe_load(file)
+            if not isinstance(self.config, dict):
+                raise ValueError("Invalid YAML format: root element must be a dictionary")
+            if 'mqtt' not in self.config:
+                raise ValueError("Missing 'mqtt' section in the YAML file")
+            if 'broker' not in self.config['mqtt']:
+                raise ValueError("Missing 'mqtt.broker' field in the YAML file")
+            if 'inputs' not in self.config:
+                raise ValueError("Missing 'inputs' section in the YAML file")
+        except FileNotFoundError:
+            print(f"Error: File '{cfg_yaml}' not found.")
+            return False
+        except yaml.YAMLError as e:
+            print(f"Error parsing YAML file '{cfg_yaml}': {e}")
+            return False
+        except ValueError as e:
+            print(f"Error in YAML file '{self.filename}': {e}")
 
-        if "inputs" not in wholeyaml:
-            print(f"Invalid configuration YAML file '{cfg_yaml}': missing  'inputs' main object")
-            sys.exit(1)
+        try:
+            # convert the 'inputs' part in a dictionary indexed by the DIGITAL INPUT CHANNEL NUMBER:
+            self.inputs_map = {input_item['input_num']: input_item for input_item in self.config['inputs']}
+            print(f"Loaded {len(self.inputs_map)} digital input configurations")
+        except ValueError as e:
+            print(f"Error in YAML file '{self.filename}': {e}")
 
-        nrule = 0
-        for input_dict in wholeyaml["inputs"]:
-            if "input_num" not in input_dict:
-                print(
-                    f"WARN: In configuration YAML file '{cfg_yaml}': ignoring key missing the [input_num] property: '{input}'"
-                )
-                continue
+        return True
 
-        #print(
-        #    f"Loaded {len()} input configurations from config file '{cfg_yaml}'."
-        #)
+    @property
+    def mqtt_broker(self) -> str:
+        if self.config is None:
+            return ''
+        return self.config['mqtt']['broker']
 
-
+    @property
+    def input_config(self, index: int) -> dict[str, any]:
+        """
+        Returns a dictionary exposing the fields:
+            'name': name of the digital input
+            'normally_closed': True or False
+        """
+        if self.inputs_map is None or index not in self.inputs_map:
+            return {}
+        return self.inputs_map[index]
 
 # =======================================================================================================
 # MAIN HELPERS
@@ -84,7 +104,7 @@ def parse_command_line():
         "-c",
         "--config",
         help="YAML file specifying the software configuration.",
-        default=None,
+        default='config.yaml',
     )
     parser.add_argument(
         "-v", "--verbose", help="Be verbose.", action="store_true", default=False
@@ -118,15 +138,53 @@ def parse_command_line():
 async def main_loop():
     args = parse_command_line()
     c = CfgFile()
-    c.load(args.config)
+    if not c.load(args.config):
+        return 1 # invalid config file... abort with failure exit code
+    
+    # check if the opto-isolated input board from Sequent Microsystem is indeed present:
+    try:
+        _ = lib16inpind.readAll(0)
+    except FileNotFoundError as e:
+        print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
+        return 2
 
-    async with aiomqtt.Client("test.mosquitto.org") as client:
-        await client.publish("humidity/outside", payload=0.38)
+    # Connect to MQTT broker
+    print(f"Connecting to MQTT broker at address {c.mqtt_broker}")
+    async with aiomqtt.Client(c.mqtt_broker) as client:
+        try:
+            while True:
+                # Read 16 digital inputs
+                sampled_values_as_int = lib16inpind.readAll(0) # 0 means the first "stacked" board (this code supports only 1!)
 
+                # Publish each input value as a separate MQTT topic
+                for i in range(16):
+                    # Extract the bit at position i using bitwise AND operation
+                    bit_value = bool(sampled_values_as_int & (1 << i))
+
+                    input_cfg = c.inputs_map(i)
+                    if input_cfg is not None:
+                        topic = f"home-assistant/{input_cfg.name}"
+
+                        if input_cfg.normally_closed:
+                            bit_value = not bit_value
+
+                        if bit_value == True:
+                            payload = '{"state":"ON"}'
+                        else:
+                            payload = '{"state":"OFF"}'
+
+                        print(f"Publishing on mqtt topic {topic} the payload {payload}")
+                        await client.publish(topic, payload)
+
+                await asyncio.sleep(1)  # Adjust the delay as needed
+        except KeyboardInterrupt:
+            print("Stopping...")
+            return
+    return 0
 
 # =======================================================================================================
 # MAIN
 # =======================================================================================================
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    sys.exit(asyncio.run(main_loop()))
