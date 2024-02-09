@@ -1,5 +1,10 @@
+# Config file for raspy2mqtt (A.k.a. "ha-alarm-raspy2mqtt")
+# Written by Francesco Montorsi, Feb 2024.
+
 mqtt:
   broker: 192.168.1.5
+
+sampling_frequency_msec: 1000
 
 inputs:
   - name: opto_input_1

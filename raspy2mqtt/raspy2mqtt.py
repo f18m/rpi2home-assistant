@@ -1,11 +1,17 @@
 #!/usr/bin/python3
 
 #
-# This script is meant to run on a Raspberry PI having installed the 
+# This software is meant to run on a Raspberry PI having installed the 
 # Sequent Microsystem 16 opto-insulated inputs HAT:
 #  https://github.com/SequentMicrosystems/16inpind-rpi
 # The script is meant to expose the 16 digital inputs read by Raspberry 
-# over MQTT, to ease their integration as (binary) sensors in Home Assistant
+# over MQTT, to ease their integration as (binary) sensors in Home Assistant.
+# This software is compatible with all 40-pin Raspberry Pi boards
+# (Raspberry Pi 1 Model A+ & B+, Raspberry Pi 2, Raspberry Pi 3, Raspberry Pi 4,
+# Raspberry Pi 5).
+# The Sequent Microsystem board is connecting the pin 37 (GPIO 26) of the Raspberry Pi 
+# to a pushbutton. This software monitors this pin, and if pressed for more than the
+# desired time, issues the shut-down command.
 #
 # Author: fmontorsi
 # Created: Feb 2024
@@ -26,6 +32,11 @@ import lib16inpind
 # =======================================================================================================
 
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
+
+g_stats = {
+    'num_samples': 0,
+    'num_connections': 0
+}
 
 
 # =======================================================================================================
@@ -81,8 +92,19 @@ class CfgFile:
     @property
     def mqtt_broker(self) -> str:
         if self.config is None:
-            return ''
+            return '' # no meaningful default value
         return self.config['mqtt']['broker']
+
+    @property
+    def sampling_frequency_sec(self) -> float:
+        if self.config is None:
+            return 1.0 # default value
+        try:
+            cfg_value = float(self.config['sampling_frequency_msec'])/1000.0
+            return cfg_value
+        except:
+            # in this case the key is completely missing or does contain an integer value
+            return 1.0 # default value
 
     @property
     def input_config(self, index: int) -> dict[str, any]:
@@ -92,7 +114,7 @@ class CfgFile:
             'normally_closed': True or False
         """
         if self.inputs_map is None or index not in self.inputs_map:
-            return {}
+            return {} # no meaningful default value
         return self.inputs_map[index]
 
 # =======================================================================================================
@@ -142,10 +164,60 @@ def parse_command_line():
 
     return args
 
+def print_stats():
+    global g_stats
+    print(f"Num samples published on the MQTT broker: {g_stats['num_samples']}")
+    print(f"Num (re)connections to the MQTT broker: {g_stats['num_connections']}")
+
+
+async def sample_values_and_publish_till_connected(cfg: CfgFile):
+    """
+    This function may throw a aiomqtt.MqttError exception indicating a connection issue!
+    """
+    global g_stats
+
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
+    g_stats["num_connections"] += 1
+    loop = asyncio.get_running_loop()
+    next_stat_time = loop.time() + 5.0
+    async with aiomqtt.Client(cfg.mqtt_broker) as client:
+        while True:
+            # Read 16 digital inputs
+            sampled_values_as_int = lib16inpind.readAll(0) # 0 means the first "stacked" board (this code supports only 1!)
+
+            # Publish each input value as a separate MQTT topic
+            for i in range(16):
+                # Extract the bit at position i using bitwise AND operation
+                bit_value = bool(sampled_values_as_int & (1 << i))
+
+                input_cfg = cfg.inputs_map(i)
+                if input_cfg is not None:
+                    topic = f"home-assistant/{input_cfg.name}"
+
+                    if input_cfg.normally_closed:
+                        bit_value = not bit_value
+
+                    if bit_value == True:
+                        payload = '{"state":"ON"}'
+                    else:
+                        payload = '{"state":"OFF"}'
+
+                    print(f"Publishing on mqtt topic {topic} the payload {payload}")
+                    g_stats["num_samples"] += 1
+
+                    # qos=1 means "at least once" QoS
+                    await client.publish(topic, payload, qos=1)
+
+            await asyncio.sleep(cfg.sampling_frequency_sec)
+            if loop.time() >= next_stat_time:
+                print_stats()
+                next_stat_time = loop.time() + 5.0
+
+
 async def main_loop():
     args = parse_command_line()
-    c = CfgFile()
-    if not c.load(args.config):
+    cfg = CfgFile()
+    if not cfg.load(args.config):
         return 1 # invalid config file... abort with failure exit code
     
     # check if the opto-isolated input board from Sequent Microsystem is indeed present:
@@ -155,38 +227,20 @@ async def main_loop():
         print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
         return 2
 
-    # Connect to MQTT broker
-    print(f"Connecting to MQTT broker at address {c.mqtt_broker}")
-    async with aiomqtt.Client(c.mqtt_broker) as client:
+    # wrap with error-handling code the main loop
+    reconnection_interval_sec = 3
+    while True:
         try:
-            while True:
-                # Read 16 digital inputs
-                sampled_values_as_int = lib16inpind.readAll(0) # 0 means the first "stacked" board (this code supports only 1!)
-
-                # Publish each input value as a separate MQTT topic
-                for i in range(16):
-                    # Extract the bit at position i using bitwise AND operation
-                    bit_value = bool(sampled_values_as_int & (1 << i))
-
-                    input_cfg = c.inputs_map(i)
-                    if input_cfg is not None:
-                        topic = f"home-assistant/{input_cfg.name}"
-
-                        if input_cfg.normally_closed:
-                            bit_value = not bit_value
-
-                        if bit_value == True:
-                            payload = '{"state":"ON"}'
-                        else:
-                            payload = '{"state":"OFF"}'
-
-                        print(f"Publishing on mqtt topic {topic} the payload {payload}")
-                        await client.publish(topic, payload)
-
-                await asyncio.sleep(1)  # Adjust the delay as needed
+            await sample_values_and_publish_till_connected(cfg)
+        except aiomqtt.MqttError:
+            print(f"Connection lost; reconnecting in {reconnection_interval_sec} seconds ...")
+            await asyncio.sleep(reconnection_interval_sec)
         except KeyboardInterrupt:
-            print("Stopping...")
-            return
+            print_stats()
+            print("Stopped by CTRL+C... aborting")
+            return 0
+    
+    print_stats()
     return 0
 
 # =======================================================================================================
