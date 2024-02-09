@@ -26,12 +26,17 @@ import asyncio
 import aiomqtt
 #import paho.mqtt as mqtt
 import lib16inpind
+from gpiozero import Button
+import subprocess
 
 # =======================================================================================================
 # GLOBALs
 # =======================================================================================================
 
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
+
+# GPIO pin connected to the push button
+SHUTDOWN_BUTTON_PIN = 26
 
 g_stats = {
     'num_samples': 0,
@@ -169,6 +174,29 @@ def print_stats():
     print(f"Num samples published on the MQTT broker: {g_stats['num_samples']}")
     print(f"Num (re)connections to the MQTT broker: {g_stats['num_connections']}")
 
+def shutdown():
+    print(f"Triggering shutdown of the Raspberry PI")
+    subprocess.call(['sudo', 'shutdown', '-h', 'now'])
+
+# async def monitor_shutdown_button():
+#     pressed_time = None
+#     while True:
+#         input_state = GPIO.input(SHUTDOWN_BUTTON_PIN)
+        
+#         # Button pressed
+#         if input_state == GPIO.LOW:
+#             # Start timer if not started
+#             if pressed_time is None:
+#                 pressed_time = asyncio.get_event_loop().time()
+#             # Check if button pressed for more than 5 seconds
+#             elif asyncio.get_event_loop().time() - pressed_time > 5:
+#                 await shutdown()
+#         # Button released
+#         else:
+#             pressed_time = None
+        
+#         # Add some delay to debounce
+#         await asyncio.sleep(0.1)
 
 async def sample_values_and_publish_till_connected(cfg: CfgFile):
     """
@@ -226,6 +254,12 @@ async def main_loop():
     except FileNotFoundError as e:
         print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
         return 2
+
+    # setup GPIO connected to the pushbutton
+    button = Button(SHUTDOWN_BUTTON_PIN, hold_time=5)
+
+    # Assign the on_long_press function to be called when the button is held for more than 5 seconds
+    button.when_held = shutdown
 
     # wrap with error-handling code the main loop
     reconnection_interval_sec = 3

@@ -19,7 +19,8 @@ classifiers = [
 dependencies = [
   "aiomqtt>=2.0.0",
   "SM16inpind>=1.0.1",
-  "PyYAML"
+  "PyYAML",
+  "gpiozero"
 ]
 
 [project.urls]
