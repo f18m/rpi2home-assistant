@@ -81,6 +81,10 @@ class CfgFile:
                 raise ValueError("Missing 'inputs' section in the YAML config file")
             if self.config['inputs'] is None:
                 raise ValueError("Missing 'inputs' section in the YAML config file")
+            if 'outputs' not in self.config:
+                raise ValueError("Missing 'outputs' section in the YAML config file")
+            if self.config['outputs'] is None:
+                raise ValueError("Missing 'outputs' section in the YAML config file")
         except FileNotFoundError:
             print(f"Error: configuration file '{cfg_yaml}' not found.")
             return False
@@ -109,6 +113,8 @@ class CfgFile:
         except KeyError as e:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
+        
+        self.outputs_map = self.config['outputs']
 
         return True
 
@@ -139,15 +145,24 @@ class CfgFile:
             return None # no meaningful default value
         return self.inputs_map[index]
 
-    def get_output_config(self, index: int) -> dict[str, any]:
+    # def get_output_config(self, index: int) -> dict[str, any]:
+    #     """
+    #     Returns a dictionary exposing the fields:
+    #         'name': name of the digital output
+    #         'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
+    #     """
+    #     if self.outputs_map is None or index not in self.outputs_map:
+    #         return None # no meaningful default value
+    #     return self.outputs_map[index]
+    def get_all_outputs(self):
         """
-        Returns a dictionary exposing the fields:
-            'name': name of the digital input
-            'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
+        Returns a list of dictionaries exposing the fields:
+             'name': name of the digital output
+             'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
         """
-        if self.outputs_map is None or index not in self.outputs_map:
+        if 'outputs' not in self.config:
             return None # no meaningful default value
-        return self.outputs_map[index]
+        return self.config['outputs']
 
 # =======================================================================================================
 # MAIN HELPERS
@@ -293,12 +308,13 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
     g_stats["num_connections_subscribe"] += 1
     async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
-        # TODO: for all OUTPUT channels run 1 subscribe
-        await client.subscribe(f"{MQTT_TOPIC_PREFIX}/")
+        for output_ch in cfg.get_all_outputs():
+            topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}"
+            print(f"Subscribing to topic {topic}")
+            await client.subscribe(topic)
 
-        # TODO: activatePIO pin
         async for message in client.messages:
-            print(message.payload)
+            print("Received message for digital output:", message.payload)
 
 
 async def main_loop():
