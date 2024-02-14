@@ -40,6 +40,7 @@ import subprocess
 
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
 MQTT_TOPIC_PREFIX = "home-assistant"
+MAX_INPUT_CHANNELS = 16
 
 # GPIO pin connected to the push button
 SHUTDOWN_BUTTON_PIN = 26
@@ -146,7 +147,7 @@ class CfgFile:
 def parse_command_line():
     """Parses the command line and returns the configuration as dictionary object."""
     parser = argparse.ArgumentParser(
-        description="Utility to expose the 16 digital inputs read by Raspberry over MQTT, to ease their integration as (binary) sensors in Home Assistant."
+        description=f"Utility to expose the {MAX_INPUT_CHANNELS} digital inputs read by Raspberry over MQTT, to ease their integration as (binary) sensors in Home Assistant."
     )
 
     # Optional arguments
@@ -229,11 +230,11 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
             sampled_values_as_int = lib16inpind.readAll(0) # 0 means the first "stacked" board (this code supports only 1!)
 
             # Publish each input value as a separate MQTT topic
-            for i in range(16):
+            for i in range(MAX_INPUT_CHANNELS):
                 # Extract the bit at position i using bitwise AND operation
                 bit_value = bool(sampled_values_as_int & (1 << i))
 
-                input_cfg = cfg.inputs_map(i)
+                input_cfg = cfg.input_config(i)
                 if input_cfg is not None:
                     topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg.name}"
 
