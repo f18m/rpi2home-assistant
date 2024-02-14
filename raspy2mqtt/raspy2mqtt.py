@@ -41,6 +41,7 @@ import subprocess
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
 MQTT_TOPIC_PREFIX = "home-assistant"
 MAX_INPUT_CHANNELS = 16
+BROKER_CONNECTION_TIMEOUT_SEC = 3
 
 # GPIO pin connected to the push button
 SHUTDOWN_BUTTON_PIN = 26
@@ -230,7 +231,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
     g_stats["num_connections"] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker) as client:
+    async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
             # Read 16 digital inputs
             sampled_values_as_int = lib16inpind.readAll(0) # 0 means the first "stacked" board (this code supports only 1!)
@@ -278,7 +279,7 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
     global g_stats
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
-    async with aiomqtt.Client(cfg.mqtt_broker) as client:
+    async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         # TODO: for all OUTPUT channels run 1 subscribe
         await client.subscribe(f"{MQTT_TOPIC_PREFIX}/")
 
