@@ -118,8 +118,7 @@ class CfgFile:
             # in this case the key is completely missing or does contain an integer value
             return 1.0 # default value
 
-    @property
-    def input_config(self, index: int) -> dict[str, any]:
+    def get_input_config(self, index: int) -> dict[str, any]:
         """
         Returns a dictionary exposing the fields:
             'name': name of the digital input
@@ -129,8 +128,7 @@ class CfgFile:
             return {} # no meaningful default value
         return self.inputs_map[index]
 
-    @property
-    def output_config(self, index: int) -> dict[str, any]:
+    def get_output_config(self, index: int) -> dict[str, any]:
         """
         Returns a dictionary exposing the fields:
             'name': name of the digital input
@@ -234,7 +232,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                 # Extract the bit at position i using bitwise AND operation
                 bit_value = bool(sampled_values_as_int & (1 << i))
 
-                input_cfg = cfg.input_config(i)
+                input_cfg = cfg.get_input_config(i)
                 if input_cfg is not None:
                     topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg.name}"
 
