@@ -42,6 +42,7 @@ THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
 MQTT_TOPIC_PREFIX = "home-assistant"
 MAX_INPUT_CHANNELS = 16
 BROKER_CONNECTION_TIMEOUT_SEC = 3
+STATS_PRINT_INTERVAL_SEC = 5
 
 # GPIO pin connected to the push button
 SHUTDOWN_BUTTON_PIN = 26
@@ -196,8 +197,10 @@ def parse_command_line():
 
 def print_stats():
     global g_stats
-    print(f"Num samples published on the MQTT broker: {g_stats['num_samples']}")
-    print(f"Num (re)connections to the MQTT broker: {g_stats['num_connections']}")
+    print(f">> STATS")
+    print(f">> Num (re)connections to the MQTT broker [publish channel]: {g_stats['num_connections_publish']}")
+    print(f">> Num (re)connections to the MQTT broker [subscribe channel]: {g_stats['num_connections_subscribe']}")
+    print(f">> Num samples published on the MQTT broker: {g_stats['num_samples']}")
 
 def shutdown():
     print(f"Triggering shutdown of the Raspberry PI")
@@ -223,6 +226,18 @@ def shutdown():
 #         # Add some delay to debounce
 #         await asyncio.sleep(0.1)
 
+
+async def print_stats_periodically(cfg: CfgFile):
+    loop = asyncio.get_running_loop()
+    next_stat_time = loop.time() + STATS_PRINT_INTERVAL_SEC
+    while True:
+        # Print out stats to help debugging
+        if loop.time() >= next_stat_time:
+            print_stats()
+            next_stat_time = loop.time() + STATS_PRINT_INTERVAL_SEC
+        
+        await asyncio.sleep(1)
+
 async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
@@ -230,7 +245,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
     global g_stats
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
-    g_stats["num_connections"] += 1
+    g_stats["num_connections_publish"] += 1
     async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
             # Read 16 digital inputs
@@ -252,7 +267,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                     else:
                         payload = '{"state":"OFF"}'
 
-                    print(f"Publishing on mqtt topic {topic} the payload {payload}")
+                    print(f"From INPUT#{i} read {bit_value}; publishing on mqtt topic [{topic}] the payload: {payload}")
                     g_stats["num_samples"] += 1
 
                     # qos=1 means "at least once" QoS
@@ -261,17 +276,6 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
             # Now sleep a little bit before repeating
             await asyncio.sleep(cfg.sampling_frequency_sec)
 
-async def print_stats_periodically(cfg: CfgFile):
-    loop = asyncio.get_running_loop()
-    next_stat_time = loop.time() + 5.0        
-    while True:
-        # Print out stats to help debugging
-        if loop.time() >= next_stat_time:
-            print_stats()
-            next_stat_time = loop.time() + 5.0
-        
-        await asyncio.sleep(1)
-
 async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
@@ -279,6 +283,7 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
     global g_stats
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
+    g_stats["num_connections_subscribe"] += 1
     async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         # TODO: for all OUTPUT channels run 1 subscribe
         await client.subscribe(f"{MQTT_TOPIC_PREFIX}/")
