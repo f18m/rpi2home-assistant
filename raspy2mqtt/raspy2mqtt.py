@@ -234,11 +234,10 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
 
                 input_cfg = cfg.get_input_config(i)
                 if input_cfg is not None:
-                    topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg.name}"
-
-                    if input_cfg.normally_closed:
+                    # Choose the TOPIC and message PAYLOAD
+                    topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg['name']}"
+                    if input_cfg['normally_closed']:
                         bit_value = not bit_value
-
                     if bit_value == True:
                         payload = '{"state":"ON"}'
                     else:
