@@ -315,10 +315,11 @@ async def main_loop():
                 tg.create_task(sample_inputs_and_publish_till_connected(cfg))
                 tg.create_task(print_stats_periodically(cfg))
                 tg.create_task(subscribe_and_activate_outputs_till_connected(cfg))
-        except aiomqtt.MqttError:
-            print(f"Connection lost; reconnecting in {reconnection_interval_sec} seconds ...")
+
+        except* aiomqtt.MqttError as err:
+            print(f"Connection lost: {err}; reconnecting in {reconnection_interval_sec} seconds ...")
             await asyncio.sleep(reconnection_interval_sec)
-        except KeyboardInterrupt:
+        except* KeyboardInterrupt:
             print_stats()
             print("Stopped by CTRL+C... aborting")
             return 0
