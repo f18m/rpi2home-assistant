@@ -62,7 +62,7 @@ class CfgFile:
 
     def __init__(self):
         self.config: Optional[Dict[str, Any]] = None
-        self.inputs_map: Optional[Dict[int, Any]] = None
+        self.inputs_map: Optional[Dict[int, Any]] = None # None means "not loaded at all"
     
     def load(self, cfg_yaml: str) -> bool:
         try:
@@ -90,7 +90,12 @@ class CfgFile:
 
         try:
             # convert the 'inputs' part in a dictionary indexed by the DIGITAL INPUT CHANNEL NUMBER:
-            self.inputs_map = {input_item['input_num']: input_item for input_item in self.config['inputs']}
+            #self.inputs_map = {input_item['input_num']: input_item for input_item in self.config['inputs']}
+            for input_item in self.config['inputs']:
+                idx = input_item['input_num']
+                self.inputs_map[idx] = input_item
+                print(input_item)
+
             print(f"Loaded {len(self.inputs_map)} digital input configurations")
         except ValueError as e:
             print(f"Error in YAML config file '{cfg_yaml}': {e}")
