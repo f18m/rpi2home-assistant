@@ -1,17 +1,22 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 #
-# This software is meant to run on a Raspberry PI having installed the 
-# Sequent Microsystem 16 opto-insulated inputs HAT:
-#  https://github.com/SequentMicrosystems/16inpind-rpi
-# The script is meant to expose the 16 digital inputs read by Raspberry 
-# over MQTT, to ease their integration as (binary) sensors in Home Assistant.
+# This software is meant to run on a Raspberry PI having installed
+# a) the Sequent Microsystem 16 opto-insulated inputs HAT:
+#       https://github.com/SequentMicrosystems/16inpind-rpi
+#    This software is meant to expose the 16 digital inputs from this HAT
+#    over MQTT, to ease their integration as (binary) sensors in Home Assistant.
+#    Note that Sequent Microsystem board is connecting the pin 37 (GPIO 26) of the Raspberry Pi 
+#    to a pushbutton. This software monitors this pin, and if pressed for more than the
+#    desired time, issues the shut-down command.
+# b) a SeenGreat 2CH output opto-insulated relay HAT:
+#       https://seengreat.com/wiki/107/
+#    This software is meant to listen on MQTT topics and turn on/off the
+#    two channels of this HAT.
+#
 # This software is compatible with all 40-pin Raspberry Pi boards
 # (Raspberry Pi 1 Model A+ & B+, Raspberry Pi 2, Raspberry Pi 3, Raspberry Pi 4,
 # Raspberry Pi 5).
-# The Sequent Microsystem board is connecting the pin 37 (GPIO 26) of the Raspberry Pi 
-# to a pushbutton. This software monitors this pin, and if pressed for more than the
-# desired time, issues the shut-down command.
 #
 # Author: fmontorsi
 # Created: Feb 2024
@@ -34,6 +39,7 @@ import subprocess
 # =======================================================================================================
 
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
+MQTT_TOPIC_PREFIX = "home-assistant"
 
 # GPIO pin connected to the push button
 SHUTDOWN_BUTTON_PIN = 26
@@ -122,6 +128,17 @@ class CfgFile:
             return {} # no meaningful default value
         return self.inputs_map[index]
 
+    @property
+    def output_config(self, index: int) -> dict[str, any]:
+        """
+        Returns a dictionary exposing the fields:
+            'name': name of the digital input
+            'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
+        """
+        if self.outputs_map is None or index not in self.outputs_map:
+            return {} # no meaningful default value
+        return self.outputs_map[index]
+
 # =======================================================================================================
 # MAIN HELPERS
 # =======================================================================================================
@@ -198,7 +215,7 @@ def shutdown():
 #         # Add some delay to debounce
 #         await asyncio.sleep(0.1)
 
-async def sample_values_and_publish_till_connected(cfg: CfgFile):
+async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
@@ -206,8 +223,6 @@ async def sample_values_and_publish_till_connected(cfg: CfgFile):
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
     g_stats["num_connections"] += 1
-    loop = asyncio.get_running_loop()
-    next_stat_time = loop.time() + 5.0
     async with aiomqtt.Client(cfg.mqtt_broker) as client:
         while True:
             # Read 16 digital inputs
@@ -220,7 +235,7 @@ async def sample_values_and_publish_till_connected(cfg: CfgFile):
 
                 input_cfg = cfg.inputs_map(i)
                 if input_cfg is not None:
-                    topic = f"home-assistant/{input_cfg.name}"
+                    topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg.name}"
 
                     if input_cfg.normally_closed:
                         bit_value = not bit_value
@@ -236,10 +251,34 @@ async def sample_values_and_publish_till_connected(cfg: CfgFile):
                     # qos=1 means "at least once" QoS
                     await client.publish(topic, payload, qos=1)
 
+            # Now sleep a little bit before repeating
             await asyncio.sleep(cfg.sampling_frequency_sec)
-            if loop.time() >= next_stat_time:
-                print_stats()
-                next_stat_time = loop.time() + 5.0
+
+async def print_stats_periodically(cfg: CfgFile):
+    loop = asyncio.get_running_loop()
+    next_stat_time = loop.time() + 5.0        
+    while True:
+        # Print out stats to help debugging
+        if loop.time() >= next_stat_time:
+            print_stats()
+            next_stat_time = loop.time() + 5.0
+        
+        await asyncio.sleep(1)
+
+async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
+    """
+    This function may throw a aiomqtt.MqttError exception indicating a connection issue!
+    """
+    global g_stats
+
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
+    async with aiomqtt.Client(cfg.mqtt_broker) as client:
+        # TODO: for all OUTPUT channels run 1 subscribe
+        await client.subscribe(f"{MQTT_TOPIC_PREFIX}/")
+
+        # TODO: activatePIO pin
+        async for message in client.messages:
+            print(message.payload)
 
 
 async def main_loop():
@@ -255,17 +294,27 @@ async def main_loop():
         print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
         return 2
 
-    # setup GPIO connected to the pushbutton
+    # setup GPIO connected to the pushbutton (input) and
+    # assign the when_held function to be called when the button is held for more than 5 seconds
+    # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
     button = Button(SHUTDOWN_BUTTON_PIN, hold_time=5)
-
-    # Assign the on_long_press function to be called when the button is held for more than 5 seconds
     button.when_held = shutdown
+
+    # setup GPIO for the outputs
+    # TODO
+
 
     # wrap with error-handling code the main loop
     reconnection_interval_sec = 3
     while True:
         try:
-            await sample_values_and_publish_till_connected(cfg)
+            #await sample_inputs_and_publish_till_connected(cfg)
+
+            # Use a task group to manage and await all tasks
+            async with asyncio.TaskGroup() as tg:
+                tg.create_task(sample_inputs_and_publish_till_connected(cfg))
+                tg.create_task(print_stats_periodically(cfg))
+                tg.create_task(subscribe_and_activate_outputs_till_connected(cfg))
         except aiomqtt.MqttError:
             print(f"Connection lost; reconnecting in {reconnection_interval_sec} seconds ...")
             await asyncio.sleep(reconnection_interval_sec)
