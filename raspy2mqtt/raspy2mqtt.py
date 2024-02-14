@@ -133,7 +133,7 @@ class CfgFile:
         """
         Returns a dictionary exposing the fields:
             'name': name of the digital input
-            'normally_closed': True or False
+            'active_low': True or False
         """
         if self.inputs_map is None or index not in self.inputs_map:
             return None # no meaningful default value
@@ -261,14 +261,16 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                 if input_cfg is not None:
                     # Choose the TOPIC and message PAYLOAD
                     topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg['name']}"
-                    if input_cfg['normally_closed']:
+                    input_type = 'active high'
+                    if input_cfg['active_low']:
                         bit_value = not bit_value
+                        input_type = 'active low'
                     if bit_value == True:
                         payload = '{"state":"ON"}'
                     else:
                         payload = '{"state":"OFF"}'
 
-                    print(f"From INPUT#{i} read {bit_value}; publishing on mqtt topic [{topic}] the payload: {payload}")
+                    print(f"From INPUT#{i} [{input_type}] read {int(bit_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
                     g_stats["num_samples"] += 1
 
                     # qos=1 means "at least once" QoS

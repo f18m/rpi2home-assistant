@@ -12,7 +12,7 @@ inputs:
   # the MQTT topic will be in the form "home-assistant/<input name>"
   - name: opto_input_1
     input_num: 1
-    normally_closed: true
+    active_low: true
 
 # outputs are produced using the SeenGreat 2ch optoinsulated board
 outputs:
