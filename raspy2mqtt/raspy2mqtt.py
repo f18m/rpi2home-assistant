@@ -134,7 +134,7 @@ class CfgFile:
             'normally_closed': True or False
         """
         if self.inputs_map is None or index not in self.inputs_map:
-            return {} # no meaningful default value
+            return None # no meaningful default value
         return self.inputs_map[index]
 
     def get_output_config(self, index: int) -> dict[str, any]:
@@ -144,7 +144,7 @@ class CfgFile:
             'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
         """
         if self.outputs_map is None or index not in self.outputs_map:
-            return {} # no meaningful default value
+            return None # no meaningful default value
         return self.outputs_map[index]
 
 # =======================================================================================================
