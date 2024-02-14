@@ -49,7 +49,8 @@ SHUTDOWN_BUTTON_PIN = 26
 
 g_stats = {
     'num_samples': 0,
-    'num_connections': 0
+    'num_connections_publish': 0
+    'num_connections_subscribe': 0
 }
 
 
