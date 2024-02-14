@@ -13,6 +13,9 @@ inputs:
   - name: opto_input_1
     input_num: 1
     active_low: true
+  - name: opto_input_2
+    input_num: 2
+    active_low: true
 
 # outputs are produced using the SeenGreat 2ch optoinsulated board
 outputs:
