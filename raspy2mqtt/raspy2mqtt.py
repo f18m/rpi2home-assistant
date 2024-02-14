@@ -91,12 +91,15 @@ class CfgFile:
         try:
             # convert the 'inputs' part in a dictionary indexed by the DIGITAL INPUT CHANNEL NUMBER:
             #self.inputs_map = {input_item['input_num']: input_item for input_item in self.config['inputs']}
+            self.inputs_map = {}
             for input_item in self.config['inputs']:
                 idx = input_item['input_num']
                 self.inputs_map[idx] = input_item
                 print(input_item)
-
             print(f"Loaded {len(self.inputs_map)} digital input configurations")
+            if len(self.inputs_map)==0:
+                # reset to "not loaded at all" condition
+                self.inputs_map = None
         except ValueError as e:
             print(f"Error in YAML config file '{cfg_yaml}': {e}")
             return False
