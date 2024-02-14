@@ -306,7 +306,8 @@ async def main_loop():
 
     # wrap with error-handling code the main loop
     reconnection_interval_sec = 3
-    while True:
+    keyb_interrupted = False
+    while not keyb_interrupted:
         try:
             #await sample_inputs_and_publish_till_connected(cfg)
 
@@ -317,12 +318,12 @@ async def main_loop():
                 tg.create_task(subscribe_and_activate_outputs_till_connected(cfg))
 
         except* aiomqtt.MqttError as err:
-            print(f"Connection lost: {err}; reconnecting in {reconnection_interval_sec} seconds ...")
+            print(f"Connection lost: {err.exceptions}; reconnecting in {reconnection_interval_sec} seconds ...")
             await asyncio.sleep(reconnection_interval_sec)
         except* KeyboardInterrupt:
             print_stats()
             print("Stopped by CTRL+C... aborting")
-            return 0
+            keyb_interrupted = True
     
     print_stats()
     return 0
