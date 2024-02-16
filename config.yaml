@@ -8,6 +8,7 @@ mqtt:
 sampling_frequency_msec: 1000
 
 # inputs are those provided by the Sequent Microsystem 16ch-optoinsulated board
+# NOTE: the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
 inputs:
   # the MQTT topic will be in the form "home-assistant/<input name>"
   - name: opto_input_1

@@ -39,7 +39,7 @@ import subprocess
 # =======================================================================================================
 
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
-MQTT_TOPIC_PREFIX = "home-assistant"
+MQTT_TOPIC_PREFIX = "home"
 MAX_INPUT_CHANNELS = 16
 BROKER_CONNECTION_TIMEOUT_SEC = 3
 STATS_PRINT_INTERVAL_SEC = 5
@@ -68,6 +68,7 @@ class CfgFile:
         self.inputs_map: Optional[Dict[int, Any]] = None # None means "not loaded at all"
     
     def load(self, cfg_yaml: str) -> bool:
+        print(f"Loading configuration file {cfg_yaml}")
         try:
             with open(cfg_yaml, 'r') as file:
                 self.config = yaml.safe_load(file)
@@ -100,7 +101,9 @@ class CfgFile:
             #self.inputs_map = {input_item['input_num']: input_item for input_item in self.config['inputs']}
             self.inputs_map = {}
             for input_item in self.config['inputs']:
-                idx = input_item['input_num']
+                idx = int(input_item['input_num'])
+                if idx < 1 or idx > 16:
+                    raise ValueError(f"Invalid input_num {idx}. The legal range is [1-16].")
                 self.inputs_map[idx] = input_item
                 print(input_item)
             print(f"Loaded {len(self.inputs_map)} digital input configurations")
@@ -115,6 +118,7 @@ class CfgFile:
             return False
         
         self.outputs_map = self.config['outputs']
+        print(f"Successfully loaded configuration")
 
         return True
 
@@ -140,6 +144,7 @@ class CfgFile:
         Returns a dictionary exposing the fields:
             'name': name of the digital input
             'active_low': True or False
+        Note: the indexes are 1-based
         """
         if self.inputs_map is None or index not in self.inputs_map:
             return None # no meaningful default value
@@ -272,7 +277,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                 # Extract the bit at position i using bitwise AND operation
                 bit_value = bool(sampled_values_as_int & (1 << i))
 
-                input_cfg = cfg.get_input_config(i)
+                input_cfg = cfg.get_input_config(1 + i)  # convert from zero-based index 'i' to 1-based index
                 if input_cfg is not None:
                     # Choose the TOPIC and message PAYLOAD
                     topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg['name']}"
