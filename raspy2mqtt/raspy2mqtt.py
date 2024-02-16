@@ -295,7 +295,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                     else:
                         payload = '{"state":"OFF"}'
 
-                    print(f"From INPUT#{i} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
+                    print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
                     g_stats["num_samples"] += 1
 
                     # qos=1 means "at least once" QoS
