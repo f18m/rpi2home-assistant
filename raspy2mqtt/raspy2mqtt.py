@@ -291,9 +291,9 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                         input_type = 'active high'
 
                     if logical_value == True:
-                        payload = '{"state":"ON"}'
+                        payload = 'ON'
                     else:
-                        payload = '{"state":"OFF"}'
+                        payload = 'OFF'
 
                     print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
                     g_stats["num_samples"] += 1
