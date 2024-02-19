@@ -356,8 +356,8 @@ async def main_loop():
     global g_output_channels
     for output_ch in cfg.get_all_outputs():
         output_name = output_ch['name']
-        active_low = output_ch['active_low']
-        g_output_channels[output_name] = gpiozero.LED(pin=output_ch['gpio'], initial_value=active_low)
+        active_high = not bool(output_ch['active_low'])
+        g_output_channels[output_name] = gpiozero.LED(pin=output_ch['gpio'], active_high=active_high)
 
     # wrap with error-handling code the main loop
     reconnection_interval_sec = 3
