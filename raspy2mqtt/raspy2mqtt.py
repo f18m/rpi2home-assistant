@@ -230,7 +230,7 @@ def print_stats():
     print(f">> Num states for output channels published on the MQTT broker: {g_stats['num_output_states_published']}")
 
 def shutdown():
-    print(f"Triggering shutdown of the Raspberry PI")
+    print(f"!! Detected long-press on the Sequent Microsystem button. Triggering clean shutdown of the Raspberry PI !!")
     subprocess.call(['sudo', 'shutdown', '-h', 'now'])
 
 # async def monitor_shutdown_button():
