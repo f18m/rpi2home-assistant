@@ -31,7 +31,7 @@ STATS_PRINT_INTERVAL_SEC = 5
 SHUTDOWN_BUTTON_PIN = 26
 
 g_stats = {
-    'num_input_samples_published': 0,``
+    'num_input_samples_published': 0,
     'num_output_commands_processed': 0,
     'num_connections_publish': 0,
     'num_connections_subscribe': 0
