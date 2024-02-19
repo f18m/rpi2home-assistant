@@ -271,7 +271,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
     """
     global g_stats
 
-    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker} to publish INPUT states")
     g_stats["num_connections_publish"] += 1
     async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
@@ -311,7 +311,7 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
     global g_stats
     global g_output_channels
 
-    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker} to subscribe to OUTPUT commands")
     g_stats["num_connections_subscribe"] += 1
     async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         for output_ch in cfg.get_all_outputs():
@@ -336,7 +336,7 @@ async def publish_outputs_state(cfg: CfgFile):
     global g_stats
     global g_output_channels
 
-    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker} to publish OUTPUT states")
     async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
             for output_ch in cfg.get_all_outputs():
