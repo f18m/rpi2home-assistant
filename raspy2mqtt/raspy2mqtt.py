@@ -14,7 +14,7 @@ import asyncio
 import aiomqtt
 #import paho.mqtt as mqtt
 import lib16inpind
-from gpiozero import Button
+import gpiozero
 import subprocess
 
 # =======================================================================================================
@@ -322,7 +322,7 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
             output_name = str(message.topic).removeprefix(f"{MQTT_TOPIC_PREFIX}/")
             c = cfg.get_output_config(output_name)
             print("Received message for digital output:", message.payload, " on topic ", message.topic, " config for this output is", c)
-            output_ch = LED(c['gpio'])
+            output_ch = gpiozero.LED(c['gpio'])
             if message.payload == b'ON':
                 output_ch.on()
             else:
@@ -344,7 +344,7 @@ async def main_loop():
     # setup GPIO connected to the pushbutton (input) and
     # assign the when_held function to be called when the button is held for more than 5 seconds
     # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
-    button = Button(SHUTDOWN_BUTTON_PIN, hold_time=5)
+    button = gpiozero.Button(SHUTDOWN_BUTTON_PIN, hold_time=5)
     button.when_held = shutdown
 
     # setup GPIO for the outputs
