@@ -7,10 +7,10 @@ mqtt:
 # sampling frequency for the input
 sampling_frequency_msec: 1000
 
-# inputs are those provided by the Sequent Microsystem 16ch-optoinsulated board
-# NOTE: the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
+# inputs are those sampled by the Sequent Microsystem 16ch-optoinsulated board
+# NOTE1: the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
+# NOTE2: the MQTT topic will be in the form "home/<input name>", don't use spaces in the name!
 inputs:
-  # the MQTT topic will be in the form "home-assistant/<input name>"
   - name: opto_input_1
     input_num: 1
     active_low: true
@@ -18,9 +18,12 @@ inputs:
     input_num: 2
     active_low: true
 
-# outputs are produced using the SeenGreat 2ch optoinsulated board
+# outputs channels are used to drive the SeenGreat 2ch optoinsulated board
+# NOTE1: the MQTT topic will be in the form "home/<output name>", don't use spaces in the name!
 outputs:
   - name: ext_alarm_siren
     gpio: 20
+    active_low: true
   - name: int_alarm_siren
     gpio: 21
+    active_low: true

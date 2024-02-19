@@ -14,7 +14,7 @@ import asyncio
 import aiomqtt
 #import paho.mqtt as mqtt
 import lib16inpind
-from gpiozero import Button
+import gpiozero
 import subprocess
 
 # =======================================================================================================
@@ -31,10 +31,14 @@ STATS_PRINT_INTERVAL_SEC = 5
 SHUTDOWN_BUTTON_PIN = 26
 
 g_stats = {
-    'num_samples': 0,
+    'num_input_samples_published': 0,
+    'num_output_commands_processed': 0,
+    'num_output_states_published': 0,
     'num_connections_publish': 0,
     'num_connections_subscribe': 0
 }
+
+g_output_channels = {}
 
 
 # =======================================================================================================
@@ -86,9 +90,9 @@ class CfgFile:
             for input_item in self.config['inputs']:
                 idx = int(input_item['input_num'])
                 if idx < 1 or idx > 16:
-                    raise ValueError(f"Invalid input_num {idx}. The legal range is [1-16].")
+                    raise ValueError(f"Invalid input_num {idx}. The legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs.")
                 self.inputs_map[idx] = input_item
-                print(input_item)
+                #print(input_item)
             print(f"Loaded {len(self.inputs_map)} digital input configurations")
             if len(self.inputs_map)==0:
                 # reset to "not loaded at all" condition
@@ -100,7 +104,23 @@ class CfgFile:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
         
-        self.outputs_map = self.config['outputs']
+        try:
+            # convert the 'outputs' part in a dictionary indexed by the NAME:
+            self.outputs_map = {}
+            for output_item in self.config['outputs']:
+                self.outputs_map[output_item['name']] = output_item
+                #print(output_item)
+            print(f"Loaded {len(self.outputs_map)} digital output configurations")
+            if len(self.outputs_map)==0:
+                # reset to "not loaded at all" condition
+                self.outputs_map = None
+        except ValueError as e:
+            print(f"Error in YAML config file '{cfg_yaml}': {e}")
+            return False
+        except KeyError as e:
+            print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
+            return False
+
         print(f"Successfully loaded configuration")
 
         return True
@@ -133,15 +153,16 @@ class CfgFile:
             return None # no meaningful default value
         return self.inputs_map[index]
 
-    # def get_output_config(self, index: int) -> dict[str, any]:
-    #     """
-    #     Returns a dictionary exposing the fields:
-    #         'name': name of the digital output
-    #         'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
-    #     """
-    #     if self.outputs_map is None or index not in self.outputs_map:
-    #         return None # no meaningful default value
-    #     return self.outputs_map[index]
+    def get_output_config(self, name: str) -> dict[str, any]:
+        """
+        Returns a dictionary exposing the fields:
+            'name': name of the digital output
+            'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
+        """
+        if self.outputs_map is None or name not in self.outputs_map:
+            return None # no meaningful default value
+        return self.outputs_map[name]
+
     def get_all_outputs(self):
         """
         Returns a list of dictionaries exposing the fields:
@@ -204,10 +225,12 @@ def print_stats():
     print(f">> STATS")
     print(f">> Num (re)connections to the MQTT broker [publish channel]: {g_stats['num_connections_publish']}")
     print(f">> Num (re)connections to the MQTT broker [subscribe channel]: {g_stats['num_connections_subscribe']}")
-    print(f">> Num samples published on the MQTT broker: {g_stats['num_samples']}")
+    print(f">> Num input samples published on the MQTT broker: {g_stats['num_input_samples_published']}")
+    print(f">> Num commands for output channels processed from MQTT broker: {g_stats['num_output_commands_processed']}")
+    print(f">> Num states for output channels published on the MQTT broker: {g_stats['num_output_states_published']}")
 
 def shutdown():
-    print(f"Triggering shutdown of the Raspberry PI")
+    print(f"!! Detected long-press on the Sequent Microsystem button. Triggering clean shutdown of the Raspberry PI !!")
     subprocess.call(['sudo', 'shutdown', '-h', 'now'])
 
 # async def monitor_shutdown_button():
@@ -248,7 +271,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
     """
     global g_stats
 
-    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker} to publish INPUT states")
     g_stats["num_connections_publish"] += 1
     async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
@@ -264,8 +287,6 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                 if input_cfg is not None:
                     # Choose the TOPIC and message PAYLOAD
                     topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg['name']}"
-                    
-
                     if input_cfg['active_low']:
                         logical_value = not bit_value
                         input_type = 'active low'
@@ -273,16 +294,12 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                         logical_value = bit_value
                         input_type = 'active high'
 
-                    if logical_value == True:
-                        payload = 'ON'
-                    else:
-                        payload = 'OFF'
-
-                    print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
-                    g_stats["num_samples"] += 1
+                    payload = "ON" if logical_value else "OFF"
+                    #print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
 
                     # qos=1 means "at least once" QoS
                     await client.publish(topic, payload, qos=1)
+                    g_stats["num_input_samples_published"] += 1
 
             # Now sleep a little bit before repeating
             await asyncio.sleep(cfg.sampling_frequency_sec)
@@ -292,8 +309,9 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
     global g_stats
+    global g_output_channels
 
-    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker} to subscribe to OUTPUT commands")
     g_stats["num_connections_subscribe"] += 1
     async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         for output_ch in cfg.get_all_outputs():
@@ -302,8 +320,34 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
             await client.subscribe(topic)
 
         async for message in client.messages:
-            print("Received message for digital output:", message.payload)
+            output_name = str(message.topic).removeprefix(f"{MQTT_TOPIC_PREFIX}/")
+            c = cfg.get_output_config(output_name)
+            print(f"Received message for digital output [{output_name}] with payload {message.payload}... changing GPIO output pin state")
+            if message.payload == b'ON':
+                g_output_channels[output_name].on()
+            else:
+                g_output_channels[output_name].off()
+            g_stats['num_output_commands_processed'] += 1
 
+async def publish_outputs_state(cfg: CfgFile):
+    """
+    This function may throw a aiomqtt.MqttError exception indicating a connection issue!
+    """
+    global g_stats
+    global g_output_channels
+
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker} to publish OUTPUT states")
+    async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
+        while True:
+            for output_ch in cfg.get_all_outputs():
+                output_name = output_ch['name']
+                topic = f"{MQTT_TOPIC_PREFIX}/{output_name}/state"
+                payload = "ON" if g_output_channels[output_name].is_lit else "OFF"
+                #print(f"Publishing to topic {topic} the payload {payload}")
+                # qos=1 means "at least once" QoS
+                await client.publish(topic, payload, qos=1)
+                g_stats['num_output_states_published'] += 1
+            await asyncio.sleep(cfg.sampling_frequency_sec*5)
 
 async def main_loop():
     args = parse_command_line()
@@ -321,25 +365,29 @@ async def main_loop():
     # setup GPIO connected to the pushbutton (input) and
     # assign the when_held function to be called when the button is held for more than 5 seconds
     # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
-    button = Button(SHUTDOWN_BUTTON_PIN, hold_time=5)
+    button = gpiozero.Button(SHUTDOWN_BUTTON_PIN, hold_time=5)
     button.when_held = shutdown
 
     # setup GPIO for the outputs
-    # TODO
-
+    print(f"Initializing output pins")
+    global g_output_channels
+    for output_ch in cfg.get_all_outputs():
+        output_name = output_ch['name']
+        active_high = not bool(output_ch['active_low'])
+        g_output_channels[output_name] = gpiozero.LED(pin=output_ch['gpio'], active_high=active_high)
 
     # wrap with error-handling code the main loop
     reconnection_interval_sec = 3
     keyb_interrupted = False
+    print(f"Starting main loop")
     while not keyb_interrupted:
         try:
-            #await sample_inputs_and_publish_till_connected(cfg)
-
-            # Use a task group to manage and await all tasks
+            # Use a task group to manage and await all (endless) tasks
             async with asyncio.TaskGroup() as tg:
                 tg.create_task(sample_inputs_and_publish_till_connected(cfg))
                 tg.create_task(print_stats_periodically(cfg))
                 tg.create_task(subscribe_and_activate_outputs_till_connected(cfg))
+                tg.create_task(publish_outputs_state(cfg))
 
         except* aiomqtt.MqttError as err:
             print(f"Connection lost: {err.exceptions}; reconnecting in {reconnection_interval_sec} seconds ...")
