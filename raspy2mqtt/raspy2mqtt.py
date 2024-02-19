@@ -320,8 +320,13 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
 
         async for message in client.messages:
             output_name = str(message.topic).removeprefix(f"{MQTT_TOPIC_PREFIX}/")
-            print("Received message for digital output:", message.payload, " on topic ", message.topic, " config for this output is", cfg.get_output_config(output_name))
-
+            c = cfg.get_output_config(output_name)
+            print("Received message for digital output:", message.payload, " on topic ", message.topic, " config for this output is", c)
+            output_ch = LED(c['gpio'])
+            if message.payload == b'ON':
+                output_ch.on()
+            else:
+                output_ch.off()
 
 async def main_loop():
     args = parse_command_line()
