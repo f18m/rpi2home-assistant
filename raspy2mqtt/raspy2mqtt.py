@@ -382,11 +382,9 @@ async def main_loop():
     print(f"Starting main loop")
     while not keyb_interrupted:
         try:
-            #await sample_inputs_and_publish_till_connected(cfg)
-
-            # Use a task group to manage and await all tasks
+            # Use a task group to manage and await all (endless) tasks
             async with asyncio.TaskGroup() as tg:
-                #tg.create_task(sample_inputs_and_publish_till_connected(cfg))
+                tg.create_task(sample_inputs_and_publish_till_connected(cfg))
                 tg.create_task(print_stats_periodically(cfg))
                 tg.create_task(subscribe_and_activate_outputs_till_connected(cfg))
                 tg.create_task(publish_outputs_state(cfg))
