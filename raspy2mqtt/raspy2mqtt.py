@@ -33,6 +33,7 @@ SHUTDOWN_BUTTON_PIN = 26
 g_stats = {
     'num_input_samples_published': 0,
     'num_output_commands_processed': 0,
+    'num_output_states_published': 0,
     'num_connections_publish': 0,
     'num_connections_subscribe': 0
 }
@@ -226,6 +227,7 @@ def print_stats():
     print(f">> Num (re)connections to the MQTT broker [subscribe channel]: {g_stats['num_connections_subscribe']}")
     print(f">> Num input samples published on the MQTT broker: {g_stats['num_input_samples_published']}")
     print(f">> Num commands for output channels processed from MQTT broker: {g_stats['num_output_commands_processed']}")
+    print(f">> Num states for output channels published on the MQTT broker: {g_stats['num_output_states_published']}")
 
 def shutdown():
     print(f"Triggering shutdown of the Raspberry PI")
@@ -285,8 +287,6 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                 if input_cfg is not None:
                     # Choose the TOPIC and message PAYLOAD
                     topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg['name']}"
-                    
-
                     if input_cfg['active_low']:
                         logical_value = not bit_value
                         input_type = 'active low'
@@ -294,16 +294,12 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                         logical_value = bit_value
                         input_type = 'active high'
 
-                    if logical_value == True:
-                        payload = 'ON'
-                    else:
-                        payload = 'OFF'
-
-                    print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
-                    g_stats["num_input_samples_published"] += 1
+                    payload = "ON" if logical_value else "OFF"
+                    #print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
 
                     # qos=1 means "at least once" QoS
                     await client.publish(topic, payload, qos=1)
+                    g_stats["num_input_samples_published"] += 1
 
             # Now sleep a little bit before repeating
             await asyncio.sleep(cfg.sampling_frequency_sec)
@@ -332,6 +328,24 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
             else:
                 g_output_channels[output_name].off()
             g_stats['num_output_commands_processed'] += 1
+
+async def publish_outputs_state(cfg: CfgFile):
+    """
+    This function may throw a aiomqtt.MqttError exception indicating a connection issue!
+    """
+    global g_stats
+    global g_output_channels
+
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
+    async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
+        for output_ch in cfg.get_all_outputs():
+            topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}/state"
+            payload = "ON" if g_output_channels[output_name].is_lit() else "OFF"
+            print(f"Publishing to topic {topic} the payload {payload}")
+            # qos=1 means "at least once" QoS
+            await client.publish(topic, payload, qos=1)
+            g_stats['num_output_states_published'] += 1
+        await asyncio.sleep(cfg.sampling_frequency_sec*5)
 
 async def main_loop():
     args = parse_command_line()
@@ -371,6 +385,7 @@ async def main_loop():
                 #tg.create_task(sample_inputs_and_publish_till_connected(cfg))
                 tg.create_task(print_stats_periodically(cfg))
                 tg.create_task(subscribe_and_activate_outputs_till_connected(cfg))
+                tg.create_task(publish_outputs_state(cfg))
 
         except* aiomqtt.MqttError as err:
             print(f"Connection lost: {err.exceptions}; reconnecting in {reconnection_interval_sec} seconds ...")
