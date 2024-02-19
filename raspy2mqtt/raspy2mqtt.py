@@ -343,7 +343,7 @@ async def publish_outputs_state(cfg: CfgFile):
                 output_name = output_ch['name']
                 topic = f"{MQTT_TOPIC_PREFIX}/{output_name}/state"
                 payload = "ON" if g_output_channels[output_name].is_lit else "OFF"
-                print(f"Publishing to topic {topic} the payload {payload}")
+                #print(f"Publishing to topic {topic} the payload {payload}")
                 # qos=1 means "at least once" QoS
                 await client.publish(topic, payload, qos=1)
                 g_stats['num_output_states_published'] += 1

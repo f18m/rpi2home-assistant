@@ -18,13 +18,13 @@ classifiers = [
 #  SM16inpind -> https://github.com/SequentMicrosystems/16inpind-rpi/tree/main/python
 #  PyYAML ->     https://pyyaml.org/wiki/PyYAMLDocumentation
 #  gpiozero ->   https://gpiozero.readthedocs.io/en/latest/index.html
-#  RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
+#  lgpio ->      https://pypi.org/project/lgpio/   (backend for gpiozero)
 dependencies = [
   "aiomqtt>=2.0.0",
   "SM16inpind>=1.0.1",
   "PyYAML",
   "gpiozero",
-  "RPi.GPIO"
+  "lgpio"
 ]
 
 [project.urls]
