@@ -339,7 +339,8 @@ async def publish_outputs_state(cfg: CfgFile):
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
     async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         for output_ch in cfg.get_all_outputs():
-            topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}/state"
+            output_name = output_ch['name']
+            topic = f"{MQTT_TOPIC_PREFIX}/{output_name}/state"
             payload = "ON" if g_output_channels[output_name].is_lit() else "OFF"
             print(f"Publishing to topic {topic} the payload {payload}")
             # qos=1 means "at least once" QoS
