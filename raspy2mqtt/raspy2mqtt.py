@@ -109,7 +109,7 @@ class CfgFile:
             self.outputs_map = {}
             for output_item in self.config['outputs']:
                 self.outputs_map[output_item['name']] = output_item
-                print(output_item)
+                #print(output_item)
             print(f"Loaded {len(self.outputs_map)} digital output configurations")
             if len(self.outputs_map)==0:
                 # reset to "not loaded at all" condition
@@ -341,7 +341,7 @@ async def publish_outputs_state(cfg: CfgFile):
         for output_ch in cfg.get_all_outputs():
             output_name = output_ch['name']
             topic = f"{MQTT_TOPIC_PREFIX}/{output_name}/state"
-            payload = "ON" if g_output_channels[output_name].is_lit() else "OFF"
+            payload = "ON" if g_output_channels[output_name].is_lit else "OFF"
             print(f"Publishing to topic {topic} the payload {payload}")
             # qos=1 means "at least once" QoS
             await client.publish(topic, payload, qos=1)
@@ -368,6 +368,7 @@ async def main_loop():
     button.when_held = shutdown
 
     # setup GPIO for the outputs
+    print(f"Initializing output pins")
     global g_output_channels
     for output_ch in cfg.get_all_outputs():
         output_name = output_ch['name']
@@ -377,6 +378,7 @@ async def main_loop():
     # wrap with error-handling code the main loop
     reconnection_interval_sec = 3
     keyb_interrupted = False
+    print(f"Starting main loop")
     while not keyb_interrupted:
         try:
             #await sample_inputs_and_publish_till_connected(cfg)
