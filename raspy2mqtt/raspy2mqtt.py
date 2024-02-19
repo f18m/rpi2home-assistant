@@ -319,7 +319,8 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
             await client.subscribe(topic)
 
         async for message in client.messages:
-            print("Received message for digital output:", message.payload, " on topic ", message.topic, " config for this output is", cfg.get_output_config(message.topic))
+            output_name = str(message.topic).removeprefix(f"{MQTT_TOPIC_PREFIX}/")
+            print("Received message for digital output:", message.payload, " on topic ", message.topic, " config for this output is", cfg.get_output_config(output_name))
 
 
 async def main_loop():
