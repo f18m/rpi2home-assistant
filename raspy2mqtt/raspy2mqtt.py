@@ -322,7 +322,7 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
         async for message in client.messages:
             output_name = str(message.topic).removeprefix(f"{MQTT_TOPIC_PREFIX}/")
             c = cfg.get_output_config(output_name)
-            print("Received message for digital output:", message.payload, " on topic ", message.topic, " config for this output is", c)
+            print(f"Received message for digital output [{output_name}] with payload {message.payload}... changing GPIO output pin state")
             if message.payload == b'ON':
                 g_output_channels[output_name].on()
             else:
