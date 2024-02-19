@@ -3,6 +3,8 @@
 Small Python daemon to read normally-closed (NC) contacts from wired alarm sensors and publish them over MQTT for HomeAssistant.
 This small utility also subscribes to MQTT to apply "switch" configurations to e.g. start/stop alarm sirens.
 
+# Prerequisites
+
 This software is meant to run on a Raspberry PI having installed
 * the [Sequent Microsystem 16 opto-insulated inputs HAT](https://github.com/SequentMicrosystems/16inpind-rpi)
    This software is meant to expose the 16 digital inputs from this HAT
@@ -18,6 +20,7 @@ This software is compatible with all 40-pin Raspberry Pi boards
 (Raspberry Pi 1 Model A+ & B+, Raspberry Pi 2, Raspberry Pi 3, Raspberry Pi 4,
 Raspberry Pi 5).
 
+Another pre-requisite is that there is an MQTT broker running somewhere (e.g. a Mosquitto broker).
 
 ## Build system
 
@@ -42,4 +45,4 @@ make raspbian_start
 ```
 
 Then of course it's important to populate the configuration file, with the specific pinouts for your raspberry HATs
-(see Overview). The file is located at `/etc/ha-alarm-raspy2mqtt.yaml`
+(see #prerequisites). The file is located at `/etc/ha-alarm-raspy2mqtt.yaml`
