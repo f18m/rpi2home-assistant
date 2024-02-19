@@ -23,5 +23,7 @@ inputs:
 outputs:
   - name: ext_alarm_siren
     gpio: 20
+    active_low: true
   - name: int_alarm_siren
     gpio: 21
+    active_low: true
