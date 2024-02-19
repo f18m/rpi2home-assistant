@@ -13,14 +13,18 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-# see
-#  https://github.com/sbtinstruments/aiomqtt
-#  https://github.com/SequentMicrosystems/16inpind-rpi
+# reference docs:
+#  aiomqtt ->    https://sbtinstruments.github.io/aiomqtt/
+#  SM16inpind -> https://github.com/SequentMicrosystems/16inpind-rpi/tree/main/python
+#  PyYAML ->     https://pyyaml.org/wiki/PyYAMLDocumentation
+#  gpiozero ->   https://gpiozero.readthedocs.io/en/latest/index.html
+#  RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
 dependencies = [
   "aiomqtt>=2.0.0",
   "SM16inpind>=1.0.1",
   "PyYAML",
-  "gpiozero"
+  "gpiozero",
+  "RPi.GPIO"
 ]
 
 [project.urls]

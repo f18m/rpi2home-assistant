@@ -1,0 +1,14 @@
+ [Unit]
+ Description=My GPIO to MQTT bridge
+ After=multi-user.target
+
+ [Service]
+ Type=idle
+ ExecStart=/root/ha-alarm-raspy2mqtt-venv/bin/python3 /root/ha-alarm-raspy2mqtt/raspy2mqtt/raspy2mqtt.py -c /etc/ha-alarm-raspy2mqtt.yaml
+ 
+ [Install]
+ WantedBy=multi-user.target
+
+
+
+
