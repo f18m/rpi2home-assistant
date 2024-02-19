@@ -31,7 +31,7 @@ STATS_PRINT_INTERVAL_SEC = 5
 SHUTDOWN_BUTTON_PIN = 26
 
 g_stats = {
-    'num_samples': 0,
+    'num_input_samples_published': 0,
     'num_connections_publish': 0,
     'num_connections_subscribe': 0
 }
@@ -206,7 +206,7 @@ def print_stats():
     print(f">> STATS")
     print(f">> Num (re)connections to the MQTT broker [publish channel]: {g_stats['num_connections_publish']}")
     print(f">> Num (re)connections to the MQTT broker [subscribe channel]: {g_stats['num_connections_subscribe']}")
-    print(f">> Num samples published on the MQTT broker: {g_stats['num_samples']}")
+    print(f">> Num samples published on the MQTT broker: {g_stats['num_input_samples_published']}")
 
 def shutdown():
     print(f"Triggering shutdown of the Raspberry PI")
@@ -281,7 +281,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                         payload = 'OFF'
 
                     print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
-                    g_stats["num_samples"] += 1
+                    g_stats["num_input_samples_published"] += 1
 
                     # qos=1 means "at least once" QoS
                     await client.publish(topic, payload, qos=1)
@@ -304,7 +304,7 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
             await client.subscribe(topic)
 
         async for message in client.messages:
-            print("Received message for digital output:", message.payload)
+            print("Received message for digital output:", message.payload, " on topic ", message.topic)
 
 
 async def main_loop():
