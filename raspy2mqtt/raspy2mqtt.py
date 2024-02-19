@@ -86,7 +86,7 @@ class CfgFile:
             for input_item in self.config['inputs']:
                 idx = int(input_item['input_num'])
                 if idx < 1 or idx > 16:
-                    raise ValueError(f"Invalid input_num {idx}. The legal range is [1-16].")
+                    raise ValueError(f"Invalid input_num {idx}. The legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs.")
                 self.inputs_map[idx] = input_item
                 #print(input_item)
             print(f"Loaded {len(self.inputs_map)} digital input configurations")
@@ -100,8 +100,22 @@ class CfgFile:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
         
-        self.outputs_map = self.config['outputs']
-        print(f"Loaded {len(self.outputs_map)} digital output configurations")
+        try:
+            # convert the 'outputs' part in a dictionary indexed by the NAME:
+            self.outputs_map = {}
+            for output_item in self.config['outputs']:
+                self.outputs_map[output_item['name']] = output_item
+                print(output_item)
+            print(f"Loaded {len(self.outputs_map)} digital output configurations")
+            if len(self.outputs_map)==0:
+                # reset to "not loaded at all" condition
+                self.outputs_map = None
+        except ValueError as e:
+            print(f"Error in YAML config file '{cfg_yaml}': {e}")
+            return False
+        except KeyError as e:
+            print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
+            return False
 
         print(f"Successfully loaded configuration")
 
@@ -135,15 +149,16 @@ class CfgFile:
             return None # no meaningful default value
         return self.inputs_map[index]
 
-    # def get_output_config(self, index: int) -> dict[str, any]:
-    #     """
-    #     Returns a dictionary exposing the fields:
-    #         'name': name of the digital output
-    #         'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
-    #     """
-    #     if self.outputs_map is None or index not in self.outputs_map:
-    #         return None # no meaningful default value
-    #     return self.outputs_map[index]
+    def get_output_config(self, name: str) -> dict[str, any]:
+        """
+        Returns a dictionary exposing the fields:
+            'name': name of the digital output
+            'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
+        """
+        if self.outputs_map is None or name not in self.outputs_map:
+            return None # no meaningful default value
+        return self.outputs_map[name]
+
     def get_all_outputs(self):
         """
         Returns a list of dictionaries exposing the fields:
@@ -304,7 +319,7 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
             await client.subscribe(topic)
 
         async for message in client.messages:
-            print("Received message for digital output:", message.payload, " on topic ", message.topic)
+            print("Received message for digital output:", message.payload, " on topic ", message.topic, " config for this output is", cfg.get_output_config(message.topic))
 
 
 async def main_loop():
