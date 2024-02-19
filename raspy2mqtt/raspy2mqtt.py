@@ -88,7 +88,7 @@ class CfgFile:
                 if idx < 1 or idx > 16:
                     raise ValueError(f"Invalid input_num {idx}. The legal range is [1-16].")
                 self.inputs_map[idx] = input_item
-                print(input_item)
+                #print(input_item)
             print(f"Loaded {len(self.inputs_map)} digital input configurations")
             if len(self.inputs_map)==0:
                 # reset to "not loaded at all" condition
@@ -101,6 +101,8 @@ class CfgFile:
             return False
         
         self.outputs_map = self.config['outputs']
+        print(f"Loaded {len(self.outputs_map)} digital output configurations")
+
         print(f"Successfully loaded configuration")
 
         return True
@@ -337,7 +339,7 @@ async def main_loop():
 
             # Use a task group to manage and await all tasks
             async with asyncio.TaskGroup() as tg:
-                tg.create_task(sample_inputs_and_publish_till_connected(cfg))
+                #tg.create_task(sample_inputs_and_publish_till_connected(cfg))
                 tg.create_task(print_stats_periodically(cfg))
                 tg.create_task(subscribe_and_activate_outputs_till_connected(cfg))
 
