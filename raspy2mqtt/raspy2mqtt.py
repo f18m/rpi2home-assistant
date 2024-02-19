@@ -31,7 +31,8 @@ STATS_PRINT_INTERVAL_SEC = 5
 SHUTDOWN_BUTTON_PIN = 26
 
 g_stats = {
-    'num_input_samples_published': 0,
+    'num_input_samples_published': 0,``
+    'num_output_commands_processed': 0,
     'num_connections_publish': 0,
     'num_connections_subscribe': 0
 }
@@ -221,7 +222,8 @@ def print_stats():
     print(f">> STATS")
     print(f">> Num (re)connections to the MQTT broker [publish channel]: {g_stats['num_connections_publish']}")
     print(f">> Num (re)connections to the MQTT broker [subscribe channel]: {g_stats['num_connections_subscribe']}")
-    print(f">> Num samples published on the MQTT broker: {g_stats['num_input_samples_published']}")
+    print(f">> Num input samples published on the MQTT broker: {g_stats['num_input_samples_published']}")
+    print(f">> Num commands for output channels processed from MQTT broker: {g_stats['num_output_commands_processed']}")
 
 def shutdown():
     print(f"Triggering shutdown of the Raspberry PI")
@@ -327,6 +329,7 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
                 output_ch.on()
             else:
                 output_ch.off()
+            g_stats['num_output_commands_processed'] += 1
 
 async def main_loop():
     args = parse_command_line()
