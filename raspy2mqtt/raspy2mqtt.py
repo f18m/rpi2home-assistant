@@ -1,23 +1,6 @@
 #!/usr/bin/env python3
 
 #
-# This software is meant to run on a Raspberry PI having installed
-# a) the Sequent Microsystem 16 opto-insulated inputs HAT:
-#       https://github.com/SequentMicrosystems/16inpind-rpi
-#    This software is meant to expose the 16 digital inputs from this HAT
-#    over MQTT, to ease their integration as (binary) sensors in Home Assistant.
-#    Note that Sequent Microsystem board is connecting the pin 37 (GPIO 26) of the Raspberry Pi 
-#    to a pushbutton. This software monitors this pin, and if pressed for more than the
-#    desired time, issues the shut-down command.
-# b) a SeenGreat 2CH output opto-insulated relay HAT:
-#       https://seengreat.com/wiki/107/
-#    This software is meant to listen on MQTT topics and turn on/off the
-#    two channels of this HAT.
-#
-# This software is compatible with all 40-pin Raspberry Pi boards
-# (Raspberry Pi 1 Model A+ & B+, Raspberry Pi 2, Raspberry Pi 3, Raspberry Pi 4,
-# Raspberry Pi 5).
-#
 # Author: fmontorsi
 # Created: Feb 2024
 # License: Apache license

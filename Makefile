@@ -24,7 +24,7 @@ raspbian_install:
 	python3 -m venv $(BINDEST)/ha-alarm-raspy2mqtt-venv
 	$(BINDEST)/ha-alarm-raspy2mqtt-venv/bin/pip3 install .
 	# install app config (only if MISSING, don't overwrite customizations)
-	cp -av --update=none config.yaml $(CFGDEST)/ha-alarm-raspy2mqtt.yaml
+	cp -av --update config.yaml $(CFGDEST)/ha-alarm-raspy2mqtt.yaml
 	# install systemd config
 	chmod 644 systemd/*.service
 	cp -av systemd/*.service $(SYSTEMDUNITDEST)/
