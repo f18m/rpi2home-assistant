@@ -37,6 +37,8 @@ g_stats = {
     'num_connections_subscribe': 0
 }
 
+g_output_channels = {}
+
 
 # =======================================================================================================
 # CfgFile
@@ -311,6 +313,7 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
     global g_stats
+    global g_output_channels
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker}")
     g_stats["num_connections_subscribe"] += 1
@@ -324,11 +327,10 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
             output_name = str(message.topic).removeprefix(f"{MQTT_TOPIC_PREFIX}/")
             c = cfg.get_output_config(output_name)
             print("Received message for digital output:", message.payload, " on topic ", message.topic, " config for this output is", c)
-            output_ch = gpiozero.LED(c['gpio'])
             if message.payload == b'ON':
-                output_ch.on()
+                g_output_channels[output_name].on()
             else:
-                output_ch.off()
+                g_output_channels[output_name].off()
             g_stats['num_output_commands_processed'] += 1
 
 async def main_loop():
@@ -351,8 +353,10 @@ async def main_loop():
     button.when_held = shutdown
 
     # setup GPIO for the outputs
-    # TODO
-
+    global g_output_channels
+    for output_ch in cfg.get_all_outputs():
+        output_name = output_ch['name']
+        g_output_channels[output_name] = gpiozero.LED(output_ch['gpio'])
 
     # wrap with error-handling code the main loop
     reconnection_interval_sec = 3
