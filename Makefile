@@ -38,3 +38,6 @@ raspbian_start:
 
 raspbian_show_logs:
 	journalctl -u ha-alarm-raspy2mqtt
+
+raspbian_update_dependencies:
+	$(BINDEST)/ha-alarm-raspy2mqtt-venv/bin/pip3 install --upgrade .

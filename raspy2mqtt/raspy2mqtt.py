@@ -311,7 +311,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                     g_stats["num_input_samples_published"] += 1
 
             update_loop_duration_sec = time.perf_counter() - update_loop_start_sec
-            print(f"Updating all sensors on MQTT took {update_loop_start_sec} secs")
+            print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
 
             # Now sleep a little bit before repeating
             await asyncio.sleep(cfg.sampling_frequency_sec)
