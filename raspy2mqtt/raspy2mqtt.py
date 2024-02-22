@@ -16,6 +16,7 @@ import aiomqtt
 import lib16inpind
 import gpiozero
 import subprocess
+import time
 
 # =======================================================================================================
 # GLOBALs
@@ -286,6 +287,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
             sampled_values_as_int = lib16inpind.readAll(0) # 0 means the first "stacked" board (this code supports only 1!)
 
             # Publish each input value as a separate MQTT topic
+            update_loop_start_sec = time.perf_counter()
             for i in range(MAX_INPUT_CHANNELS):
                 # Extract the bit at position i using bitwise AND operation
                 bit_value = bool(sampled_values_as_int & (1 << i))
@@ -307,6 +309,9 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                     # qos=1 means "at least once" QoS
                     await client.publish(topic, payload, qos=1)
                     g_stats["num_input_samples_published"] += 1
+
+            update_loop_duration_sec = time.perf_counter() - update_loop_start_sec
+            print(f"Updating all sensors on MQTT took {update_loop_start_sec} secs")
 
             # Now sleep a little bit before repeating
             await asyncio.sleep(cfg.sampling_frequency_sec)
