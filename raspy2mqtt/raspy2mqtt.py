@@ -5,6 +5,8 @@
 # Created: Feb 2024
 # License: Apache license
 #
+# TODO: add prometheus support to monitor MQTT update timings (latencies) to help debug "sensor unavailable" on HA
+#       see https://prometheus.github.io/client_python/getting-started/three-step-demo/
 
 import argparse
 import os
@@ -36,7 +38,8 @@ g_stats = {
     'num_output_commands_processed': 0,
     'num_output_states_published': 0,
     'num_connections_publish': 0,
-    'num_connections_subscribe': 0
+    'num_connections_subscribe': 0,
+    'num_connections_lost': 0
 }
 
 g_output_channels = {}
@@ -231,6 +234,7 @@ def parse_command_line():
 def print_stats():
     global g_stats
     print(f">> STATS")
+    print(f">> Num times the MQTT broker connection was lost: {g_stats['num_connections_lost']}")
     print(f">> Num (re)connections to the MQTT broker [publish channel]: {g_stats['num_connections_publish']}")
     print(f">> Num (re)connections to the MQTT broker [subscribe channel]: {g_stats['num_connections_subscribe']}")
     print(f">> Num input samples published on the MQTT broker: {g_stats['num_input_samples_published']}")
@@ -311,7 +315,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                     g_stats["num_input_samples_published"] += 1
 
             update_loop_duration_sec = time.perf_counter() - update_loop_start_sec
-            print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
+            #print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
 
             # Now sleep a little bit before repeating
             await asyncio.sleep(cfg.sampling_frequency_sec)
@@ -362,6 +366,8 @@ async def publish_outputs_state(cfg: CfgFile):
             await asyncio.sleep(cfg.sampling_frequency_sec*5)
 
 async def main_loop():
+    global g_stats
+
     args = parse_command_line()
     cfg = CfgFile()
     if not cfg.load(args.config):
@@ -403,6 +409,7 @@ async def main_loop():
 
         except* aiomqtt.MqttError as err:
             print(f"Connection lost: {err.exceptions}; reconnecting in {reconnection_interval_sec} seconds ...")
+            g_stats['num_connections_lost'] += 1
             await asyncio.sleep(reconnection_interval_sec)
         except* KeyboardInterrupt:
             print_stats()
