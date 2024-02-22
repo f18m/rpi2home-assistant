@@ -1,15 +1,18 @@
 # Config file for raspy2mqtt (A.k.a. "ha-alarm-raspy2mqtt")
 # Written by Francesco Montorsi, Feb 2024.
 
-mqtt:
-  broker: 192.168.1.5
+mqtt_broker:
+  host: 192.168.1.5
 
 # sampling frequency for the input
 sampling_frequency_msec: 1000
 
 # inputs are those sampled by the Sequent Microsystem 16ch-optoinsulated board
-# NOTE1: the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
-# NOTE2: the MQTT topic will be in the form "home/<input name>", don't use spaces in the name!
+# NOTE1: a simple wiring for alarm system sensors is to get their NC relay fed with positive voltage on
+#        one side and then drive the other wire to the Sequent Microsystem input board; this means the
+#        Sequent Microsystem input will normally be high... in other words it's an "active low" pin
+# NOTE2: the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
+# NOTE3: the MQTT topic will be in the form "home/<input name>", don't use spaces in the name!
 inputs:
   - name: opto_input_1
     input_num: 1
@@ -19,7 +22,8 @@ inputs:
     active_low: true
 
 # outputs channels are used to drive the SeenGreat 2ch optoinsulated board
-# NOTE1: the MQTT topic will be in the form "home/<output name>", don't use spaces in the name!
+# NOTE1: all outputs are active low in this kind of board (i.e. to trigger the relay the GPIO must be driven low)
+# NOTE2: the MQTT topic will be in the form "home/<output name>", don't use spaces in the name!
 outputs:
   - name: ext_alarm_siren
     gpio: 20

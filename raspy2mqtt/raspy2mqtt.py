@@ -61,10 +61,10 @@ class CfgFile:
                 self.config = yaml.safe_load(file)
             if not isinstance(self.config, dict):
                 raise ValueError("Invalid YAML format: root element must be a dictionary")
-            if 'mqtt' not in self.config:
-                raise ValueError("Missing 'mqtt' section in the YAML config file")
-            if 'broker' not in self.config['mqtt']:
-                raise ValueError("Missing 'mqtt.broker' field in the YAML config file")
+            if 'mqtt_broker' not in self.config:
+                raise ValueError("Missing 'mqtt_broker' section in the YAML config file")
+            if 'host' not in self.config['mqtt_broker']:
+                raise ValueError("Missing 'mqtt_broker.host' field in the YAML config file")
             if 'inputs' not in self.config:
                 raise ValueError("Missing 'inputs' section in the YAML config file")
             if self.config['inputs'] is None:
@@ -126,10 +126,16 @@ class CfgFile:
         return True
 
     @property
-    def mqtt_broker(self) -> str:
+    def mqtt_broker_host(self) -> str:
         if self.config is None:
             return '' # no meaningful default value
-        return self.config['mqtt']['broker']
+        return self.config['mqtt_broker']['host']
+    def mqtt_broker_port(self) -> str:
+        if self.config is None:
+            return 1883 # the default MQTT broker port
+        if 'port' not in self.config['mqtt_broker']:
+            return 1883 # the default MQTT broker port
+        return self.config['mqtt_broker']['port']
 
     @property
     def sampling_frequency_sec(self) -> float:
@@ -271,9 +277,9 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
     """
     global g_stats
 
-    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker} to publish INPUT states")
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish INPUT states")
     g_stats["num_connections_publish"] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
             # Read 16 digital inputs
             sampled_values_as_int = lib16inpind.readAll(0) # 0 means the first "stacked" board (this code supports only 1!)
@@ -311,9 +317,9 @@ async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
     global g_stats
     global g_output_channels
 
-    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker} to subscribe to OUTPUT commands")
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to subscribe to OUTPUT commands")
     g_stats["num_connections_subscribe"] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         for output_ch in cfg.get_all_outputs():
             topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}"
             print(f"Subscribing to topic {topic}")
@@ -336,8 +342,8 @@ async def publish_outputs_state(cfg: CfgFile):
     global g_stats
     global g_output_channels
 
-    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker} to publish OUTPUT states")
-    async with aiomqtt.Client(cfg.mqtt_broker, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
+    print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OUTPUT states")
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
             for output_ch in cfg.get_all_outputs():
                 output_name = output_ch['name']
