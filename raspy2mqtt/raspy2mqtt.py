@@ -130,7 +130,8 @@ class CfgFile:
         if self.config is None:
             return '' # no meaningful default value
         return self.config['mqtt_broker']['host']
-    def mqtt_broker_port(self) -> str:
+    @property
+    def mqtt_broker_port(self) -> int:
         if self.config is None:
             return 1883 # the default MQTT broker port
         if 'port' not in self.config['mqtt_broker']:
