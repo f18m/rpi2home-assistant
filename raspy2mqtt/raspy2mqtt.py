@@ -28,7 +28,6 @@ THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
 MQTT_TOPIC_PREFIX = "home"
 MAX_INPUT_CHANNELS = 16
 BROKER_CONNECTION_TIMEOUT_SEC = 3
-STATS_PRINT_INTERVAL_SEC = 60
 
 # GPIO pin connected to the push button
 SHUTDOWN_BUTTON_PIN = 26
@@ -152,6 +151,12 @@ class CfgFile:
         except:
             # in this case the key is completely missing or does contain an integer value
             return 1.0 # default value
+        
+    @property
+    def stats_log_period_sec(self) -> int:
+        if self.config is None or 'log_stats_every' not in self.config:
+            return 30 # default value
+        return int(self.config['log_stats_every'])
 
     def get_input_config(self, index: int) -> dict[str, any]:
         """
@@ -268,12 +273,12 @@ def shutdown():
 
 async def print_stats_periodically(cfg: CfgFile):
     loop = asyncio.get_running_loop()
-    next_stat_time = loop.time() + STATS_PRINT_INTERVAL_SEC
+    next_stat_time = loop.time() + cfg.stats_log_period_sec
     while True:
         # Print out stats to help debugging
         if loop.time() >= next_stat_time:
             print_stats()
-            next_stat_time = loop.time() + STATS_PRINT_INTERVAL_SEC
+            next_stat_time = loop.time() + cfg.stats_log_period_sec
         
         await asyncio.sleep(1)
 

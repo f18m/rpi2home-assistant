@@ -7,6 +7,9 @@ mqtt_broker:
 # sampling frequency for the input
 sampling_frequency_msec: 1000
 
+# stats printed on stdout each N secs:
+log_stats_every: 30
+
 # inputs are those sampled by the Sequent Microsystem 16ch-optoinsulated board
 # NOTE1: a simple wiring for alarm system sensors is to get their NC relay fed with positive voltage on
 #        one side and then drive the other wire to the Sequent Microsystem input board; this means the
