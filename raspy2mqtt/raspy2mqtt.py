@@ -434,6 +434,7 @@ async def main_loop():
     # setup GPIO pins for the INPUTs
     print(f"Initializing GPIO input pins")
     for input_ch in cfg.get_all_gpio_inputs():
+        print(input_ch)
         # the short hold-time is to ensure that the digital input is served ASAP (i.e. publish_mqtt_message gets
         # invoked almost immediately)
         active_high = not bool(input_ch['active_low'])

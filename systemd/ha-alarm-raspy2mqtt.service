@@ -1,15 +1,17 @@
- [Unit]
- Description=My GPIO to MQTT bridge
- After=multi-user.target
+[Unit]
+Description=My GPIO to MQTT bridge
+After=network-online.target
+Wants=network-online.target
 
- [Service]
- Type=idle
- ExecStart=/root/ha-alarm-raspy2mqtt-venv/bin/python3 /root/ha-alarm-raspy2mqtt/raspy2mqtt/raspy2mqtt.py -c /etc/ha-alarm-raspy2mqtt.yaml
- Environment="GPIOZERO_PIN_FACTORY=rpigpio"
+StartLimitIntervalSec=500
+StartLimitBurst=5
+
+[Service]
+Type=idle
+ExecStart=/root/ha-alarm-raspy2mqtt-venv/bin/python3 /root/ha-alarm-raspy2mqtt/raspy2mqtt/raspy2mqtt.py -c /etc/ha-alarm-raspy2mqtt.yaml
+Environment="GPIOZERO_PIN_FACTORY=rpigpio"
+Restart=on-failure
+RestartSec=5s
  
- [Install]
- WantedBy=multi-user.target
-
-
-
-
+[Install]
+WantedBy=multi-user.target
