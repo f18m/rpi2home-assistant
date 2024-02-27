@@ -10,6 +10,7 @@
 
 import argparse
 import os
+import fcntl
 import sys
 import yaml
 import asyncio
@@ -25,11 +26,12 @@ import time
 
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
 MQTT_TOPIC_PREFIX = "home"
-MAX_INPUT_CHANNELS = 16
 BROKER_CONNECTION_TIMEOUT_SEC = 3
 
-# GPIO pin connected to the push button
-SHUTDOWN_BUTTON_PIN = 26
+# SequentMicrosystem-specific constants
+SEQMICRO_INPUTHAT_STACK_LEVEL = 0 # 0 means the first "stacked" board (this code supports only 1!)
+SEQMICRO_INPUTHAT_MAX_CHANNELS = 16
+SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO = 26 # GPIO pin connected to the push button
 
 g_stats = {
     'num_input_samples_published': 0,
@@ -207,7 +209,7 @@ class CfgFile:
 def parse_command_line():
     """Parses the command line and returns the configuration as dictionary object."""
     parser = argparse.ArgumentParser(
-        description=f"Utility to expose the {MAX_INPUT_CHANNELS} digital inputs read by Raspberry over MQTT, to ease their integration as (binary) sensors in Home Assistant."
+        description=f"Utility to expose the {SEQMICRO_INPUTHAT_MAX_CHANNELS} digital inputs read by Raspberry over MQTT, to ease their integration as (binary) sensors in Home Assistant."
     )
 
     # Optional arguments
@@ -246,6 +248,28 @@ def parse_command_line():
         sys.exit(0)
 
     return args
+
+def instance_already_running(label="default"):
+    """
+    Detect if an an instance with the label is already running, globally
+    at the operating system level.
+
+    Using `os.open` ensures that the file pointer won't be closed
+    by Python's garbage collector after the function's scope is exited.
+
+    The lock will be released when the program exits, or could be
+    released if the file pointer were closed.
+    """
+
+    lock_file_pointer = os.open(f"/tmp/instance_{label}.lock", os.O_WRONLY | os.O_CREAT)
+
+    try:
+        fcntl.lockf(lock_file_pointer, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        already_running = False
+    except IOError:
+        already_running = True
+
+    return already_running
 
 def print_stats():
     global g_stats
@@ -300,11 +324,11 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
     async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
             # Read 16 digital inputs
-            sampled_values_as_int = lib16inpind.readAll(0) # 0 means the first "stacked" board (this code supports only 1!)
+            sampled_values_as_int = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
 
             # Publish each input value as a separate MQTT topic
             update_loop_start_sec = time.perf_counter()
-            for i in range(MAX_INPUT_CHANNELS):
+            for i in range(SEQMICRO_INPUTHAT_MAX_CHANNELS):
                 # Extract the bit at position i using bitwise AND operation
                 bit_value = bool(sampled_values_as_int & (1 << i))
 
@@ -387,18 +411,23 @@ async def main_loop():
     
     # check if the opto-isolated input board from Sequent Microsystem is indeed present:
     try:
-        _ = lib16inpind.readAll(0)
+        _ = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
     except FileNotFoundError as e:
         print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
         return 2
-    # TODO: catch connection timed out
+    except OSError as e:
+        print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
+        return 2
+    except BaseException as e:
+        print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
+        return 2
 
     # setup GPIO connected to the pushbutton (input) and
     # assign the when_held function to be called when the button is held for more than 5 seconds
     # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
     buttons = []
     print(f"Initializing GPIO shutdown button")
-    b = gpiozero.Button(SHUTDOWN_BUTTON_PIN, hold_time=5)
+    b = gpiozero.Button(SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, hold_time=5)
     b.when_held = shutdown
     buttons.append(b)
 
@@ -450,4 +479,10 @@ async def main_loop():
 # =======================================================================================================
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main_loop()))
+    if instance_already_running("ha-alarm-raspy2mqtt"):
+        print(f"Sorry, detected another instance of this daemon is already running. Using the same I2C bus from 2 sofware programs is not recommended. Aborting.")
+        sys.exit(3)
+    try:
+        sys.exit(asyncio.run(main_loop()))
+    except KeyboardInterrupt:
+        print(f"Stopping due to CTRL+C")
