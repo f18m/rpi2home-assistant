@@ -463,7 +463,7 @@ async def main_loop():
         # the short hold-time is to ensure that the digital input is served ASAP (i.e. publish_mqtt_message gets
         # invoked almost immediately)
         active_high = not bool(input_ch['active_low'])
-        b = gpiozero.Button(input_ch['gpio'], hold_time=0.3, pull_up=None, active_state=active_high)
+        b = gpiozero.Button(input_ch['gpio'], hold_time=0.1, pull_up=None, active_state=active_high)
         b.when_held = publish_mqtt_message
         buttons.append(b)
 
