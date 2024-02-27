@@ -10,19 +10,30 @@ sampling_frequency_msec: 1000
 # stats printed on stdout each N secs:
 log_stats_every: 30
 
-# inputs are those sampled by the Sequent Microsystem 16ch-optoinsulated board
+# opto-isolated inputs are those sampled by the Sequent Microsystem 16ch-optoinsulated board
 # NOTE1: a simple wiring for alarm system sensors is to get their NC relay fed with positive voltage on
 #        one side and then drive the other wire to the Sequent Microsystem input board; this means the
 #        Sequent Microsystem input will normally be high... in other words it's an "active low" pin
 # NOTE2: the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
 # NOTE3: the MQTT topic will be in the form "home/<input name>", don't use spaces in the name!
-inputs:
+i2c_optoisolated_inputs:
   - name: opto_input_1
     input_num: 1
     active_low: true
   - name: opto_input_2
     input_num: 2
     active_low: true
+
+# GPIO inputs are those sampled by Raspberry directly using its own GPIO pins (3.3V compatible)
+gpio_inputs:
+  - name: radio_channel_a
+    gpio: 27
+    active_low: false
+    mqtt:
+      topic: alarmo/command
+      command: ARM_AWAY
+      code: none
+
 
 # outputs channels are used to drive the SeenGreat 2ch optoinsulated board
 # NOTE1: all outputs are active low in this kind of board (i.e. to trigger the relay the GPIO must be driven low)
