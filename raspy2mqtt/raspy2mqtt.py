@@ -344,8 +344,8 @@ def print_stats():
     print(f">> STAT REPORT #{print_stats.counter}")
 
     uptime_sec = time.time() - g_start_time
-    m, s = divmod(uptime_sec, 60)
-    h, m = divmod(m, 60)
+    m, s = int(divmod(uptime_sec, 60))
+    h, m = int(divmod(m, 60))
     print(f">> Uptime: {h}:{m:02}:{s:02}")
     print(f">> Num times the MQTT broker connection was lost: {g_stats['num_connections_lost']}")
 
@@ -455,8 +455,9 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
                 gpio_number = g_gpio_queue.get_nowait()
             except queue.Empty:
                 # if there's no notification (typical case), then do not block the event loop
-                # and keep processing other tasks:
-                await asyncio.sleep(0.5)
+                # and keep processing other tasks... to ensure low-latency in processing the
+                # GPIO inputs the sleep time is set equal to the opto-isolated input sampling freq
+                await asyncio.sleep(cfg.sampling_frequency_sec)
                 continue
         
             # there is a GPIO notification to process:
@@ -528,7 +529,7 @@ async def publish_outputs_state(cfg: CfgFile):
                 #print(f"Publishing to topic {topic} the payload {payload}")
                 await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE)
                 g_stats["outputs"]['num_mqtt_states_published'] += 1
-            await asyncio.sleep(cfg.sampling_frequency_sec*5)
+            await asyncio.sleep(cfg.sampling_frequency_sec)
 
 async def main_loop():
     global g_stats
