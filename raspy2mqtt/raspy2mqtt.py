@@ -418,13 +418,13 @@ async def process_gpio_queue_and_publish_till_connected(cfg: CfgFile):
             gpio_number = g_gpio_queue.get()
             gpio_config = cfg.get_gpio_input_config(gpio_number)
             if gpio_config is None or 'mqtt' not in gpio_config:
-                print(f'Main thread got notification of GPIO#{item} being activated but there is NO CONFIGURATION for that pin. Ignoring.')
+                print(f'Main thread got notification of GPIO#{gpio_number} being activated but there is NO CONFIGURATION for that pin. Ignoring.')
             else:
                 # extract MQTT config
                 mqtt_topic = gpio_config['mqtt']['topic']
                 mqtt_command = gpio_config['mqtt']['command']
                 mqtt_code = gpio_config['mqtt']['code']
-                print(f'Main thread got notification of GPIO#{item} being activated; a valid MQTT configuration is attached: topic={mqtt_topic}, command={mqtt_command}, code={mqtt_code}')
+                print(f'Main thread got notification of GPIO#{gpio_number} being activated; a valid MQTT configuration is attached: topic={mqtt_topic}, command={mqtt_command}, code={mqtt_code}')
 
                 # now launch the MQTT publish
                 mqtt_payload = {
