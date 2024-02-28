@@ -428,11 +428,12 @@ async def process_gpio_queue_and_publish_till_connected(cfg: CfgFile):
                 print(f'Main thread got notification of GPIO#{gpio_number} being activated; a valid MQTT configuration is attached: topic={mqtt_topic}, command={mqtt_command}, code={mqtt_code}')
 
                 # now launch the MQTT publish
-                mqtt_payload = {
-                    "command": mqtt_command,
-                    "code": mqtt_code
-                }
-                mqtt_payload_str = json.dumps(mqtt_payload)
+                #mqtt_payload = {
+                #    "command": mqtt_command,
+                #    "code": mqtt_code
+                #}
+                #mqtt_payload_str = json.dumps(mqtt_payload)
+                mqtt_payload_str = mqtt_command
                 await client.publish(mqtt_topic, mqtt_payload_str, qos=MQTT_QOS_AT_LEAST_ONCE)
                 print(f'Sent on topic={mqtt_topic}, payload={mqtt_payload_str}')
 
