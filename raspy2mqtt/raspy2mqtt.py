@@ -344,8 +344,11 @@ def print_stats():
     print(f">> STAT REPORT #{print_stats.counter}")
 
     uptime_sec = time.time() - g_start_time
-    m, s = int(divmod(uptime_sec, 60))
-    h, m = int(divmod(m, 60))
+    m, s = divmod(uptime_sec, 60)
+    h, m = divmod(m, 60)
+    h = int(h)
+    m = int(m)
+    s = int(s)
     print(f">> Uptime: {h}:{m:02}:{s:02}")
     print(f">> Num times the MQTT broker connection was lost: {g_stats['num_connections_lost']}")
 
