@@ -432,7 +432,9 @@ async def process_gpio_queue_and_publish_till_connected(cfg: CfgFile):
                     "command": mqtt_command,
                     "code": mqtt_code
                 }
-                await client.publish(mqtt_topic, json.dumps(mqtt_payload), qos=MQTT_QOS_AT_LEAST_ONCE)
+                mqtt_payload_str = json.dumps(mqtt_payload)
+                await client.publish(mqtt_topic, mqtt_payload_str, qos=MQTT_QOS_AT_LEAST_ONCE)
+                print(f'Sent on topic={mqtt_topic}, payload={mqtt_payload_str}')
 
             g_gpio_queue.task_done()
 
