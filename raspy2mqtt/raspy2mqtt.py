@@ -28,6 +28,7 @@ import queue
 
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
 MQTT_TOPIC_PREFIX = "home"
+MQTT_QOS_AT_LEAST_ONCE = 1
 BROKER_CONNECTION_TIMEOUT_SEC = 3
 
 # SequentMicrosystem-specific constants
@@ -62,7 +63,7 @@ class CfgFile:
 
     def __init__(self):
         self.config: Optional[Dict[str, Any]] = None
-        self.inputs_map: Optional[Dict[int, Any]] = None # None means "not loaded at all"
+        self.optoisolated_inputs_map: Optional[Dict[int, Any]] = None # None means "not loaded at all"
     
     def load(self, cfg_yaml: str) -> bool:
         print(f"Loading configuration file {cfg_yaml}")
@@ -95,17 +96,37 @@ class CfgFile:
 
         try:
             # convert the 'i2c_optoisolated_inputs' part in a dictionary indexed by the DIGITAL INPUT CHANNEL NUMBER:
-            self.inputs_map = {}
+            self.optoisolated_inputs_map = {}
             for input_item in self.config['i2c_optoisolated_inputs']:
                 idx = int(input_item['input_num'])
                 if idx < 1 or idx > 16:
                     raise ValueError(f"Invalid input_num {idx}. The legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs.")
-                self.inputs_map[idx] = input_item
+                self.optoisolated_inputs_map[idx] = input_item
                 #print(input_item)
-            print(f"Loaded {len(self.inputs_map)} digital input configurations")
-            if len(self.inputs_map)==0:
+            print(f"Loaded {len(self.optoisolated_inputs_map)} opto-isolated input configurations")
+            if len(self.optoisolated_inputs_map)==0:
                 # reset to "not loaded at all" condition
-                self.inputs_map = None
+                self.optoisolated_inputs_map = None
+        except ValueError as e:
+            print(f"Error in YAML config file '{cfg_yaml}': {e}")
+            return False
+        except KeyError as e:
+            print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
+            return False
+
+        try:
+            # convert the 'gpio_inputs' part in a dictionary indexed by the GPIO PIN NUMBER:
+            self.gpio_inputs_map = {}
+            for input_item in self.config['gpio_inputs']:
+                idx = int(input_item['gpio'])
+                if idx < 1 or idx > 40:
+                    raise ValueError(f"Invalid input_num {idx}. The legal range is [1-40] since the Raspberry GPIO connector is a 40-pin connector.")
+                self.gpio_inputs_map[idx] = input_item
+                #print(input_item)
+            print(f"Loaded {len(self.gpio_inputs_map)} GPIO input configurations")
+            if len(self.gpio_inputs_map)==0:
+                # reset to "not loaded at all" condition
+                self.gpio_inputs_map = None
         except ValueError as e:
             print(f"Error in YAML config file '{cfg_yaml}': {e}")
             return False
@@ -164,6 +185,10 @@ class CfgFile:
             return 30 # default value
         return int(self.config['log_stats_every'])
 
+    #
+    # OPTO-ISOLATED INPUTS
+    #
+
     def get_optoisolated_input_config(self, index: int) -> dict[str, any]:
         """
         Returns a dictionary exposing the fields:
@@ -171,10 +196,15 @@ class CfgFile:
             'active_low': True or False
         Note: the indexes are 1-based
         """
-        if self.inputs_map is None or index not in self.inputs_map:
+        if self.optoisolated_inputs_map is None or index not in self.optoisolated_inputs_map:
             return None # no meaningful default value
-        return self.inputs_map[index]
+        return self.optoisolated_inputs_map[index]
     
+
+    #
+    # GPIO INPUTS
+    #
+
     def get_all_gpio_inputs(self):
         """
         Returns a list of dictionaries exposing the fields:
@@ -185,6 +215,21 @@ class CfgFile:
         if 'gpio_inputs' not in self.config:
             return None # no meaningful default value
         return self.config['gpio_inputs']
+
+    def get_gpio_input_config(self, index: int) -> dict[str, any]:
+        """
+        Returns a dictionary exposing the fields:
+            'name': name of the digital input
+            'active_low': True or False
+            'mqtt': a dictionary with more details about the TOPIC and PAYLOAD to send on input activation (see config.yaml)
+        """
+        if self.gpio_inputs_map is None or index not in self.gpio_inputs_map:
+            return None # no meaningful default value
+        return self.gpio_inputs_map[index]
+
+    #
+    # OUTPUTS CONFIG
+    #
 
     def get_output_config(self, name: str) -> dict[str, any]:
         """
@@ -299,8 +344,7 @@ def shutdown():
     subprocess.call(['sudo', 'shutdown', '-h', 'now'])
 
 def publish_mqtt_message(device):
-    print(f"!! Detected GPIO input !! ")
-    print(device.pin.number)
+    print(f"!! Detected activation of GPIO{device.pin.number} !! ")
     g_gpio_queue.put(device.pin.number)
 
 
@@ -352,8 +396,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
                     payload = "ON" if logical_value else "OFF"
                     #print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
 
-                    # qos=1 means "at least once" QoS
-                    await client.publish(topic, payload, qos=1)
+                    await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE)
                     g_stats["num_input_samples_published"] += 1
 
             update_loop_duration_sec = time.perf_counter() - update_loop_start_sec
@@ -372,9 +415,24 @@ async def process_gpio_queue_and_publish_till_connected(cfg: CfgFile):
     g_stats["num_connections_publish"] += 1
     async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
-            item = g_gpio_queue.get()
-            print(f'Working on {item}')
-            print(f'Finished {item}')
+            gpio_number = g_gpio_queue.get()
+            gpio_config = cfg.get_gpio_input_config(gpio_number)
+            if gpio_config is None or 'mqtt' not in gpio_config:
+                print(f'Main thread got notification of GPIO#{item} being activated but there is NO CONFIGURATION for that pin. Ignoring.')
+            else:
+                # extract MQTT config
+                mqtt_topic = gpio_config['mqtt']['topic']
+                mqtt_command = gpio_config['mqtt']['command']
+                mqtt_code = gpio_config['mqtt']['code']
+                print(f'Main thread got notification of GPIO#{item} being activated; a valid MQTT configuration is attached: topic={mqtt_topic}, command={mqtt_command}, code={mqtt_code}')
+
+                # now launch the MQTT publish
+                mqtt_payload = {
+                    "command": mqtt_command,
+                    "code": mqtt_code
+                }
+                await client.publish(mqtt_topic, json.dumps(mqtt_payload), qos=MQTT_QOS_AT_LEAST_ONCE)
+
             g_gpio_queue.task_done()
 
             # Now sleep a little bit before repeating
@@ -421,8 +479,7 @@ async def publish_outputs_state(cfg: CfgFile):
                 topic = f"{MQTT_TOPIC_PREFIX}/{output_name}/state"
                 payload = "ON" if g_output_channels[output_name].is_lit else "OFF"
                 #print(f"Publishing to topic {topic} the payload {payload}")
-                # qos=1 means "at least once" QoS
-                await client.publish(topic, payload, qos=1)
+                await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE)
                 g_stats['num_output_states_published'] += 1
             await asyncio.sleep(cfg.sampling_frequency_sec*5)
 
