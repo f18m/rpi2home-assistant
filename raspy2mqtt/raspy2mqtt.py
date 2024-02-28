@@ -460,7 +460,7 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
                 # if there's no notification (typical case), then do not block the event loop
                 # and keep processing other tasks... to ensure low-latency in processing the
                 # GPIO inputs the sleep time is set equal to the opto-isolated input sampling freq
-                await asyncio.sleep(cfg.sampling_frequency_sec)
+                await asyncio.sleep(cfg.sampling_frequency_sec*5)
                 continue
         
             # there is a GPIO notification to process:
