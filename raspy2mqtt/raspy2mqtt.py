@@ -63,6 +63,9 @@ g_output_channels = {}
 # thread-safe queue to communicate from GPIOzero secondary threads to main thread
 g_gpio_queue = queue.Queue()
 
+# global start time
+g_start_time = time.time()
+
 # =======================================================================================================
 # CfgFile
 # =======================================================================================================
@@ -336,9 +339,14 @@ def instance_already_running(label="default"):
     return already_running
 
 def print_stats():
-    global g_stats
+    global g_stats, g_start_time
     print_stats.counter = getattr(print_stats, 'counter', 0) + 1
     print(f">> STAT REPORT #{print_stats.counter}")
+
+    uptime_sec = time.time() - g_start_time
+    m, s = divmod(uptime_sec, 60)
+    h, m = divmod(m, 60)
+    print(f">> Uptime: {h:d}:{m:02d}:{s:02d}")
     print(f">> Num times the MQTT broker connection was lost: {g_stats['num_connections_lost']}")
 
     x = g_stats["optoisolated_inputs"]
