@@ -435,9 +435,6 @@ async def process_gpio_queue_and_publish_till_connected(cfg: CfgFile):
 
             g_gpio_queue.task_done()
 
-            # Now sleep a little bit before repeating
-            await asyncio.sleep(cfg.sampling_frequency_sec)
-
 
 async def subscribe_and_activate_outputs_till_connected(cfg: CfgFile):
     """
