@@ -1,5 +1,5 @@
 [Unit]
-Description=My GPIO to MQTT bridge
+Description=HomeAssistant Alarm bridge for wired sensors/actuators
 After=network-online.target
 Wants=network-online.target
 
@@ -7,7 +7,7 @@ StartLimitIntervalSec=500
 StartLimitBurst=5
 
 [Service]
-Type=idle
+Type=simple
 ExecStart=/root/ha-alarm-raspy2mqtt-venv/bin/python3 /root/ha-alarm-raspy2mqtt/raspy2mqtt/raspy2mqtt.py -c /etc/ha-alarm-raspy2mqtt.yaml
 Environment="GPIOZERO_PIN_FACTORY=rpigpio"
 Restart=on-failure

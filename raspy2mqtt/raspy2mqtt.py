@@ -316,6 +316,8 @@ def instance_already_running(label="default"):
     lock_file_pointer = os.open(f"/tmp/instance_{label}.lock", os.O_WRONLY | os.O_CREAT)
 
     try:
+        # LOCK_NB = lock non-blocking
+        # LOCK_EX = exclusive lock
         fcntl.lockf(lock_file_pointer, fcntl.LOCK_EX | fcntl.LOCK_NB)
         already_running = False
     except IOError:
@@ -404,7 +406,7 @@ async def sample_inputs_and_publish_till_connected(cfg: CfgFile):
             #print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
 
             # Now sleep a little bit before repeating
-            await asyncio.sleep(cfg.sampling_frequency_sec)
+            await asyncio.sleep(cfg.sampling_frequency_sec - update_loop_duration_sec)
 
 async def process_gpio_queue_and_publish_till_connected(cfg: CfgFile):
     """
@@ -416,7 +418,16 @@ async def process_gpio_queue_and_publish_till_connected(cfg: CfgFile):
     g_stats["num_connections_publish"] += 1
     async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
-            gpio_number = g_gpio_queue.get()
+            # get next notification coming from the gpiozero secondary thread:
+            try:
+                gpio_number = g_gpio_queue.get_nowait()
+            except queue.Empty:
+                # if there's no notification (typical case), then do not block the event loop
+                # and keep processing other tasks:
+                await asyncio.sleep(0.5)
+                continue
+        
+            # there is a GPIO notification to process:
             gpio_config = cfg.get_gpio_input_config(gpio_number)
             if gpio_config is None or 'mqtt' not in gpio_config:
                 print(f'Main thread got notification of GPIO#{gpio_number} being activated but there is NO CONFIGURATION for that pin. Ignoring.')
