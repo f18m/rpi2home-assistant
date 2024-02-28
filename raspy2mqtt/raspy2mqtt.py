@@ -460,7 +460,7 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
                 # if there's no notification (typical case), then do not block the event loop
                 # and keep processing other tasks... to ensure low-latency in processing the
                 # GPIO inputs the sleep time is set equal to the opto-isolated input sampling freq
-                await asyncio.sleep(cfg.sampling_frequency_sec*5)
+                await asyncio.sleep(cfg.sampling_frequency_sec)
                 continue
         
             # there is a GPIO notification to process:
@@ -523,15 +523,28 @@ async def publish_outputs_state(cfg: CfgFile):
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OUTPUT states")
     g_stats["outputs"]["num_connections_publish"] += 1
+    output_status_map = {}
     async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
             for output_ch in cfg.get_all_outputs():
                 output_name = output_ch['name']
-                topic = f"{MQTT_TOPIC_PREFIX}/{output_name}/state"
-                payload = "ON" if g_output_channels[output_name].is_lit else "OFF"
-                #print(f"Publishing to topic {topic} the payload {payload}")
-                await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE)
-                g_stats["outputs"]['num_mqtt_states_published'] += 1
+                output_status = g_output_channels[output_name].is_lit
+
+                if output_name not in output_status_map or output_status_map[output_name] != output_status:
+                    # need to publish an update over MQTT... the state has changed
+                    topic = f"{MQTT_TOPIC_PREFIX}/{output_name}/state"
+                    payload = "ON" if output_status else "OFF"
+
+                    # publish with RETAIN flag so that Home Assistant will always find an updated status on
+                    # the broker about each switch
+                    #print(f"Publishing to topic {topic} the payload {payload}")
+                    await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True)
+                    g_stats["outputs"]['num_mqtt_states_published'] += 1
+
+                    # remember the status we just published in order to later skip meaningless updates
+                    # when there is no state change:
+                    output_status_map[output_name] = output_status
+
             await asyncio.sleep(cfg.sampling_frequency_sec)
 
 async def main_loop():
