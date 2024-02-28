@@ -346,7 +346,7 @@ def print_stats():
     uptime_sec = time.time() - g_start_time
     m, s = divmod(uptime_sec, 60)
     h, m = divmod(m, 60)
-    print(f">> Uptime: {h:d}:{m:02d}:{s:02d}")
+    print(f">> Uptime: {h}:{m:02}:{s:02}")
     print(f">> Num times the MQTT broker connection was lost: {g_stats['num_connections_lost']}")
 
     x = g_stats["optoisolated_inputs"]
@@ -563,7 +563,6 @@ async def main_loop():
     # setup GPIO pins for the INPUTs
     print(f"Initializing GPIO input pins")
     for input_ch in cfg.get_all_gpio_inputs():
-        print(input_ch)
         # the short hold-time is to ensure that the digital input is served ASAP (i.e. publish_mqtt_message gets
         # invoked almost immediately)
         active_high = not bool(input_ch['active_low'])
