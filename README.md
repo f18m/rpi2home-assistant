@@ -12,13 +12,13 @@ For example, this small utility also subscribes to MQTT to apply "switch" config
 # Prerequisites
 
 This software is meant to run on a Raspberry PI having installed
-* the [Sequent Microsystem 16 opto-insulated inputs HAT](https://sequentmicrosystems.com/collections/all-io-cards/products/16-universal-inputs-card-for-raspberry-pi)
+* the [Sequent Microsystem 16 opto-insulated inputs HAT](https://sequentmicrosystems.com/collections/all-io-cards/products/16-universal-inputs-card-for-raspberry-pi).
    This software is meant to expose the 16 digital inputs from this HAT
    over MQTT, to ease their integration as (binary) sensors in Home Assistant.
    Note that Sequent Microsystem board is connecting the pin 37 (GPIO 26) of the Raspberry Pi 
    to a pushbutton. This software monitors this pin, and if pressed for more than the
    desired time, issues the shut-down command.
-* a [SeenGreat 2CH output opto-insulated relay HAT](https://seengreat.com/wiki/107/)  
+* a [SeenGreat 2CH output opto-insulated relay HAT](https://seengreat.com/wiki/107/).
    This software is meant to listen on MQTT topics and turn on/off the
    two channels of this HAT.
 
@@ -72,6 +72,6 @@ the documentation of the configuration options, with some basic example.
 * [AsyncIO tutorial](https://realpython.com/python-concurrency/#asyncio-version)
 * [Home Assistant](https://www.home-assistant.io/)
 
-Very similar project, more flexible and much bigger, targeting:
+Very similar project, more flexible and much bigger, targeting specific sensor boards:
 * [mqtt-io](https://github.com/flyte/mqtt-io)
 
