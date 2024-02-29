@@ -1,12 +1,18 @@
 # ha-alarm-raspy2mqtt
 
-Small Python daemon to read normally-closed (NC) contacts from wired alarm sensors and publish them over MQTT for HomeAssistant.
-This small utility also subscribes to MQTT to apply "switch" configurations to e.g. start/stop alarm sirens.
+Small Python daemon to transform a Raspberry into a bridge from GPIO pins and MQTT, for HomeAssistant usage.
+In particular this software allows:
+* sample a wide range of electrical signals (voltages), from 3V-48V AC or DC, using a dedicated Raspberry HAT
+* sample 3.3V inputs from Raspberry GPIO pins
+* use Raspberry GPIO pins in output mode to activate relays
+
+All these features are implemented in an [Home Assistant](https://www.home-assistant.io/)-friendly fashion.
+For example, this small utility also subscribes to MQTT to apply "switch" configurations to drive loads.
 
 # Prerequisites
 
 This software is meant to run on a Raspberry PI having installed
-* the [Sequent Microsystem 16 opto-insulated inputs HAT](https://github.com/SequentMicrosystems/16inpind-rpi)
+* the [Sequent Microsystem 16 opto-insulated inputs HAT](https://sequentmicrosystems.com/collections/all-io-cards/products/16-universal-inputs-card-for-raspberry-pi)
    This software is meant to expose the 16 digital inputs from this HAT
    over MQTT, to ease their integration as (binary) sensors in Home Assistant.
    Note that Sequent Microsystem board is connecting the pin 37 (GPIO 26) of the Raspberry Pi 
@@ -22,6 +28,9 @@ Raspberry Pi 5).
 
 Another pre-requisite is that there is an MQTT broker running somewhere (e.g. a Mosquitto broker).
 
+
+# Documentation
+
 ## Build system
 
 This project uses `hatch` as build system (https://hatch.pypa.io/latest/).
@@ -30,10 +39,17 @@ This project uses `hatch` as build system (https://hatch.pypa.io/latest/).
 
 This python code needs to run as `root` due to ensure access to the Raspberry I2C and GPIO peripherals.
 
-
 ## How to install on a Raspberry
 
-This procedure has been tested on Raspbian 12 (bookworm):
+Note that Raspbian does not allow to install Python software using `pip`, just like it happens on other distributions.
+Trying to install a Python package that way leads to an error like:
+
+```
+error: externally-managed-environment [...]
+```
+
+That means that to install Python software, a virtual environment has to be used.
+This procedure automates the creation of the venv and has been tested on Raspbian 12 (bookworm):
 
 ```
 sudo su
@@ -45,4 +61,17 @@ make raspbian_start
 ```
 
 Then of course it's important to populate the configuration file, with the specific pinouts for your raspberry HATs
-(see #prerequisites). The file is located at `/etc/ha-alarm-raspy2mqtt.yaml`
+(see #prerequisites). The file is located at `/etc/ha-alarm-raspy2mqtt.yaml`, see [config.yaml](config.yaml) for 
+the documentation of the configuration options, with some basic example.
+
+
+# Useful links
+
+* [Sequent Microsystem 16 opto-insulated inputs python library](https://github.com/SequentMicrosystems/16inpind-rpi)
+* [aiomqtt python library](https://github.com/sbtinstruments/aiomqtt)
+* [AsyncIO tutorial](https://realpython.com/python-concurrency/#asyncio-version)
+* [Home Assistant](https://www.home-assistant.io/)
+
+Very similar project, more flexible and much bigger, targeting:
+* [mqtt-io](https://github.com/flyte/mqtt-io)
+
