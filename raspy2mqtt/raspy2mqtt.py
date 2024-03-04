@@ -69,6 +69,9 @@ g_gpio_queue = queue.Queue()
 # global start time
 g_start_time = time.time()
 
+# last reading of the 16 digital opto-isolated inputs 
+g_optoisolated_inputs_sampled_values = 0
+
 # =======================================================================================================
 # CfgFile
 # =======================================================================================================
@@ -409,7 +412,7 @@ async def print_stats_periodically(cfg: CfgFile):
         
         await asyncio.sleep(1)
 
-async def sample_and_publish_optoisolated_inputs(cfg: CfgFile):
+async def publish_optoisolated_inputs(cfg: CfgFile):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
@@ -420,13 +423,15 @@ async def sample_and_publish_optoisolated_inputs(cfg: CfgFile):
     async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
             # Read 16 digital inputs
-            sampled_values_as_int = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
+            # NOTE1: this is a blocking call that will block until the 16 inputs are sampled
+            # NOTE2: this might raise a TimeoutError exception in case the I2C bus transaction fails
+            g_optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
 
             # Publish each input value as a separate MQTT topic
             update_loop_start_sec = time.perf_counter()
             for i in range(SEQMICRO_INPUTHAT_MAX_CHANNELS):
                 # Extract the bit at position i using bitwise AND operation
-                bit_value = bool(sampled_values_as_int & (1 << i))
+                bit_value = bool(g_optoisolated_inputs_sampled_values & (1 << i))
 
                 input_cfg = cfg.get_optoisolated_input_config(1 + i)  # convert from zero-based index 'i' to 1-based index
                 if input_cfg is not None:
@@ -580,8 +585,13 @@ async def main_loop():
     # assign the when_held function to be called when the button is held for more than 5 seconds
     # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
     buttons = []
-    print(f"Initializing GPIO shutdown button")
+    print(f"Initializing SequentMicrosystem GPIO shutdown button")
     b = gpiozero.Button(SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, hold_time=5)
+    b.when_held = shutdown
+    buttons.append(b)
+
+    print(f"Initializing SequentMicrosystem GPIO interrupt line")
+    b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pullup=True)
     b.when_held = shutdown
     buttons.append(b)
 
@@ -613,7 +623,7 @@ async def main_loop():
             async with asyncio.TaskGroup() as tg:
                 tg.create_task(print_stats_periodically(cfg))
                 # inputs:
-                tg.create_task(sample_and_publish_optoisolated_inputs(cfg))
+                tg.create_task(publish_optoisolated_inputs(cfg))
                 tg.create_task(process_gpio_inputs_queue_and_publish(cfg))
                 # outputs:
                 tg.create_task(subscribe_and_activate_outputs(cfg))
@@ -639,6 +649,10 @@ if __name__ == "__main__":
     if instance_already_running("ha-alarm-raspy2mqtt"):
         print(f"Sorry, detected another instance of this daemon is already running. Using the same I2C bus from 2 sofware programs is not recommended. Aborting.")
         sys.exit(3)
+
+    # configure the PIN factory to be used by gpiozero:
+    os.environ["GPIOZERO_PIN_FACTORY"] = "rpigpio"
+
     try:
         sys.exit(asyncio.run(main_loop()))
     except KeyboardInterrupt:
