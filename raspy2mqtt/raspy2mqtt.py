@@ -36,6 +36,9 @@ BROKER_CONNECTION_TIMEOUT_SEC = 3
 SEQMICRO_INPUTHAT_STACK_LEVEL = 0 # 0 means the first "stacked" board (this code supports only 1!)
 SEQMICRO_INPUTHAT_MAX_CHANNELS = 16
 SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO = 26 # GPIO pin connected to the push button
+SEQMICRO_INPUTHAT_INTERRUPT_GPIO = 11 # GPIO pin connected to the interrupt line of the I/O expander (need pullup resistor)
+SEQMICRO_INPUTHAT_I2C_SDA = 2 # reserved for I2C communication between Raspberry CPU and the input HAT
+SEQMICRO_INPUTHAT_I2C_SCL = 3 # reserved for I2C communication between Raspberry CPU and the input HAT
 
 # global stat dictionary
 g_stats = {
@@ -128,6 +131,8 @@ class CfgFile:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
 
+        reserved_gpios = [ SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, SEQMICRO_INPUTHAT_INTERRUPT_GPIO, SEQMICRO_INPUTHAT_I2C_SDA, SEQMICRO_INPUTHAT_I2C_SCL ]
+
         try:
             # convert the 'gpio_inputs' part in a dictionary indexed by the GPIO PIN NUMBER:
             self.gpio_inputs_map = {}
@@ -135,6 +140,9 @@ class CfgFile:
                 idx = int(input_item['gpio'])
                 if idx < 1 or idx > 40:
                     raise ValueError(f"Invalid input_num {idx}. The legal range is [1-40] since the Raspberry GPIO connector is a 40-pin connector.")
+                # some GPIO pins are reserved and cannot be configured!
+                if idx in reserved_gpios:
+                    raise ValueError(f"Invalid input_num {idx}: that GPIO pin is reserved for communication with the Sequent Microsystem HAT. Choose a different GPIO.")
                 self.gpio_inputs_map[idx] = input_item
                 #print(input_item)
             print(f"Loaded {len(self.gpio_inputs_map)} GPIO input configurations")
