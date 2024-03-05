@@ -75,3 +75,7 @@ the documentation of the configuration options, with some basic example.
 Very similar project, more flexible and much bigger, targeting specific sensor boards:
 * [mqtt-io](https://github.com/flyte/mqtt-io)
 
+
+# TODO
+
+Add support for HomeAssistant DISCOVERY, see https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery 
