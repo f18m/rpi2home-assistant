@@ -43,6 +43,7 @@ SEQMICRO_INPUTHAT_I2C_SCL = 3 # reserved for I2C communication between Raspberry
 # global stat dictionary
 g_stats = {
     'optoisolated_inputs': {
+        'num_readings': 0,
         'num_connections_publish': 0,
         'num_mqtt_messages': 0,
     },
@@ -367,6 +368,7 @@ def print_stats():
     print(f">> OPTO-ISOLATED INPUTS:")
     print(f">>   Num (re)connections to the MQTT broker [publish channel]: {x['num_connections_publish']}")
     print(f">>   Num MQTT messages published to the broker: {x['num_mqtt_messages']}")
+    print(f">>   Num actual readings of optoisolated inputs: {x['num_readings']}")
 
     x = g_stats["gpio_inputs"]
     print(f">> GPIO INPUTS:")
@@ -392,6 +394,14 @@ def shutdown():
     print(f"!! Detected long-press on the Sequent Microsystem button. Triggering clean shutdown of the Raspberry PI !!")
     subprocess.call(['sudo', 'shutdown', '-h', 'now'])
 
+def sample_optoisolated_inputs():
+    global g_stats, g_optoisolated_inputs_sampled_values
+    # Read 16 digital inputs
+    # NOTE1: this is a blocking call that will block until the 16 inputs are sampled
+    # NOTE2: this might raise a TimeoutError exception in case the I2C bus transaction fails
+    g_optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
+    g_stats["optoisolated_inputs"]["num_readings"] += 1
+
 def publish_mqtt_message(device):
     print(f"!! Detected activation of GPIO{device.pin.number} !! ")
     g_gpio_queue.put(device.pin.number)
@@ -416,17 +426,12 @@ async def publish_optoisolated_inputs(cfg: CfgFile):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
-    global g_stats
+    global g_stats, g_optoisolated_inputs_sampled_values
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OPTOISOLATED INPUT states")
     g_stats["optoisolated_inputs"]['num_connections_publish'] += 1
     async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
         while True:
-            # Read 16 digital inputs
-            # NOTE1: this is a blocking call that will block until the 16 inputs are sampled
-            # NOTE2: this might raise a TimeoutError exception in case the I2C bus transaction fails
-            g_optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
-
             # Publish each input value as a separate MQTT topic
             update_loop_start_sec = time.perf_counter()
             for i in range(SEQMICRO_INPUTHAT_MAX_CHANNELS):
@@ -592,7 +597,7 @@ async def main_loop():
 
     print(f"Initializing SequentMicrosystem GPIO interrupt line")
     b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pullup=True)
-    b.when_held = shutdown
+    b.when_held = sample_optoisolated_inputs
     buttons.append(b)
 
     # setup GPIO pins for the INPUTs
