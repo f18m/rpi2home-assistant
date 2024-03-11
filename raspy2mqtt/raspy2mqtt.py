@@ -22,6 +22,7 @@ import time
 import threading
 import queue
 import json
+from datetime import datetime, timezone
 
 # =======================================================================================================
 # GLOBALs
@@ -65,6 +66,9 @@ g_gpio_queue = queue.Queue()
 
 # global start time
 g_start_time = time.time()
+
+# global prefix for MQTT client identifiers
+g_mqtt_identifier_prefix = ""
 
 # =======================================================================================================
 # CfgFile
@@ -405,11 +409,11 @@ async def sample_and_publish_optoisolated_inputs(cfg: CfgFile):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
-    global g_stats
+    global g_stats, g_mqtt_identifier_prefix
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OPTOISOLATED INPUT states")
     g_stats["optoisolated_inputs"]['num_connections_publish'] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC, identifier=g_mqtt_identifier_prefix + "_optoisolated_publisher") as client:
         while True:
             # Read 16 digital inputs
             sampled_values_as_int = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
@@ -447,11 +451,11 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
-    global g_stats
+    global g_stats, g_mqtt_identifier_prefix
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish GPIO INPUT states")
     g_stats["gpio_inputs"]["num_connections_publish"] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC, identifier=g_mqtt_identifier_prefix + "_gpio_publisher") as client:
         while True:
             # get next notification coming from the gpiozero secondary thread:
             try:
@@ -494,11 +498,11 @@ async def subscribe_and_activate_outputs(cfg: CfgFile):
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
     global g_stats
-    global g_output_channels
+    global g_output_channels, g_mqtt_identifier_prefix
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to subscribe to OUTPUT commands")
     g_stats["outputs"]["num_connections_subscribe"] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC, identifier=g_mqtt_identifier_prefix + "_outputs_subscriber") as client:
         for output_ch in cfg.get_all_outputs():
             topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}"
             print(f"Subscribing to topic {topic}")
@@ -518,13 +522,12 @@ async def publish_outputs_state(cfg: CfgFile):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
-    global g_stats
-    global g_output_channels
+    global g_stats, g_output_channels, g_mqtt_identifier_prefix
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OUTPUT states")
     g_stats["outputs"]["num_connections_publish"] += 1
     output_status_map = {}
-    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC) as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC, identifier=g_mqtt_identifier_prefix + "_outputs_state_publisher") as client:
         while True:
             for output_ch in cfg.get_all_outputs():
                 output_name = output_ch['name']
@@ -548,7 +551,7 @@ async def publish_outputs_state(cfg: CfgFile):
             await asyncio.sleep(cfg.sampling_frequency_sec)
 
 async def main_loop():
-    global g_stats
+    global g_stats, g_mqtt_identifier_prefix
 
     args = parse_command_line()
     cfg = CfgFile()
@@ -594,6 +597,9 @@ async def main_loop():
         output_name = output_ch['name']
         active_high = not bool(output_ch['active_low'])
         g_output_channels[output_name] = gpiozero.LED(pin=output_ch['gpio'], active_high=active_high)
+
+    # before launching MQTT connections, define a unique MQTT prefix identifier:
+    g_mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     # wrap with error-handling code the main loop
     reconnection_interval_sec = 3
