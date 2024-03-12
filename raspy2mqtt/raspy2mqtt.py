@@ -31,7 +31,6 @@ from datetime import datetime, timezone
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
 MQTT_TOPIC_PREFIX = "home"
 MQTT_QOS_AT_LEAST_ONCE = 1
-BROKER_CONNECTION_TIMEOUT_SEC = 3
 
 # SequentMicrosystem-specific constants
 SEQMICRO_INPUTHAT_STACK_LEVEL = 0 # 0 means the first "stacked" board (this code supports only 1!)
@@ -185,6 +184,16 @@ class CfgFile:
         if 'port' not in self.config['mqtt_broker']:
             return 1883 # the default MQTT broker port
         return self.config['mqtt_broker']['port']
+    @property
+    def mqtt_reconnection_period_sec(self) -> float:
+        if self.config is None:
+            return 1.0 # the default reconnection interval 
+        if 'reconnection_period_msec' not in self.config['mqtt_broker']:
+            return 1.0 # the default reconnection interval 
+        
+        # convert the user-defined timeout from msec to (floating) sec
+        return float(self.config['mqtt_broker']['reconnection_period_msec']) / 1000.0
+
 
     @property
     def sampling_frequency_sec(self) -> float:
@@ -413,7 +422,7 @@ async def sample_and_publish_optoisolated_inputs(cfg: CfgFile):
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OPTOISOLATED INPUT states")
     g_stats["optoisolated_inputs"]['num_connections_publish'] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC, identifier=g_mqtt_identifier_prefix + "_optoisolated_publisher") as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=cfg.mqtt_reconnection_period_sec, identifier=g_mqtt_identifier_prefix + "_optoisolated_publisher") as client:
         while True:
             # Read 16 digital inputs
             sampled_values_as_int = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
@@ -455,7 +464,7 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish GPIO INPUT states")
     g_stats["gpio_inputs"]["num_connections_publish"] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC, identifier=g_mqtt_identifier_prefix + "_gpio_publisher") as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=cfg.mqtt_reconnection_period_sec, identifier=g_mqtt_identifier_prefix + "_gpio_publisher") as client:
         while True:
             # get next notification coming from the gpiozero secondary thread:
             try:
@@ -502,7 +511,7 @@ async def subscribe_and_activate_outputs(cfg: CfgFile):
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to subscribe to OUTPUT commands")
     g_stats["outputs"]["num_connections_subscribe"] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC, identifier=g_mqtt_identifier_prefix + "_outputs_subscriber") as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=cfg.mqtt_reconnection_period_sec, identifier=g_mqtt_identifier_prefix + "_outputs_subscriber") as client:
         for output_ch in cfg.get_all_outputs():
             topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}"
             print(f"Subscribing to topic {topic}")
@@ -527,7 +536,7 @@ async def publish_outputs_state(cfg: CfgFile):
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OUTPUT states")
     g_stats["outputs"]["num_connections_publish"] += 1
     output_status_map = {}
-    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=BROKER_CONNECTION_TIMEOUT_SEC, identifier=g_mqtt_identifier_prefix + "_outputs_state_publisher") as client:
+    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=cfg.mqtt_reconnection_period_sec, identifier=g_mqtt_identifier_prefix + "_outputs_state_publisher") as client:
         while True:
             for output_ch in cfg.get_all_outputs():
                 output_name = output_ch['name']
