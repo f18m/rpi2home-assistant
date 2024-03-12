@@ -615,7 +615,6 @@ async def main_loop():
     g_mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     # wrap with error-handling code the main loop
-    reconnection_interval_sec = 3
     keyb_interrupted = False
     print(f"Starting main loop")
     while not keyb_interrupted:
@@ -631,9 +630,9 @@ async def main_loop():
                 tg.create_task(publish_outputs_state(cfg))
 
         except* aiomqtt.MqttError as err:
-            print(f"Connection lost: {err.exceptions}; reconnecting in {reconnection_interval_sec} seconds ...")
+            print(f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
             g_stats['num_connections_lost'] += 1
-            await asyncio.sleep(reconnection_interval_sec)
+            await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
         except* KeyboardInterrupt:
             print_stats()
             print("Stopped by CTRL+C... aborting")
