@@ -6,7 +6,8 @@ authors = [
 ]
 description = ""
 readme = "README.md"
-requires-python = ">=3.6"
+# some features like asyncio TaskGroups and Exception groups are available only since Python 3.11:
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

@@ -28,6 +28,8 @@ Raspberry Pi 5).
 
 Another pre-requisite is that there is an MQTT broker running somewhere (e.g. a Mosquitto broker).
 
+Final but important pre-requisite is Python >= 3.11, that for Raspberry means Debian bookworm 12 or Raspbian 12 or higher.
+
 
 # Documentation
 
