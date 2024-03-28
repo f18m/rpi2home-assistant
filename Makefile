@@ -23,7 +23,7 @@ endif
 
 raspbian_install:
 	# check OS version
-	@if [[ `lsb_release -i -s` != "Raspbian" ]] || (( `lsb_release -r -s` < 12 )); then \
+	@if [[ `lsb_release -i -s 2>/dev/null` != "Raspbian" && `lsb_release -i -s 2>/dev/null` != "Debian" ]] || (( `lsb_release -r -s 2>/dev/null` < 12 )); then \
 		echo ; \
 		echo "** WARNING **" ; echo "THIS SOFTWARE HAS BEEN TESTED ONLY ON RASPBIAN 12 OR HIGHER AND REQUIRES PYTHON3.11" ; \
 		echo "CHECK IF THIS DISTRIBUTION IS OK... PROCEEDING BUT EXPECT ERRORS" ; \

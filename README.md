@@ -55,7 +55,8 @@ This procedure automates the creation of the venv and has been tested on Raspbia
 
 ```
 sudo su
-apt install git python3-venv
+# python3-dev is needed by a dependency (rpi-gpio) which compiles native C code
+apt install git python3-venv python3-dev
 cd /root
 git clone https://github.com/f18m/ha-alarm-raspy2mqtt.git
 cd ha-alarm-raspy2mqtt/
