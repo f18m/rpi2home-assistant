@@ -39,9 +39,9 @@ This project uses `hatch` as build system (https://hatch.pypa.io/latest/).
 
 This python code needs to run as `root` due to ensure access to the Raspberry I2C and GPIO peripherals.
 
-## How to install on a Raspberry
+## How to install on a Raspberry Pi with Debian Bookworm 12
 
-Note that Raspbian does not allow to install Python software using `pip`, just like it happens on other distributions.
+Note that Raspbian with Python 3.11+ does not allow to install Python software using `pip`.
 Trying to install a Python package that way leads to an error like:
 
 ```
@@ -53,6 +53,8 @@ This procedure automates the creation of the venv and has been tested on Raspbia
 
 ```
 sudo su
+apt install git python3-venv
+cd /root
 git clone https://github.com/f18m/ha-alarm-raspy2mqtt.git
 cd ha-alarm-raspy2mqtt/
 make raspbian_install

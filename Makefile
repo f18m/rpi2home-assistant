@@ -15,7 +15,7 @@ endif
 ifeq ($(CFGDEST),)
 CFGDEST=/etc
 endif
-ifeq ($(CFGDEST),)
+ifeq ($(SYSTEMDUNITDEST),)
 SYSTEMDUNITDEST=/lib/systemd/system/
 endif
 
