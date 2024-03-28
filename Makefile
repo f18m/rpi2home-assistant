@@ -9,6 +9,8 @@
 #  * installation of this project into that venv
 #  * distribution of config file in standard system folders
 
+SHELL = /bin/bash
+
 ifeq ($(BINDEST),)
 BINDEST=/root
 endif
