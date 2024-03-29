@@ -89,14 +89,17 @@ class CfgFile:
                 self.config = yaml.safe_load(file)
             if not isinstance(self.config, dict):
                 raise ValueError("Invalid YAML format: root element must be a dictionary")
+            # check MQTT
             if 'mqtt_broker' not in self.config:
                 raise ValueError("Missing 'mqtt_broker' section in the YAML config file")
             if 'host' not in self.config['mqtt_broker']:
                 raise ValueError("Missing 'mqtt_broker.host' field in the YAML config file")
+            # check inputs
             if 'i2c_optoisolated_inputs' not in self.config:
                 raise ValueError("Missing 'i2c_optoisolated_inputs' section in the YAML config file")
             if self.config['i2c_optoisolated_inputs'] is None:
                 raise ValueError("Missing 'i2c_optoisolated_inputs' section in the YAML config file")
+            # check outputs
             if 'outputs' not in self.config:
                 raise ValueError("Missing 'outputs' section in the YAML config file")
             if self.config['outputs'] is None:
@@ -181,6 +184,16 @@ class CfgFile:
         if self.config is None:
             return '' # no meaningful default value
         return self.config['mqtt_broker']['host']
+    @property
+    def mqtt_broker_user(self) -> str:
+        if self.config is None:
+            return None # no meaningful default value
+        return self.config['mqtt_broker']['user']
+    @property
+    def mqtt_broker_password(self) -> str:
+        if self.config is None:
+            return None # no meaningful default value
+        return self.config['mqtt_broker']['password']
     @property
     def mqtt_broker_port(self) -> int:
         if self.config is None:
@@ -387,6 +400,10 @@ def print_stats():
     print(f">>   Num (re)connections to the MQTT broker [publish channel]: {x['num_connections_publish']}")
     print(f">>   Num states for output channels published on the MQTT broker: {x['num_mqtt_states_published']}")
 
+def create_aiomqtt_client(cfg: CfgFile, identifier_str: str):
+    return aiomqtt.Client(hostname=cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=cfg.mqtt_reconnection_period_sec,
+                          username=cfg.mqtt_broker_user, password=cfg.mqtt_broker_password,
+                          identifier=g_mqtt_identifier_prefix + identifier_str)
 
 # =======================================================================================================
 # GPIOZERO helper functions
@@ -426,7 +443,7 @@ async def sample_and_publish_optoisolated_inputs(cfg: CfgFile):
 
     print(f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OPTOISOLATED INPUT states")
     g_stats["optoisolated_inputs"]['num_connections_publish'] += 1
-    async with aiomqtt.Client(cfg.mqtt_broker_host, port=cfg.mqtt_broker_port, timeout=cfg.mqtt_reconnection_period_sec, identifier=g_mqtt_identifier_prefix + "_optoisolated_publisher") as client:
+    async with create_aiomqtt_client(cfg, "_optoisolated_publisher") as client:
         while True:
             # Read 16 digital inputs
             sampled_values_as_int = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)

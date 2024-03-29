@@ -28,6 +28,8 @@ raspbian_install:
 		echo "** WARNING **" ; echo "THIS SOFTWARE HAS BEEN TESTED ONLY ON RASPBIAN 12 OR HIGHER AND REQUIRES PYTHON3.11" ; \
 		echo "CHECK IF THIS DISTRIBUTION IS OK... PROCEEDING BUT EXPECT ERRORS" ; \
 		echo ; \
+	else \
+		echo "Your operating system seems to be OK for ha-alarm-raspy2mqtt" ; \
 	fi
 	# install python venv
 	python3 -m venv $(BINDEST)/ha-alarm-raspy2mqtt-venv
