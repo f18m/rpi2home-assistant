@@ -11,7 +11,7 @@ Type=simple
 ExecStart=/root/ha-alarm-raspy2mqtt-venv/bin/python3 /root/ha-alarm-raspy2mqtt/raspy2mqtt/raspy2mqtt.py -c /etc/ha-alarm-raspy2mqtt.yaml
 
 # attempt to avoid warning at startup:
-Environment="GPIOZERO_PIN_FACTORY=rpigpio"
+Environment="GPIOZERO_PIN_FACTORY=pigpio"
 
 # PYTHONUNBUFFERED is important to ensure sdtout is flushed timely so "journalctl" shows logs of this service unit:
 Environment=PYTHONUNBUFFERED=1

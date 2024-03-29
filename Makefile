@@ -28,6 +28,8 @@ raspbian_install:
 		echo "** WARNING **" ; echo "THIS SOFTWARE HAS BEEN TESTED ONLY ON RASPBIAN 12 OR HIGHER AND REQUIRES PYTHON3.11" ; \
 		echo "CHECK IF THIS DISTRIBUTION IS OK... PROCEEDING BUT EXPECT ERRORS" ; \
 		echo ; \
+	else \
+		echo "Your operating system seems to be OK for ha-alarm-raspy2mqtt" ; \
 	fi
 	# install python venv
 	python3 -m venv $(BINDEST)/ha-alarm-raspy2mqtt-venv
@@ -37,13 +39,16 @@ raspbian_install:
 	# install systemd config
 	chmod 644 systemd/*.service
 	cp -av systemd/*.service $(SYSTEMDUNITDEST)/
+	systemctl daemon-reload
 
 raspbian_enable_at_boot:
-	systemctl daemon-reload
 	systemctl enable ha-alarm-raspy2mqtt.service
+	# this is assuming that the Debian package "pigpiod" is already installed:
+	systemctl enable pigpiod.service
 
 raspbian_start:
 	systemctl start ha-alarm-raspy2mqtt.service
+	systemctl start pigpiod.service
 
 raspbian_show_logs:
 	journalctl -u ha-alarm-raspy2mqtt
