@@ -46,3 +46,6 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["raspy2mqtt"]
+
+[tool.black]
+line-length = 120
