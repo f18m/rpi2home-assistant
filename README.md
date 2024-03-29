@@ -11,7 +11,7 @@ For example, this small utility also subscribes to MQTT to apply "switch" config
 
 # Prerequisites
 
-This software is meant to run on a Raspberry PI having installed
+This software is meant to run on a Raspberry PI that has 2 hardware components installed:
 * the [Sequent Microsystem 16 opto-insulated inputs HAT](https://sequentmicrosystems.com/collections/all-io-cards/products/16-universal-inputs-card-for-raspberry-pi).
    This software is meant to expose the 16 digital inputs from this HAT
    over MQTT, to ease their integration as (binary) sensors in Home Assistant.
@@ -22,13 +22,13 @@ This software is meant to run on a Raspberry PI having installed
    This software is meant to listen on MQTT topics and turn on/off the
    two channels of this HAT.
 
-This software is compatible with all 40-pin Raspberry Pi boards
+Beyond that, this software is meant to be compatible with all 40-pin Raspberry Pi boards
 (Raspberry Pi 1 Model A+ & B+, Raspberry Pi 2, Raspberry Pi 3, Raspberry Pi 4,
 Raspberry Pi 5).
 
-Another pre-requisite is that there is an MQTT broker running somewhere (e.g. a Mosquitto broker).
-
-Final but important pre-requisite is Python >= 3.11, that for Raspberry means Debian bookworm 12 or Raspbian 12 or higher.
+Software prerequisites are:
+* you must have an MQTT broker running somewhere (e.g. a Mosquitto broker)
+* Python >= 3.11; for Raspberry it means you must be using Debian bookworm 12 or Raspbian 12 or higher.
 
 
 # Documentation
