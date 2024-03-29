@@ -187,12 +187,16 @@ class CfgFile:
     @property
     def mqtt_broker_user(self) -> str:
         if self.config is None:
-            return None # no meaningful default value
+            return None # default is unauthenticated
+        if 'user' not in self.config['mqtt_broker']:
+            return None # default is unauthenticated
         return self.config['mqtt_broker']['user']
     @property
     def mqtt_broker_password(self) -> str:
         if self.config is None:
-            return None # no meaningful default value
+            return None # default is unauthenticated
+        if 'password' not in self.config['mqtt_broker']:
+            return None # default is unauthenticated
         return self.config['mqtt_broker']['password']
     @property
     def mqtt_broker_port(self) -> int:
