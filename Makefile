@@ -43,9 +43,12 @@ raspbian_install:
 
 raspbian_enable_at_boot:
 	systemctl enable ha-alarm-raspy2mqtt.service
+	# this is assuming that the Debian package "pigpiod" is already installed:
+	systemctl enable pigpiod.service
 
 raspbian_start:
 	systemctl start ha-alarm-raspy2mqtt.service
+	systemctl start pigpiod.service
 
 raspbian_show_logs:
 	journalctl -u ha-alarm-raspy2mqtt
