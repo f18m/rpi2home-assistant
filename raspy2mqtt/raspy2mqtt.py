@@ -647,6 +647,10 @@ async def main_loop():
     # setup GPIO connected to the pushbutton (input) and
     # assign the when_held function to be called when the button is held for more than 5 seconds
     # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
+    if 'GPIOZERO_PIN_FACTORY' in os.environ:
+        print(f"GPIO factory backend is: {os.environ['GPIOZERO_PIN_FACTORY']}")
+    else:
+        print(f"GPIO factory backend is the default one. This might fail on newer Raspbian versions with Linux kernel >= 6.6.20")
     buttons = []
     print(f"Initializing GPIO shutdown button")
     b = gpiozero.Button(SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, hold_time=5)

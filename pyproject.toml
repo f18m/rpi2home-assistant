@@ -19,13 +19,15 @@ classifiers = [
 #  SM16inpind -> https://github.com/SequentMicrosystems/16inpind-rpi/tree/main/python
 #  PyYAML ->     https://pyyaml.org/wiki/PyYAMLDocumentation
 #  gpiozero ->   https://gpiozero.readthedocs.io/en/latest/index.html
-#  RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
+#  DEPRECATED: RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
+#              As of March 2024, RPI.GPIO does not work anymore on latest Raspbian, see https://github.com/gpiozero/gpiozero/issues/1136
+#              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
 dependencies = [
   "aiomqtt>=2.0.0",
   "SM16inpind>=1.0.1",
   "PyYAML",
   "gpiozero",
-  "RPi.GPIO"
+  "pigpio>=1.78"
 ]
 
 [project.urls]

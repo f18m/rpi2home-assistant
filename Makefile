@@ -39,9 +39,9 @@ raspbian_install:
 	# install systemd config
 	chmod 644 systemd/*.service
 	cp -av systemd/*.service $(SYSTEMDUNITDEST)/
+	systemctl daemon-reload
 
 raspbian_enable_at_boot:
-	systemctl daemon-reload
 	systemctl enable ha-alarm-raspy2mqtt.service
 
 raspbian_start:
