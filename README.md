@@ -67,7 +67,7 @@ make raspbian_start
 ```
 
 Then of course it's important to populate the configuration file, with the specific pinouts for your raspberry HATs
-(see #prerequisites). The file is located at `/etc/ha-alarm-raspy2mqtt.yaml`, see [config.yaml](config.yaml) for 
+(see [Preqrequisites](#prerequisites) section). The file is located at `/etc/ha-alarm-raspy2mqtt.yaml`, see [config.yaml](config.yaml) for 
 the documentation of the configuration options, with some basic example.
 
 
