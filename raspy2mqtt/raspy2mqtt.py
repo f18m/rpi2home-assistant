@@ -752,9 +752,6 @@ if __name__ == "__main__":
         )
         sys.exit(3)
 
-    # configure the PIN factory to be used by gpiozero:
-    os.environ["GPIOZERO_PIN_FACTORY"] = "rpigpio"
-
     try:
         sys.exit(asyncio.run(main_loop()))
     except KeyboardInterrupt:
