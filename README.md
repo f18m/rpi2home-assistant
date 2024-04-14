@@ -11,7 +11,7 @@ For example, this small utility also subscribes to MQTT to apply "switch" config
 
 # Prerequisites
 
-This software is meant to run on a Raspberry PI having installed
+This software is meant to run on a Raspberry PI that has 2 hardware components installed:
 * the [Sequent Microsystem 16 opto-insulated inputs HAT](https://sequentmicrosystems.com/collections/all-io-cards/products/16-universal-inputs-card-for-raspberry-pi).
    This software is meant to expose the 16 digital inputs from this HAT
    over MQTT, to ease their integration as (binary) sensors in Home Assistant.
@@ -22,11 +22,13 @@ This software is meant to run on a Raspberry PI having installed
    This software is meant to listen on MQTT topics and turn on/off the
    two channels of this HAT.
 
-This software is compatible with all 40-pin Raspberry Pi boards
+Beyond that, this software is meant to be compatible with all 40-pin Raspberry Pi boards
 (Raspberry Pi 1 Model A+ & B+, Raspberry Pi 2, Raspberry Pi 3, Raspberry Pi 4,
 Raspberry Pi 5).
 
-Another pre-requisite is that there is an MQTT broker running somewhere (e.g. a Mosquitto broker).
+Software prerequisites are:
+* you must have an MQTT broker running somewhere (e.g. a Mosquitto broker)
+* Python >= 3.11; for Raspberry it means you must be using Debian bookworm 12 or Raspbian 12 or higher.
 
 
 # Documentation
@@ -39,9 +41,9 @@ This project uses `hatch` as build system (https://hatch.pypa.io/latest/).
 
 This python code needs to run as `root` due to ensure access to the Raspberry I2C and GPIO peripherals.
 
-## How to install on a Raspberry
+## How to install on a Raspberry Pi with Debian Bookworm 12
 
-Note that Raspbian does not allow to install Python software using `pip`, just like it happens on other distributions.
+Note that Raspbian with Python 3.11+ does not allow to install Python software using `pip`.
 Trying to install a Python package that way leads to an error like:
 
 ```
@@ -53,6 +55,10 @@ This procedure automates the creation of the venv and has been tested on Raspbia
 
 ```
 sudo su
+# python3-dev is needed by a dependency (rpi-gpio) which compiles native C code
+# pigpiod is a package providing the daemon that is required by the pigpio GPIO factory
+apt install git python3-venv python3-dev pigpiod
+cd /root
 git clone https://github.com/f18m/ha-alarm-raspy2mqtt.git
 cd ha-alarm-raspy2mqtt/
 make raspbian_install
@@ -61,7 +67,7 @@ make raspbian_start
 ```
 
 Then of course it's important to populate the configuration file, with the specific pinouts for your raspberry HATs
-(see #prerequisites). The file is located at `/etc/ha-alarm-raspy2mqtt.yaml`, see [config.yaml](config.yaml) for 
+(see [Preqrequisites](#prerequisites) section). The file is located at `/etc/ha-alarm-raspy2mqtt.yaml`, see [config.yaml](config.yaml) for 
 the documentation of the configuration options, with some basic example.
 
 

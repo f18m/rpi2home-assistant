@@ -3,6 +3,9 @@
 
 mqtt_broker:
   host: 192.168.1.5
+  reconnection_period_msec: 1500
+  user: 
+  password:
 
 # sampling frequency for the input
 sampling_frequency_msec: 1000
