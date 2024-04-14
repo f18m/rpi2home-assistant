@@ -35,17 +35,19 @@ MQTT_QOS_AT_LEAST_ONCE = 1
 # SequentMicrosystem-specific constants
 SEQMICRO_INPUTHAT_STACK_LEVEL = 0  # 0 means the first "stacked" board (this code supports only 1!)
 SEQMICRO_INPUTHAT_MAX_CHANNELS = 16
-SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO = 26 # GPIO pin connected to the push button
-SEQMICRO_INPUTHAT_INTERRUPT_GPIO = 11 # GPIO pin connected to the interrupt line of the I/O expander (need pullup resistor)
-SEQMICRO_INPUTHAT_I2C_SDA = 2 # reserved for I2C communication between Raspberry CPU and the input HAT
-SEQMICRO_INPUTHAT_I2C_SCL = 3 # reserved for I2C communication between Raspberry CPU and the input HAT
+SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO = 26  # GPIO pin connected to the push button
+SEQMICRO_INPUTHAT_INTERRUPT_GPIO = (
+    11  # GPIO pin connected to the interrupt line of the I/O expander (need pullup resistor)
+)
+SEQMICRO_INPUTHAT_I2C_SDA = 2  # reserved for I2C communication between Raspberry CPU and the input HAT
+SEQMICRO_INPUTHAT_I2C_SCL = 3  # reserved for I2C communication between Raspberry CPU and the input HAT
 
 # global stat dictionary
 g_stats = {
-    'optoisolated_inputs': {
-        'num_readings': 0,
-        'num_connections_publish': 0,
-        'num_mqtt_messages': 0,
+    "optoisolated_inputs": {
+        "num_readings": 0,
+        "num_connections_publish": 0,
+        "num_mqtt_messages": 0,
     },
     "gpio_inputs": {
         "num_connections_publish": 0,
@@ -70,7 +72,7 @@ g_gpio_queue = queue.Queue()
 # global start time
 g_start_time = time.time()
 
-# last reading of the 16 digital opto-isolated inputs 
+# last reading of the 16 digital opto-isolated inputs
 g_optoisolated_inputs_sampled_values = 0
 
 # global prefix for MQTT client identifiers
@@ -144,7 +146,12 @@ class CfgFile:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
 
-        reserved_gpios = [ SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, SEQMICRO_INPUTHAT_INTERRUPT_GPIO, SEQMICRO_INPUTHAT_I2C_SDA, SEQMICRO_INPUTHAT_I2C_SCL ]
+        reserved_gpios = [
+            SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO,
+            SEQMICRO_INPUTHAT_INTERRUPT_GPIO,
+            SEQMICRO_INPUTHAT_I2C_SDA,
+            SEQMICRO_INPUTHAT_I2C_SCL,
+        ]
 
         try:
             # convert the 'gpio_inputs' part in a dictionary indexed by the GPIO PIN NUMBER:
@@ -152,10 +159,14 @@ class CfgFile:
             for input_item in self.config["gpio_inputs"]:
                 idx = int(input_item["gpio"])
                 if idx < 1 or idx > 40:
-                    raise ValueError(f"Invalid input_num {idx}. The legal range is [1-40] since the Raspberry GPIO connector is a 40-pin connector.")
+                    raise ValueError(
+                        f"Invalid input_num {idx}. The legal range is [1-40] since the Raspberry GPIO connector is a 40-pin connector."
+                    )
                 # some GPIO pins are reserved and cannot be configured!
                 if idx in reserved_gpios:
-                    raise ValueError(f"Invalid input_num {idx}: that GPIO pin is reserved for communication with the Sequent Microsystem HAT. Choose a different GPIO.")
+                    raise ValueError(
+                        f"Invalid input_num {idx}: that GPIO pin is reserved for communication with the Sequent Microsystem HAT. Choose a different GPIO."
+                    )
                 self.gpio_inputs_map[idx] = input_item
                 # print(input_item)
             print(f"Loaded {len(self.gpio_inputs_map)} GPIO input configurations")
@@ -456,6 +467,7 @@ def sample_optoisolated_inputs():
     g_optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
     g_stats["optoisolated_inputs"]["num_readings"] += 1
 
+
 def publish_mqtt_message(device):
     print(f"!! Detected activation of GPIO{device.pin.number} !! ")
     g_gpio_queue.put(device.pin.number)
@@ -476,6 +488,7 @@ async def print_stats_periodically(cfg: CfgFile):
             next_stat_time = loop.time() + cfg.stats_log_period_sec
 
         await asyncio.sleep(1)
+
 
 async def publish_optoisolated_inputs(cfg: CfgFile):
     """
@@ -662,10 +675,12 @@ async def main_loop():
     # setup GPIO connected to the pushbutton (input) and
     # assign the when_held function to be called when the button is held for more than 5 seconds
     # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
-    if 'GPIOZERO_PIN_FACTORY' in os.environ:
+    if "GPIOZERO_PIN_FACTORY" in os.environ:
         print(f"GPIO factory backend is: {os.environ['GPIOZERO_PIN_FACTORY']}")
     else:
-        print(f"GPIO factory backend is the default one. This might fail on newer Raspbian versions with Linux kernel >= 6.6.20")
+        print(
+            f"GPIO factory backend is the default one. This might fail on newer Raspbian versions with Linux kernel >= 6.6.20"
+        )
     buttons = []
     print(f"Initializing SequentMicrosystem GPIO shutdown button")
     b = gpiozero.Button(SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, hold_time=5)
