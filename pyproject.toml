@@ -48,13 +48,15 @@ authors = ["f18m <francesco.montorsi@gmail.com>"]
 readme = "README.md"
 packages = [{include = "raspy2mqtt"}]
 
+# since Renovate bot is used, it's best to pin dependency versions; 
+# see https://docs.renovatebot.com/modules/manager/poetry/
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-aiomqtt = ">=2.0.0"
-sm16inpind = ">=1.0.1"
-PyYAML = "^6.0.1"
-gpiozero = "^2.0.1"
-pigpio = ">=1.78"
+aiomqtt = "2.0.0"
+sm16inpind = "1.0.1"
+PyYAML = "6.0.1"
+gpiozero = "2.0.1"
+pigpio = "1.78"
 
 [build-system]
 requires = ["poetry-core"]
