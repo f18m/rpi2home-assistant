@@ -1,6 +1,6 @@
 [project]
 name = "ha-alarm-raspy2mqtt"
-version = "0.0.1"
+version = "1.1.0"
 authors = [
   { name="Francesco Montorsi", email="francesco.montorsi@gmail.com" },
 ]
@@ -37,17 +37,25 @@ dependencies = [
 [project.scripts]
 raspy2mqtt = "raspy2mqtt:main_loop"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.sdist]
-include = [
-  "raspy2mqtt/*.py"
-]
-
-[tool.hatch.build.targets.wheel]
-packages = ["raspy2mqtt"]
-
 [tool.black]
 line-length = 120
+
+[tool.poetry]
+name = "ha-alarm-raspy2mqtt"
+version = "0.1.0"
+description = ""
+authors = ["f18m <francesco.montorsi@gmail.com>"]
+readme = "README.md"
+packages = [{include = "raspy2mqtt"}]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+aiomqtt = ">=2.0.0"
+sm16inpind = ">=1.0.1"
+PyYAML = "^6.0.1"
+gpiozero = "^2.0.1"
+pigpio = ">=1.78"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
