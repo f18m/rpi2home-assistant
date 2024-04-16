@@ -14,22 +14,6 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-# reference docs:
-#  aiomqtt ->    https://sbtinstruments.github.io/aiomqtt/
-#  SM16inpind -> https://github.com/SequentMicrosystems/16inpind-rpi/tree/main/python
-#  PyYAML ->     https://pyyaml.org/wiki/PyYAMLDocumentation
-#  gpiozero ->   https://gpiozero.readthedocs.io/en/latest/index.html
-#  DEPRECATED: RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
-#              As of March 2024, RPI.GPIO does not work anymore on latest Raspbian, see https://github.com/gpiozero/gpiozero/issues/1136
-#              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
-dependencies = [
-  "aiomqtt>=2.0.0",
-  "SM16inpind>=1.0.1",
-  "PyYAML",
-  "gpiozero",
-  "pigpio>=1.78"
-]
-
 [project.urls]
 "Homepage" = "https://github.com/f18m/ha-alarm-raspy2mqtt"
 "Bug Tracker" = "https://github.com/f18m/ha-alarm-raspy2mqtt/issues"
@@ -48,8 +32,17 @@ authors = ["f18m <francesco.montorsi@gmail.com>"]
 readme = "README.md"
 packages = [{include = "raspy2mqtt"}]
 
-# since Renovate bot is used, it's best to pin dependency versions; 
-# see https://docs.renovatebot.com/modules/manager/poetry/
+# DEPENDENCIES
+# 1) since Renovate bot is used, it's best to pin dependency versions; 
+#    see https://docs.renovatebot.com/modules/manager/poetry/
+# 2) reference docs for each dependency:
+#  aiomqtt ->    https://sbtinstruments.github.io/aiomqtt/
+#  SM16inpind -> https://github.com/SequentMicrosystems/16inpind-rpi/tree/main/python
+#  PyYAML ->     https://pyyaml.org/wiki/PyYAMLDocumentation
+#  gpiozero ->   https://gpiozero.readthedocs.io/en/latest/index.html
+#  DEPRECATED: RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
+#              As of March 2024, RPI.GPIO does not work anymore on latest Raspbian, see https://github.com/gpiozero/gpiozero/issues/1136
+#              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
 aiomqtt = "2.0.1"
