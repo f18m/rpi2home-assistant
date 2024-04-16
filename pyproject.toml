@@ -1,6 +1,6 @@
 [project]
 name = "ha-alarm-raspy2mqtt"
-version = "0.0.1"
+version = "1.1.0"
 authors = [
   { name="Francesco Montorsi", email="francesco.montorsi@gmail.com" },
 ]
@@ -14,22 +14,6 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-# reference docs:
-#  aiomqtt ->    https://sbtinstruments.github.io/aiomqtt/
-#  SM16inpind -> https://github.com/SequentMicrosystems/16inpind-rpi/tree/main/python
-#  PyYAML ->     https://pyyaml.org/wiki/PyYAMLDocumentation
-#  gpiozero ->   https://gpiozero.readthedocs.io/en/latest/index.html
-#  DEPRECATED: RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
-#              As of March 2024, RPI.GPIO does not work anymore on latest Raspbian, see https://github.com/gpiozero/gpiozero/issues/1136
-#              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
-dependencies = [
-  "aiomqtt>=2.0.0",
-  "SM16inpind>=1.0.1",
-  "PyYAML",
-  "gpiozero",
-  "pigpio>=1.78"
-]
-
 [project.urls]
 "Homepage" = "https://github.com/f18m/ha-alarm-raspy2mqtt"
 "Bug Tracker" = "https://github.com/f18m/ha-alarm-raspy2mqtt/issues"
@@ -37,17 +21,36 @@ dependencies = [
 [project.scripts]
 raspy2mqtt = "raspy2mqtt:main_loop"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.sdist]
-include = [
-  "raspy2mqtt/*.py"
-]
-
-[tool.hatch.build.targets.wheel]
-packages = ["raspy2mqtt"]
-
 [tool.black]
 line-length = 120
+
+[tool.poetry]
+name = "ha-alarm-raspy2mqtt"
+version = "0.1.0"
+description = ""
+authors = ["f18m <francesco.montorsi@gmail.com>"]
+readme = "README.md"
+packages = [{include = "raspy2mqtt"}]
+
+# DEPENDENCIES
+# 1) since Renovate bot is used, it's best to pin dependency versions; 
+#    see https://docs.renovatebot.com/modules/manager/poetry/
+# 2) reference docs for each dependency:
+#  aiomqtt ->    https://sbtinstruments.github.io/aiomqtt/
+#  SM16inpind -> https://github.com/SequentMicrosystems/16inpind-rpi/tree/main/python
+#  PyYAML ->     https://pyyaml.org/wiki/PyYAMLDocumentation
+#  gpiozero ->   https://gpiozero.readthedocs.io/en/latest/index.html
+#  DEPRECATED: RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
+#              As of March 2024, RPI.GPIO does not work anymore on latest Raspbian, see https://github.com/gpiozero/gpiozero/issues/1136
+#              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+aiomqtt = "2.0.1"
+sm16inpind = "1.0.1"
+PyYAML = "6.0.1"
+gpiozero = "2.0.1"
+pigpio = "1.78"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
