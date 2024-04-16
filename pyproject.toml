@@ -52,7 +52,7 @@ packages = [{include = "raspy2mqtt"}]
 # see https://docs.renovatebot.com/modules/manager/poetry/
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-aiomqtt = "2.0.0"
+aiomqtt = "2.0.1"
 sm16inpind = "1.0.1"
 PyYAML = "6.0.1"
 gpiozero = "2.0.1"
