@@ -5,8 +5,7 @@
 # Created: Feb 2024
 # License: Apache license
 #
-# TODO: add prometheus support to monitor MQTT update timings (latencies) to help debug "sensor unavailable" on HA
-#       see https://prometheus.github.io/client_python/getting-started/three-step-demo/
+# TODO: add HomeAssistant discovery messages
 
 import argparse
 import os
@@ -239,18 +238,21 @@ class CfgFile:
     def mqtt_reconnection_period_sec(self) -> float:
         if self.config is None:
             return 1.0  # the default reconnection interval
-        if "reconnection_period_msec" not in self.config["mqtt_broker"]:
-            return 1.0  # the default reconnection interval
 
-        # convert the user-defined timeout from msec to (floating) sec
-        return float(self.config["mqtt_broker"]["reconnection_period_msec"]) / 1000.0
+        try:
+            # convert the user-defined timeout from msec to (floating) sec
+            cfg_value = float(self.config["mqtt_broker"]["reconnection_period_msec"]) / 1000.0
+            return cfg_value
+        except:
+            # in this case the key is completely missing or does contain an integer value
+            return 1.0  # default value
 
     @property
-    def sampling_frequency_sec(self) -> float:
+    def mqtt_publish_period_sec(self) -> float:
         if self.config is None:
             return 1.0  # default value
         try:
-            cfg_value = float(self.config["sampling_frequency_msec"]) / 1000.0
+            cfg_value = float(self.config["mqtt_broker"]["publish_period_msec"]) / 1000.0
             return cfg_value
         except:
             # in this case the key is completely missing or does contain an integer value
@@ -461,7 +463,9 @@ def shutdown():
 
 def sample_optoisolated_inputs():
     global g_stats, g_optoisolated_inputs_sampled_values
-    # Read 16 digital inputs
+
+    # This function is invoked when the SequentMicrosystem hat triggers an interrupt saying
+    # "hey there is some change in my inputs"... so we read all the 16 digital inputs
     # NOTE1: this is a blocking call that will block until the 16 inputs are sampled
     # NOTE2: this might raise a TimeoutError exception in case the I2C bus transaction fails
     g_optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
@@ -502,15 +506,18 @@ async def publish_optoisolated_inputs(cfg: CfgFile):
     g_stats["optoisolated_inputs"]["num_connections_publish"] += 1
     async with create_aiomqtt_client(cfg, "_optoisolated_publisher") as client:
         while True:
-            # Publish each input value as a separate MQTT topic
+            # Publish each sampled value as a separate MQTT topic
             update_loop_start_sec = time.perf_counter()
             for i in range(SEQMICRO_INPUTHAT_MAX_CHANNELS):
-                # Extract the bit at position i using bitwise AND operation
+
+                # IMPORTANT: this function expects something else to update the 'g_optoisolated_inputs_sampled_values'
+                #            integer, whenever it is necessary to update it
+
+                # Extract the bit at position i-th using bitwise AND operation
                 bit_value = bool(g_optoisolated_inputs_sampled_values & (1 << i))
 
-                input_cfg = cfg.get_optoisolated_input_config(
-                    1 + i
-                )  # convert from zero-based index 'i' to 1-based index
+                # convert from zero-based index 'i' to 1-based index, as used in the config file
+                input_cfg = cfg.get_optoisolated_input_config(1 + i)  
                 if input_cfg is not None:
                     # Choose the TOPIC and message PAYLOAD
                     topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg['name']}"
@@ -531,7 +538,7 @@ async def publish_optoisolated_inputs(cfg: CfgFile):
             # print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
 
             # Now sleep a little bit before repeating
-            await asyncio.sleep(cfg.sampling_frequency_sec - update_loop_duration_sec)
+            await asyncio.sleep(cfg.mqtt_publish_period_sec - update_loop_duration_sec)
 
 
 async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
@@ -553,7 +560,7 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
                 # if there's no notification (typical case), then do not block the event loop
                 # and keep processing other tasks... to ensure low-latency in processing the
                 # GPIO inputs the sleep time is set equal to the opto-isolated input sampling freq
-                await asyncio.sleep(cfg.sampling_frequency_sec)
+                await asyncio.sleep(cfg.mqtt_publish_period_sec)
                 continue
 
             # there is a GPIO notification to process:
@@ -563,6 +570,7 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
                 print(
                     f"Main thread got notification of GPIO#{gpio_number} being activated but there is NO CONFIGURATION for that pin. Ignoring."
                 )
+                # TODO: add stat here
             else:
                 # extract MQTT config
                 mqtt_topic = gpio_config["mqtt"]["topic"]
@@ -648,7 +656,7 @@ async def publish_outputs_state(cfg: CfgFile):
                     # when there is no state change:
                     output_status_map[output_name] = output_status
 
-            await asyncio.sleep(cfg.sampling_frequency_sec)
+            await asyncio.sleep(cfg.mqtt_publish_period_sec)
 
 
 async def main_loop():
