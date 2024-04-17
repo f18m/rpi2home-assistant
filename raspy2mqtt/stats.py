@@ -32,6 +32,7 @@ g_stats = {
     "num_connections_lost": 0,
 }
 
+
 def print_stats():
     global g_stats, g_start_time
     print_stats.counter = getattr(print_stats, "counter", 0) + 1
@@ -64,4 +65,3 @@ def print_stats():
     print(f">>   Num commands for output channels processed from MQTT broker: {x['num_mqtt_commands_processed']}")
     print(f">>   Num (re)connections to the MQTT broker [publish channel]: {x['num_connections_publish']}")
     print(f">>   Num states for output channels published on the MQTT broker: {x['num_mqtt_states_published']}")
-

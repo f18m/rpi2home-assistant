@@ -128,8 +128,8 @@ class CfgFile:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
 
-        print(f"MQTT broker host: {self.mqtt_broker_host}")
-        print(f"MQTT broker port: {self.mqtt_broker_port}")
+        print(f"MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
+        print(f"MQTT broker authentication: " + "ON" if self.mqtt_broker_user != None else "OFF")
         print(f"MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
         print(f"MQTT publish period: {self.mqtt_publish_period_sec}s")
 
