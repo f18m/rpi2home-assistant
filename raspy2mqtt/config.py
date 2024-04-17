@@ -129,7 +129,10 @@ class CfgFile:
             return False
 
         print(f"MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
-        print(f"MQTT broker authentication: " + "ON" if self.mqtt_broker_user != None else "OFF")
+        if self.mqtt_broker_user != None:
+            print(f"MQTT broker authentication: ON")
+        else:
+            print(f"MQTT broker authentication: OFF")
         print(f"MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
         print(f"MQTT publish period: {self.mqtt_publish_period_sec}s")
 
