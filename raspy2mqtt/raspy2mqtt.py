@@ -150,6 +150,14 @@ def sample_optoisolated_inputs():
     g_optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
     g_stats["optoisolated_inputs"]["num_readings"] += 1
 
+    # FIXME: right now, it's hard to force-wake the coroutine 
+    # which handles publishing to MQTT
+    # the reason is that we should be using
+    #   https://docs.python.org/3/library/asyncio-sync.html#asyncio.Event
+    # which is not thread-safe. And this function executes in GPIOzero secondary thread :(
+    # This means that if an input changes rapidly from 0 to 1 and then back to 0, we might not
+    # publish this to MQTT (depends on the MQTT publish frequency... nyquist frequency)
+
 
 def publish_mqtt_message(device):
     print(f"!! Detected activation of GPIO{device.pin.number} !! ")
@@ -399,6 +407,9 @@ async def main_loop():
 
     # before launching MQTT connections, define a unique MQTT prefix identifier:
     g_mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+    # do first sampling operation immediately:
+    sample_optoisolated_inputs()
 
     # wrap with error-handling code the main loop
     keyb_interrupted = False
