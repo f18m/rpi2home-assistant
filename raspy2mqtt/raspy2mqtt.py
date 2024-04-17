@@ -696,7 +696,7 @@ async def main_loop():
     buttons.append(b)
 
     print(f"Initializing SequentMicrosystem GPIO interrupt line")
-    b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pullup=True)
+    b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pull_up=True)
     b.when_held = sample_optoisolated_inputs
     buttons.append(b)
 
