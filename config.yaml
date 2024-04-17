@@ -1,14 +1,24 @@
-# Config file for raspy2mqtt (A.k.a. "ha-alarm-raspy2mqtt")
+# Sample config file for the ha-alarm-raspy2mqtt utility
 # Written by Francesco Montorsi, Feb 2024.
 
 mqtt_broker:
+  # the IP or FQDN of the server hosting the MQTT broker:
   host: 192.168.1.5
+
+  # in case the connection with the broker drops, a reconnection will be attempted each X msec:
   reconnection_period_msec: 1500
+
+  # how often should this software re-publish the status of all inputs / outputs inside MQTT?
+  # note that this software will publish the status of an input/output even if it didn't change
+  # since previous update; the reason is to reset the expire timer associated typically
+  # inside HomeAssistant for each MQTT sensor (see the "expire_after" property).
+  publish_period_msec: 3000
+
+  # in case your broker has authentication turned on, please provide user/pw
+  # TODO: password is cleartext right now, which is insecure
   user: 
   password:
 
-# sampling frequency for the input
-sampling_frequency_msec: 1000
 
 # stats printed on stdout each N secs:
 log_stats_every: 30
@@ -22,7 +32,7 @@ log_stats_every: 30
 # NOTE3: the MQTT topic will be in the form "home/<input name>", don't use spaces in the name!
 # NOTE4: to raise security/robustness of the alarm system, on HomeAssistant the "expire_after" property
 #        should be used; the MQTT topics for opto-isolated inputs are continuously updated at a frequency
-#        configured by 'sampling_frequency_msec'
+#        configured by 'mqtt_broker.publish_period_msec'
 i2c_optoisolated_inputs:
   - name: opto_input_1
     input_num: 1

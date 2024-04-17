@@ -1,10 +1,10 @@
 # ha-alarm-raspy2mqtt
 
 Small Python daemon to transform a Raspberry into a bridge from GPIO pins and MQTT, for HomeAssistant usage.
-In particular this software allows:
-* sample a wide range of electrical signals (voltages), from 3V-48V AC or DC, using a dedicated Raspberry HAT
-* sample 3.3V inputs from Raspberry GPIO pins
-* use Raspberry GPIO pins in output mode to activate relays
+In particular this software allows to:
+* sample a wide range of electrical signals (voltages) from 3V-48V AC or DC, using a dedicated Raspberry HAT, and publish them on MQTT
+* sample 3.3V inputs from Raspberry GPIO pins directly (with no isolation/protection/HAT), and publish them on MQTT
+* listen to MQTT topics and use Raspberry GPIO pins in output mode to activate relays, using a dedicated Raspberry HAT / relay board
 
 All these features are implemented in an [Home Assistant](https://www.home-assistant.io/)-friendly fashion.
 For example, this small utility also subscribes to MQTT to apply "switch" configurations to drive loads.
@@ -35,7 +35,7 @@ Software prerequisites are:
 
 ## Build system
 
-This project uses `hatch` as build system (https://hatch.pypa.io/latest/).
+This project uses `poetry` as build system (https://python-poetry.org/).
 
 ## Permissions
 
@@ -71,6 +71,27 @@ Then of course it's important to populate the configuration file, with the speci
 the documentation of the configuration options, with some basic example.
 
 
+## Check Application Outputs
+
+After starting the application you can verify from the logs whether it's running successfully:
+
+```
+journalctl  --since="5min ago"
+```
+
+## Development
+
+To develop changes you can create a branch, then check it out on your raspberry and then run:
+
+```
+	python3 -m venv ~/ha-alarm-raspy2mqtt-venv
+	~/ha-alarm-raspy2mqtt-venv/bin/pip3 install .
+   source ~/ha-alarm-raspy2mqtt-venv/bin/activate
+   cd <checkout_folder>/raspy2mqtt
+   ./raspy2mqtt -c /etc/ha-alarm-raspy2mqtt.yaml
+```
+
+
 # Useful links
 
 * [Sequent Microsystem 16 opto-insulated inputs python library](https://github.com/SequentMicrosystems/16inpind-rpi)
@@ -81,3 +102,9 @@ the documentation of the configuration options, with some basic example.
 Very similar project, more flexible and much bigger, targeting specific sensor boards:
 * [mqtt-io](https://github.com/flyte/mqtt-io)
 
+
+# TODO
+
+- Add support for HomeAssistant DISCOVERY, see https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery 
+- Eventually get rid of GPIOZERO + PIGPIOD which consume CPU and also force use of e.g. the queue.Queue due to
+  the multithreading issues
