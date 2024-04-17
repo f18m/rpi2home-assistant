@@ -11,16 +11,13 @@ import argparse
 import os
 import fcntl
 import sys
-import yaml
 import asyncio
 import aiomqtt
 import lib16inpind
 import gpiozero
 import subprocess
 import time
-import threading
 import queue
-import json
 from datetime import datetime, timezone
 from stats import *
 from config import *

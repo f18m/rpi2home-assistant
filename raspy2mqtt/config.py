@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import yaml
+
 #
 # Author: fmontorsi
 # Created: Apr 2024
