@@ -33,9 +33,6 @@ g_output_channels = {}
 # thread-safe queue to communicate from GPIOzero secondary threads to main thread
 g_gpio_queue = queue.Queue()
 
-# global start time
-g_start_time = time.time()
-
 # last reading of the 16 digital opto-isolated inputs
 g_optoisolated_inputs_sampled_values = 0
 

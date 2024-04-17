@@ -35,6 +35,9 @@ g_stats = {
     "num_connections_lost": 0,
 }
 
+# global start time
+g_start_time = time.time()
+
 
 def print_stats():
     global g_stats, g_start_time
