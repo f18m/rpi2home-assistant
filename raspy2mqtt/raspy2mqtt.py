@@ -199,6 +199,7 @@ class CfgFile:
         print(f"MQTT broker host: {self.mqtt_broker_host}")
         print(f"MQTT broker port: {self.mqtt_broker_port}")
         print(f"MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
+        print(f"MQTT publish period: {self.mqtt_publish_period_sec}s")
 
         print(f"Successfully loaded configuration")
 

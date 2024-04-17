@@ -71,6 +71,15 @@ Then of course it's important to populate the configuration file, with the speci
 the documentation of the configuration options, with some basic example.
 
 
+## Check Application Outputs
+
+After starting the application you can verify from the logs whether it's running successfully:
+
+```
+journalctl  --since="5min ago"
+```
+
+
 # Useful links
 
 * [Sequent Microsystem 16 opto-insulated inputs python library](https://github.com/SequentMicrosystems/16inpind-rpi)
