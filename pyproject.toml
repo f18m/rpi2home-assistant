@@ -1,18 +1,21 @@
-[project]
-name = "ha-alarm-raspy2mqtt"
-version = "1.1.0"
-authors = [
-  { name="Francesco Montorsi", email="francesco.montorsi@gmail.com" },
-]
-description = ""
-readme = "README.md"
+# 
+# FIXME: the 'project' metadata section is commented out because PEP621 is still not supported by Poetry as of Apr 2024, see https://github.com/python-poetry/poetry/issues/3332
+# 
+#[project]
+#name = "ha-alarm-raspy2mqtt"
+#version = "1.1.0"
+#authors = [
+#  { name="Francesco Montorsi", email="francesco.montorsi@gmail.com" },
+#]
+#description = "HomeAssistant Alarm bridge for wired sensors/actuators"
+#readme = "README.md"
 # some features like asyncio TaskGroups and Exception groups are available only since Python 3.11:
-requires-python = ">=3.11"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
+#requires-python = ">=3.11"
+#classifiers = [
+#    "Programming Language :: Python :: 3",
+#    "License :: OSI Approved :: MIT License",
+#    "Operating System :: OS Independent",
+#]
 
 [project.urls]
 "Homepage" = "https://github.com/f18m/ha-alarm-raspy2mqtt"
@@ -26,9 +29,9 @@ line-length = 120
 
 [tool.poetry]
 name = "ha-alarm-raspy2mqtt"
-version = "0.1.0"
-description = ""
-authors = ["f18m <francesco.montorsi@gmail.com>"]
+version = "1.1.0"
+description = "HomeAssistant Alarm bridge for wired sensors/actuators"
+authors = ["Francesco Montorsi <francesco.montorsi@gmail.com>"]
 readme = "README.md"
 packages = [{include = "raspy2mqtt"}]
 
