@@ -22,6 +22,7 @@ import threading
 import queue
 import json
 from datetime import datetime, timezone
+from stats import *
 
 # =======================================================================================================
 # GLOBALs
@@ -41,26 +42,6 @@ SEQMICRO_INPUTHAT_INTERRUPT_GPIO = (
 SEQMICRO_INPUTHAT_I2C_SDA = 2  # reserved for I2C communication between Raspberry CPU and the input HAT
 SEQMICRO_INPUTHAT_I2C_SCL = 3  # reserved for I2C communication between Raspberry CPU and the input HAT
 
-# global stat dictionary
-g_stats = {
-    "optoisolated_inputs": {
-        "num_readings": 0,
-        "num_connections_publish": 0,
-        "num_mqtt_messages": 0,
-    },
-    "gpio_inputs": {
-        "num_connections_publish": 0,
-        "num_gpio_notifications": 0,
-        "num_mqtt_messages": 0,
-    },
-    "outputs": {
-        "num_connections_subscribe": 0,
-        "num_mqtt_commands_processed": 0,
-        "num_connections_publish": 0,
-        "num_mqtt_states_published": 0,
-    },
-    "num_connections_lost": 0,
-}
 
 # global dictionary of gpiozero.LED instances used to drive outputs
 g_output_channels = {}
@@ -405,40 +386,6 @@ def instance_already_running(label="default"):
     return already_running
 
 
-def print_stats():
-    global g_stats, g_start_time
-    print_stats.counter = getattr(print_stats, "counter", 0) + 1
-    print(f">> STAT REPORT #{print_stats.counter}")
-
-    uptime_sec = time.time() - g_start_time
-    m, s = divmod(uptime_sec, 60)
-    h, m = divmod(m, 60)
-    h = int(h)
-    m = int(m)
-    s = int(s)
-    print(f">> Uptime: {h}:{m:02}:{s:02}")
-    print(f">> Num times the MQTT broker connection was lost: {g_stats['num_connections_lost']}")
-
-    x = g_stats["optoisolated_inputs"]
-    print(f">> OPTO-ISOLATED INPUTS:")
-    print(f">>   Num (re)connections to the MQTT broker [publish channel]: {x['num_connections_publish']}")
-    print(f">>   Num MQTT messages published to the broker: {x['num_mqtt_messages']}")
-    print(f">>   Num actual readings of optoisolated inputs: {x['num_readings']}")
-
-    x = g_stats["gpio_inputs"]
-    print(f">> GPIO INPUTS:")
-    print(f">>   Num (re)connections to the MQTT broker [publish channel]: {x['num_connections_publish']}")
-    print(f">>   Num GPIO activations detected: {x['num_gpio_notifications']}")
-    print(f">>   Num MQTT messages published to the broker: {x['num_mqtt_messages']}")
-
-    x = g_stats["outputs"]
-    print(f">> OUTPUTS:")
-    print(f">>   Num (re)connections to the MQTT broker [subscribe channel]: {x['num_connections_subscribe']}")
-    print(f">>   Num commands for output channels processed from MQTT broker: {x['num_mqtt_commands_processed']}")
-    print(f">>   Num (re)connections to the MQTT broker [publish channel]: {x['num_connections_publish']}")
-    print(f">>   Num states for output channels published on the MQTT broker: {x['num_mqtt_states_published']}")
-
-
 def create_aiomqtt_client(cfg: CfgFile, identifier_str: str):
     return aiomqtt.Client(
         hostname=cfg.mqtt_broker_host,
@@ -467,6 +414,10 @@ def sample_optoisolated_inputs():
 
     # This function is invoked when the SequentMicrosystem hat triggers an interrupt saying
     # "hey there is some change in my inputs"... so we read all the 16 digital inputs
+    #
+    # NOTE0: since this routine is invoked by the gpiozero library, it runs on a secondary OS thread
+    #        so _in theory_ we should be using a mutex when writing to the global 'g_optoisolated_inputs_sampled_values'
+    #        variable. In practice since it's a simple integer variable, I don't think the mutex is needed.
     # NOTE1: this is a blocking call that will block until the 16 inputs are sampled
     # NOTE2: this might raise a TimeoutError exception in case the I2C bus transaction fails
     g_optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
@@ -560,7 +511,7 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
             except queue.Empty:
                 # if there's no notification (typical case), then do not block the event loop
                 # and keep processing other tasks... to ensure low-latency in processing the
-                # GPIO inputs the sleep time is set equal to the opto-isolated input sampling freq
+                # GPIO inputs the sleep time is set equal to the MQTT publish freq
                 await asyncio.sleep(cfg.mqtt_publish_period_sec)
                 continue
 
@@ -571,7 +522,7 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
                 print(
                     f"Main thread got notification of GPIO#{gpio_number} being activated but there is NO CONFIGURATION for that pin. Ignoring."
                 )
-                # TODO: add stat here
+                g_stats["gpio_inputs"]["ERROR_noconfig"] += 1
             else:
                 # extract MQTT config
                 mqtt_topic = gpio_config["mqtt"]["topic"]
@@ -597,7 +548,7 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
 
 async def subscribe_and_activate_outputs(cfg: CfgFile):
     """
-    This function may throw a aiomqtt.MqttError exception indicating a connection issue!
+    This function may throw an aiomqtt.MqttError exception indicating a connection issue!
     """
     global g_stats
     global g_output_channels, g_mqtt_identifier_prefix
