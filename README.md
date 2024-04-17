@@ -35,7 +35,7 @@ Software prerequisites are:
 
 ## Build system
 
-This project uses `hatch` as build system (https://hatch.pypa.io/latest/).
+This project uses `poetry` as build system (https://python-poetry.org/).
 
 ## Permissions
 
@@ -77,6 +77,18 @@ After starting the application you can verify from the logs whether it's running
 
 ```
 journalctl  --since="5min ago"
+```
+
+## Development
+
+To develop changes you can create a branch, then check it out on your raspberry and then run:
+
+```
+	python3 -m venv ~/ha-alarm-raspy2mqtt-venv
+	~/ha-alarm-raspy2mqtt-venv/bin/pip3 install .
+   source ~/ha-alarm-raspy2mqtt-venv/bin/activate
+   cd <checkout_folder>/raspy2mqtt
+   ./raspy2mqtt -c /etc/ha-alarm-raspy2mqtt.yaml
 ```
 
 
