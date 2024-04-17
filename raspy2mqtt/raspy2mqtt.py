@@ -517,7 +517,7 @@ async def publish_optoisolated_inputs(cfg: CfgFile):
                 bit_value = bool(g_optoisolated_inputs_sampled_values & (1 << i))
 
                 # convert from zero-based index 'i' to 1-based index, as used in the config file
-                input_cfg = cfg.get_optoisolated_input_config(1 + i)  
+                input_cfg = cfg.get_optoisolated_input_config(1 + i)
                 if input_cfg is not None:
                     # Choose the TOPIC and message PAYLOAD
                     topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg['name']}"
