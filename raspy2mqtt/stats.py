@@ -58,6 +58,7 @@ def print_stats():
     print(f">>   Num (re)connections to the MQTT broker [publish channel]: {x['num_connections_publish']}")
     print(f">>   Num GPIO activations detected: {x['num_gpio_notifications']}")
     print(f">>   Num MQTT messages published to the broker: {x['num_mqtt_messages']}")
+    print(f">>   ERROR: GPIO inputs detected but missing configuration: {x['ERROR_noconfig']}")
 
     x = g_stats["outputs"]
     print(f">> OUTPUTS:")
