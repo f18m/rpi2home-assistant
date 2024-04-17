@@ -47,6 +47,12 @@ g_mqtt_identifier_prefix = ""
 # MAIN HELPERS
 # =======================================================================================================
 
+def get_my_version():
+    try:
+        from importlib.metadata import version
+    except:
+        from importlib_metadata import version
+    return version(THIS_SCRIPT_PYPI_PACKAGE)
 
 def parse_command_line():
     """Parses the command line and returns the configuration as dictionary object."""
@@ -79,12 +85,7 @@ def parse_command_line():
     verbose = args.verbose
 
     if args.version:
-        try:
-            from importlib.metadata import version
-        except:
-            from importlib_metadata import version
-        this_script_version = version(THIS_SCRIPT_PYPI_PACKAGE)
-        print(f"Version: {this_script_version}")
+        print(f"Version: {get_my_version()}")
         sys.exit(0)
 
     return args
@@ -441,6 +442,7 @@ if __name__ == "__main__":
         )
         sys.exit(3)
 
+    print(f"{THIS_SCRIPT_PYPI_PACKAGE} version {get_my_version()} starting")
     try:
         sys.exit(asyncio.run(main_loop()))
     except KeyboardInterrupt:
