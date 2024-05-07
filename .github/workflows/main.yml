@@ -35,6 +35,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: install pypi-packaged dependencies
+      run: sudo pip3 install pytest
     - name: run unit tests
       run: pytest .
 
