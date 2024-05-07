@@ -38,5 +38,5 @@ jobs:
     - name: install pypi-packaged dependencies
       run: sudo pip3 install pytest
     - name: run unit tests
-      run: pytest .
+      run: pytest -v .
 
