@@ -29,3 +29,12 @@ jobs:
       run: sudo pip3 install black
     - name: lint the code
       run: black .
+
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: run unit tests
+      run: pytest .
+
