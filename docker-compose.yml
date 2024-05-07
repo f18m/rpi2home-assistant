@@ -1,0 +1,18 @@
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883" #default mqtt port
+      - "9001:9001" #default mqtt port for websockets
+    #volumes:
+    #  - ./config:/mosquitto/config:rw
+    #  - ./data:/mosquitto/data:rw
+    #  - ./log:/mosquitto/log:rw
+    restart: unless-stopped
+
+  ha-alarm-raspy2mqtt:
+    build: .
+    #depends_on:
+    #  - mqtt_broker
+    volumes:
+      - ./config.yaml:/app/config.yaml

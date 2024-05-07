@@ -19,9 +19,9 @@ import subprocess
 import time
 import queue
 from datetime import datetime, timezone
-from stats import *
-from config import *
-from constants import *
+from raspy2mqtt.stats import *
+from raspy2mqtt.config import *
+from raspy2mqtt.constants import *
 
 # =======================================================================================================
 # GLOBALs
@@ -440,12 +440,7 @@ async def main_loop():
     print_stats()
     return 0
 
-
-# =======================================================================================================
-# MAIN
-# =======================================================================================================
-
-if __name__ == "__main__":
+def main():
     if instance_already_running("ha-alarm-raspy2mqtt"):
         print(
             f"Sorry, detected another instance of this daemon is already running. Using the same I2C bus from 2 sofware programs is not recommended. Aborting."
@@ -457,3 +452,10 @@ if __name__ == "__main__":
         sys.exit(asyncio.run(main_loop()))
     except KeyboardInterrupt:
         print(f"Stopping due to CTRL+C")
+
+# =======================================================================================================
+# MAIN
+# =======================================================================================================
+
+if __name__ == "__main__":
+    main()
