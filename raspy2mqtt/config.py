@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import yaml
-from constants import *
+from raspy2mqtt.constants import *
 
 #
 # Author: fmontorsi
@@ -31,7 +31,7 @@ class CfgFile:
             if not isinstance(self.config, dict):
                 raise ValueError("Invalid YAML format: root element must be a dictionary")
             # check MQTT
-            if "mqtt_broker" not in self.config:
+            if "mqtt_broker" not in self.config or self.config["mqtt_broker"] is None:
                 raise ValueError("Missing 'mqtt_broker' section in the YAML config file")
             if "host" not in self.config["mqtt_broker"]:
                 raise ValueError("Missing 'mqtt_broker.host' field in the YAML config file")
