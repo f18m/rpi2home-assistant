@@ -44,12 +44,14 @@ g_mqtt_identifier_prefix = ""
 # MAIN HELPERS
 # =======================================================================================================
 
+
 def get_my_version():
     try:
         from importlib.metadata import version
     except:
         from importlib_metadata import version
     return version(THIS_SCRIPT_PYPI_PACKAGE)
+
 
 def parse_command_line():
     """Parses the command line and returns the configuration as dictionary object."""
@@ -150,7 +152,7 @@ def sample_optoisolated_inputs():
     g_optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
     g_stats["optoisolated_inputs"]["num_readings"] += 1
 
-    # FIXME: right now, it's hard to force-wake the coroutine 
+    # FIXME: right now, it's hard to force-wake the coroutine
     # which handles publishing to MQTT
     # the reason is that we should be using
     #   https://docs.python.org/3/library/asyncio-sync.html#asyncio.Event

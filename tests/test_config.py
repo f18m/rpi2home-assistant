@@ -6,6 +6,7 @@ def test_nonexisting_config_file_fails():
     x = CfgFile()
     assert x.load("a/path/that/does/not/exists") == False
 
+
 def test_empty_config_file_fails(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
@@ -15,13 +16,14 @@ def test_empty_config_file_fails(tmpdir):
     assert x.load(str(p)) == False
 
 
-MINIMAL_CFG="""
+MINIMAL_CFG = """
 mqtt_broker:
   host: something
 i2c_optoisolated_inputs: []
 gpio_inputs: []
 outputs: []
 """
+
 
 def test_minimal_config_file_succeeds(tmpdir):
     # create config file to test:
@@ -36,7 +38,8 @@ def test_minimal_config_file_succeeds(tmpdir):
     assert len(x.get_all_gpio_inputs()) == 0
     assert len(x.get_all_outputs()) == 0
 
-MINIMAL_CFG2="""
+
+MINIMAL_CFG2 = """
 mqtt_broker:
   host: something
 i2c_optoisolated_inputs:
@@ -57,6 +60,7 @@ outputs:
     active_low: true
 """
 
+
 def test_minimal_config_file2_succeeds(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
@@ -66,12 +70,12 @@ def test_minimal_config_file2_succeeds(tmpdir):
     assert x.load(str(p)) == True
     assert x.mqtt_broker_host == "something"
     assert x.mqtt_broker_user is None
-    assert x.get_optoisolated_input_config(1) == {'active_low': True, 'input_num': 1, 'name': 'opto_input_1'}
+    assert x.get_optoisolated_input_config(1) == {"active_low": True, "input_num": 1, "name": "opto_input_1"}
     assert len(x.get_all_gpio_inputs()) == 1
     assert len(x.get_all_outputs()) == 1
 
 
-INVALID_INPUTNUM_CFG="""
+INVALID_INPUTNUM_CFG = """
 mqtt_broker:
   host: something
 i2c_optoisolated_inputs:
@@ -81,6 +85,7 @@ gpio_inputs: []
 outputs: []
 """
 
+
 def test_wrong_config_file_fails(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
@@ -88,5 +93,3 @@ def test_wrong_config_file_fails(tmpdir):
 
     x = CfgFile()
     assert x.load(str(p)) == False
-
-
