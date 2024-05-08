@@ -1,0 +1,34 @@
+# Config file used by the docker-compose to start the ha-alarm-raspy2mqtt container
+
+mqtt_broker:
+  host: tests-mqtt-broker-1
+
+log_stats_every: 30
+
+# --disable-hw is provided when running integration tests, still we need a few entries to be able to test MQTT publish
+i2c_optoisolated_inputs:
+  - name: opto_input_1
+    input_num: 1
+    active_low: true
+  - name: opto_input_2
+    input_num: 2
+    active_low: true
+
+# --disable-hw is provided when running integration tests, still we need a few entries to be able to test MQTT publish
+gpio_inputs:
+  - name: radio_channel_a
+    gpio: 27
+    active_low: false
+    mqtt:
+      topic: alarmo/command
+      command: ARM_AWAY
+      code: none
+
+# --disable-hw is provided when running integration tests, still we need a few entries to be able to test MQTT publish
+outputs:
+  - name: output_1
+    gpio: 20
+    active_low: true
+  - name: output_2
+    gpio: 21
+    active_low: true
