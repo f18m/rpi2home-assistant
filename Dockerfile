@@ -20,4 +20,5 @@ WORKDIR /app
 COPY --from=builder /app/dist/*.whl .
 RUN pip3 install --no-cache-dir *.whl
 
-CMD [ "raspy2mqtt", "-c", "/app/config.yaml"]
+ENV PYTHONUNBUFFERED=1
+CMD [ "raspy2mqtt" ]

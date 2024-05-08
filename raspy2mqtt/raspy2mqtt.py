@@ -64,8 +64,15 @@ def parse_command_line():
     parser.add_argument(
         "-c",
         "--config",
-        help="YAML file specifying the software configuration. Defaults to 'config.yaml'",
-        default="config.yaml",
+        help="YAML file specifying the software configuration. Defaults to '/etc/ha-alarm-raspy2mqtt.yaml'",
+        default="/etc/ha-alarm-raspy2mqtt.yaml",
+    )
+    parser.add_argument(
+        "-d",
+        "--disable-hw",
+        help="This is mostly a debugging option; it disables interactions with HW components to ease integration tests",
+        action="store_true",
+        default=False,
     )
     parser.add_argument("-v", "--verbose", help="Be verbose.", action="store_true", default=False)
     parser.add_argument(
@@ -79,9 +86,6 @@ def parse_command_line():
     if "COLUMNS" not in os.environ:
         os.environ["COLUMNS"] = "120"  # avoid too many line wraps
     args = parser.parse_args()
-
-    global verbose
-    verbose = args.verbose
 
     if args.version:
         print(f"Version: {get_my_version()}")
@@ -115,7 +119,7 @@ def instance_already_running(label="default"):
     return already_running
 
 
-def create_aiomqtt_client(cfg: CfgFile, identifier_str: str):
+def create_aiomqtt_client(cfg: AppConfig, identifier_str: str):
     return aiomqtt.Client(
         hostname=cfg.mqtt_broker_host,
         port=cfg.mqtt_broker_port,
@@ -161,9 +165,64 @@ def sample_optoisolated_inputs():
     # publish this to MQTT (depends on the MQTT publish frequency... nyquist frequency)
 
 
-def publish_mqtt_message(device):
+def on_gpio_input(device):
     print(f"!! Detected activation of GPIO{device.pin.number} !! ")
     g_gpio_queue.put(device.pin.number)
+
+
+def init_hardware(cfg: AppConfig):
+    # check if the opto-isolated input board from Sequent Microsystem is indeed present:
+    try:
+        _ = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
+    except FileNotFoundError as e:
+        print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
+        return 2
+    except OSError as e:
+        print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
+        return 2
+    except BaseException as e:
+        print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
+        return 2
+
+    # setup GPIO connected to the pushbutton (input) and
+    # assign the when_held function to be called when the button is held for more than 5 seconds
+    # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
+    if "GPIOZERO_PIN_FACTORY" in os.environ:
+        print(f"GPIO factory backend is: {os.environ['GPIOZERO_PIN_FACTORY']}")
+    else:
+        print(
+            f"GPIO factory backend is the default one. This might fail on newer Raspbian versions with Linux kernel >= 6.6.20"
+        )
+    buttons = []
+    print(f"Initializing SequentMicrosystem GPIO shutdown button")
+    b = gpiozero.Button(SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, hold_time=5)
+    b.when_held = shutdown
+    buttons.append(b)
+
+    print(f"Initializing SequentMicrosystem GPIO interrupt line")
+    b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pull_up=True)
+    b.when_held = sample_optoisolated_inputs
+    buttons.append(b)
+
+    # setup GPIO pins for the INPUTs
+    print(f"Initializing GPIO input pins")
+    for input_ch in cfg.get_all_gpio_inputs():
+        # the short hold-time is to ensure that the digital input is served ASAP (i.e. on_gpio_input gets
+        # invoked almost immediately)
+        active_high = not bool(input_ch["active_low"])
+        b = gpiozero.Button(input_ch["gpio"], hold_time=0.1, pull_up=None, active_state=active_high)
+        b.when_held = on_gpio_input
+        buttons.append(b)
+
+    # setup GPIO pins for the OUTPUTs
+    print(f"Initializing GPIO output pins")
+    global g_output_channels
+    for output_ch in cfg.get_all_outputs():
+        output_name = output_ch["name"]
+        active_high = not bool(output_ch["active_low"])
+        g_output_channels[output_name] = gpiozero.LED(pin=output_ch["gpio"], active_high=active_high)
+
+    return buttons
 
 
 # =======================================================================================================
@@ -171,7 +230,7 @@ def publish_mqtt_message(device):
 # =======================================================================================================
 
 
-async def print_stats_periodically(cfg: CfgFile):
+async def print_stats_periodically(cfg: AppConfig):
     loop = asyncio.get_running_loop()
     next_stat_time = loop.time() + cfg.stats_log_period_sec
     while True:
@@ -183,7 +242,7 @@ async def print_stats_periodically(cfg: CfgFile):
         await asyncio.sleep(1)
 
 
-async def publish_optoisolated_inputs(cfg: CfgFile):
+async def publish_optoisolated_inputs(cfg: AppConfig):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
@@ -230,7 +289,7 @@ async def publish_optoisolated_inputs(cfg: CfgFile):
             await asyncio.sleep(cfg.mqtt_publish_period_sec - update_loop_duration_sec)
 
 
-async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
+async def process_gpio_inputs_queue_and_publish(cfg: AppConfig):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
@@ -283,7 +342,7 @@ async def process_gpio_inputs_queue_and_publish(cfg: CfgFile):
             g_gpio_queue.task_done()
 
 
-async def subscribe_and_activate_outputs(cfg: CfgFile):
+async def subscribe_and_activate_outputs(cfg: AppConfig):
     """
     This function may throw an aiomqtt.MqttError exception indicating a connection issue!
     """
@@ -313,7 +372,7 @@ async def subscribe_and_activate_outputs(cfg: CfgFile):
             g_stats["outputs"]["num_mqtt_commands_processed"] += 1
 
 
-async def publish_outputs_state(cfg: CfgFile):
+async def publish_outputs_state(cfg: AppConfig):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
@@ -352,66 +411,25 @@ async def main_loop():
     global g_stats, g_mqtt_identifier_prefix
 
     args = parse_command_line()
-    cfg = CfgFile()
+    cfg = AppConfig()
     if not cfg.load(args.config):
         return 1  # invalid config file... abort with failure exit code
 
-    # check if the opto-isolated input board from Sequent Microsystem is indeed present:
-    try:
-        _ = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
-    except FileNotFoundError as e:
-        print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
-        return 2
-    except OSError as e:
-        print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
-        return 2
-    except BaseException as e:
-        print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
-        return 2
+    # merge CLI options into the configuration object:
+    cfg.disable_hw = args.disable_hw
+    cfg.verbose = args.verbose
 
-    # setup GPIO connected to the pushbutton (input) and
-    # assign the when_held function to be called when the button is held for more than 5 seconds
-    # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
-    if "GPIOZERO_PIN_FACTORY" in os.environ:
-        print(f"GPIO factory backend is: {os.environ['GPIOZERO_PIN_FACTORY']}")
+    if cfg.disable_hw:
+        print("Skipping HW initialization (--disable-hw was given)")
     else:
-        print(
-            f"GPIO factory backend is the default one. This might fail on newer Raspbian versions with Linux kernel >= 6.6.20"
-        )
-    buttons = []
-    print(f"Initializing SequentMicrosystem GPIO shutdown button")
-    b = gpiozero.Button(SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, hold_time=5)
-    b.when_held = shutdown
-    buttons.append(b)
+        print("Initializing HW (optoisolated inputs, GPIOs, etc)")
+        button_instances = init_hardware(cfg)
 
-    print(f"Initializing SequentMicrosystem GPIO interrupt line")
-    b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pull_up=True)
-    b.when_held = sample_optoisolated_inputs
-    buttons.append(b)
-
-    # setup GPIO pins for the INPUTs
-    print(f"Initializing GPIO input pins")
-    for input_ch in cfg.get_all_gpio_inputs():
-        # the short hold-time is to ensure that the digital input is served ASAP (i.e. publish_mqtt_message gets
-        # invoked almost immediately)
-        active_high = not bool(input_ch["active_low"])
-        b = gpiozero.Button(input_ch["gpio"], hold_time=0.1, pull_up=None, active_state=active_high)
-        b.when_held = publish_mqtt_message
-        buttons.append(b)
-
-    # setup GPIO pins for the OUTPUTs
-    print(f"Initializing GPIO output pins")
-    global g_output_channels
-    for output_ch in cfg.get_all_outputs():
-        output_name = output_ch["name"]
-        active_high = not bool(output_ch["active_low"])
-        g_output_channels[output_name] = gpiozero.LED(pin=output_ch["gpio"], active_high=active_high)
+        # do first sampling operation immediately:
+        sample_optoisolated_inputs()
 
     # before launching MQTT connections, define a unique MQTT prefix identifier:
     g_mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-
-    # do first sampling operation immediately:
-    sample_optoisolated_inputs()
 
     # wrap with error-handling code the main loop
     keyb_interrupted = False

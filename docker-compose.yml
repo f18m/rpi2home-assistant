@@ -15,4 +15,5 @@ services:
     depends_on:
       - mqtt-broker
     volumes:
-      - ./config.yaml:/app/config.yaml
+      - ./config.yaml:/etc/ha-alarm-raspy2mqtt.yaml
+    entrypoint: raspy2mqtt --disable-hw

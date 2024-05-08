@@ -1,9 +1,9 @@
 import pytest
-from raspy2mqtt.config import CfgFile
+from raspy2mqtt.config import AppConfig
 
 
 def test_nonexisting_config_file_fails():
-    x = CfgFile()
+    x = AppConfig()
     assert x.load("a/path/that/does/not/exists") == False
 
 
@@ -12,7 +12,7 @@ def test_empty_config_file_fails(tmpdir):
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
     p.write("\n")
 
-    x = CfgFile()
+    x = AppConfig()
     assert x.load(str(p)) == False
 
 
@@ -30,7 +30,7 @@ def test_minimal_config_file_succeeds(tmpdir):
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
     p.write(MINIMAL_CFG)
 
-    x = CfgFile()
+    x = AppConfig()
     assert x.load(str(p)) == True
     assert x.mqtt_broker_host == "something"
     assert x.mqtt_broker_user is None
@@ -66,7 +66,7 @@ def test_minimal_config_file2_succeeds(tmpdir):
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
     p.write(MINIMAL_CFG2)
 
-    x = CfgFile()
+    x = AppConfig()
     assert x.load(str(p)) == True
     assert x.mqtt_broker_host == "something"
     assert x.mqtt_broker_user is None
@@ -91,5 +91,5 @@ def test_wrong_config_file_fails(tmpdir):
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
     p.write(INVALID_INPUTNUM_CFG)
 
-    x = CfgFile()
+    x = AppConfig()
     assert x.load(str(p)) == False

@@ -10,18 +10,24 @@ from raspy2mqtt.constants import *
 #
 
 # =======================================================================================================
-# CfgFile
+# AppConfig
 # =======================================================================================================
 
 
-class CfgFile:
+class AppConfig:
     """
-    This class represents the YAML config file for this utility
+    This class represents the configuration of this application.
+    It contains helpers to read the YAML config file for this utility plus helpers to
+    receive configurations from CLI options.
     """
 
     def __init__(self):
         self.config: Optional[Dict[str, Any]] = None
         self.optoisolated_inputs_map: Optional[Dict[int, Any]] = None  # None means "not loaded at all"
+
+        # config options related to CLI options:
+        self.disable_hw = False  # can be get/set from the outside
+        self.verbose = False
 
     def load(self, cfg_yaml: str) -> bool:
         print(f"Loading configuration file {cfg_yaml}")
