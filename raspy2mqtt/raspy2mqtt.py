@@ -440,6 +440,7 @@ async def main_loop():
     print_stats()
     return 0
 
+
 def main():
     if instance_already_running("ha-alarm-raspy2mqtt"):
         print(
@@ -452,6 +453,7 @@ def main():
         sys.exit(asyncio.run(main_loop()))
     except KeyboardInterrupt:
         print(f"Stopping due to CTRL+C")
+
 
 # =======================================================================================================
 # MAIN

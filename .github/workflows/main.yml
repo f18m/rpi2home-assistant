@@ -36,7 +36,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: install pypi-packaged dependencies
-      run: sudo pip3 install pytest
+      run: sudo pip3 install pytest pytest-docker-compose
     - name: run unit tests
       run: pytest -v .
 

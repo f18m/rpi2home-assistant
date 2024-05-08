@@ -1,3 +1,3 @@
 import pytest
 
-pytest_plugins = ["docker_compose"]
+# pytest_plugins = ["docker_compose"]
