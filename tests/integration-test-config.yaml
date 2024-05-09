@@ -2,6 +2,7 @@
 
 mqtt_broker:
   host: tests-mqtt-broker-1
+  publish_period_msec: 500
 
 log_stats_every: 30
 

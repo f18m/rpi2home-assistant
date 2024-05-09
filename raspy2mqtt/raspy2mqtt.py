@@ -419,6 +419,12 @@ async def main_loop():
     cfg.disable_hw = args.disable_hw
     cfg.verbose = args.verbose
 
+    # merge env vars into the configuration object:
+    if os.environ.get('DISABLE_HW', None) != None:
+        cfg.disable_hw = True
+    if os.environ.get('VERBOSE', None) != None:
+        cfg.verbose = True
+
     if cfg.disable_hw:
         print("Skipping HW initialization (--disable-hw was given)")
     else:

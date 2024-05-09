@@ -14,4 +14,5 @@ services:
       - mqtt-broker
     volumes:
       - ./integration-test-config.yaml:/etc/ha-alarm-raspy2mqtt.yaml:ro
-    entrypoint: raspy2mqtt --disable-hw
+    environment:
+      - DISABLE_HW=true

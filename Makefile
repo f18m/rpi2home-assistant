@@ -55,3 +55,10 @@ raspbian_show_logs:
 
 raspbian_update_dependencies:
 	$(BINDEST)/ha-alarm-raspy2mqtt-venv/bin/pip3 install --upgrade .
+
+
+docker:
+	docker build -t ha-alarm-raspy2mqtt:latest .
+
+test:
+	cd tests && pytest -vvvv --log-level=INFO -s -m integration
