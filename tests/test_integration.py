@@ -10,17 +10,23 @@ from typing import Optional
 
 # MosquittoContainer
 
-testcontainer_client_id = "TESTCONTAINER-CLIENT"
 
 class MosquittoContainer(DockerContainer):
     """
     Specialization of DockerContainer for MQTT broker Mosquitto.
     """
 
-    def __init__(self, image: str = "eclipse-mosquitto:latest", port: int = 1883, configfile: Optional[str] = None, password: Optional[str] = None, **kwargs) -> None:
+    TESTCONTAINER_CLIENT_ID = "TESTCONTAINER-CLIENT"
+    DEFAULT_PORT = 1883
+
+    def __init__(self, image: str = "eclipse-mosquitto:latest", port: int = None, configfile: Optional[str] = None, password: Optional[str] = None, **kwargs) -> None:
         #raise_for_deprecated_parameter(kwargs, "port_to_expose", "port")
         super().__init__(image, **kwargs)
-        self.port = port
+
+        if port is None:
+            self.port = MosquittoContainer.DEFAULT_PORT
+        else:
+            self.port = port
         self.password = password
 
         # setup container:
@@ -76,7 +82,7 @@ class MosquittoContainer(DockerContainer):
         err = paho.mqtt.enums.MQTTErrorCode.MQTT_ERR_SUCCESS
         if self.client is None:
             self.client = mqtt_client.Client(
-                    client_id=testcontainer_client_id, 
+                    client_id=MosquittoContainer.TESTCONTAINER_CLIENT_ID, 
                     callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2,
                     userdata=self,
                     **kwargs)
@@ -92,13 +98,28 @@ class MosquittoContainer(DockerContainer):
         super().start()
         self._connect()
         return self
+    
+    class WatchedTopicInfo:
+        def __init__(self):
+            self.count = 0
+            self.timestamp_start_watch = time.time()
+        def increment_msg_count(self):
+            self.count += 1
+        def get_count(self):
+            return self.count
+        def get_rate(self):
+            duration = time.time() - self.timestamp_start_watch
+            if duration > 0:
+                return self.count / duration
+            return 0
 
     def on_message(client, mosquitto_container, msg):
-        print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+        # very verbose but useful for debug:
+        #print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
         if msg.topic == "$SYS/broker/messages/received":
             mosquitto_container.msg_queue.put(msg)
         else:
-            mosquitto_container.watched_topics[msg.topic] += 1
+            mosquitto_container.watched_topics[msg.topic].increment_msg_count()
 
     def get_messages_received(self) -> int:
         """
@@ -127,7 +148,7 @@ class MosquittoContainer(DockerContainer):
         if not client.is_connected():
             raise RuntimeError(f"Could not connect to Mosquitto broker: {err}")
 
-        self.watched_topics[topic] = 0
+        self.watched_topics[topic] = MosquittoContainer.WatchedTopicInfo()
 
         # after subscribe() the on_message() callback will be invoked
         client.subscribe(topic)
@@ -135,7 +156,36 @@ class MosquittoContainer(DockerContainer):
     def get_messages_received_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
             return 0
-        return self.watched_topics[topic]
+        return self.watched_topics[topic].get_count()
+    def get_message_rate_in_watched_topic(self, topic: str) -> int:
+        if topic not in self.watched_topics:
+            return 0
+        return self.watched_topics[topic].get_rate()
+
+
+class Raspy2MQTTContainer(DockerContainer):
+    """
+    Specialization of DockerContainer to test this same repository artifact.
+    """
+
+    CONFIG_FILE = "integration-test-config.yaml"
+
+    def __init__(self, broker: MosquittoContainer) -> None:
+        super().__init__(image="ha-alarm-raspy2mqtt")
+
+        cfgfile = os.path.join(os.getcwd(), Raspy2MQTTContainer.CONFIG_FILE)
+        self.with_volume_mapping(cfgfile, "/etc/ha-alarm-raspy2mqtt.yaml")
+        self.with_env("DISABLE_HW", "true")
+
+        # IMPORTANT: to link with the MQTT broker we want to use the IP address internal to the docker network,
+        #            and the standard MQTT port. The localhost:exposed_port address is not reachable from a
+        #            docker container that has been started inside a docker network!
+        broker_container = broker.get_wrapped_container()
+        broker_ip = broker.get_docker_client().bridge_ip(broker_container.id)
+        print(f"Linking the {self.image} container with the MQTT broker at host:ip {broker_ip}:{MosquittoContainer.DEFAULT_PORT}")
+
+        self.with_env("MQTT_BROKER_HOST", broker_ip)
+        self.with_env("MQTT_BROKER_PORT", MosquittoContainer.DEFAULT_PORT)
 
 
 # GLOBALs
@@ -150,12 +200,13 @@ def setup(request):
     Fixture to setup and teardown the MQTT broker
     """
     broker.start()
-    print("started")
+    print("Broker successfully started")
 
     def remove_container():
         broker.stop()
 
     request.addfinalizer(remove_container)
+
 
 # TESTS
 
@@ -163,16 +214,27 @@ def setup(request):
 def test_basic_publish():
 
     topic_under_test = "home/opto_input_1"
-    broker.watch_topic(topic_under_test)
+    min_expected_msg = 10
+    expected_msg_rate = 2   # in msgs/sec; see the 'publish_period_msec' inside Raspy2MQTTContainer.CONFIG_FILE  
 
-    with DockerContainer("ha-alarm-raspy2mqtt").with_volume_mapping(os.path.join(os.getcwd(), "integration-test-config.yaml"), "/etc/ha-alarm-raspy2mqtt.yaml").with_env("DISABLE_HW", "true") as container:
-        #time.sleep(1000)
-        msg_count = broker.get_messages_received_in_watched_topic(topic_under_test)
-        while msg_count < 10:
-            print(msg_count)
+    broker.watch_topic(topic_under_test)
+    with Raspy2MQTTContainer(broker=broker) as container:
+        msg_count = 0
+        while msg_count < min_expected_msg:
+            print(f"In watched topic [{topic_under_test}] counted {msg_count} messages so far...")
             time.sleep(1)
             msg_count = broker.get_messages_received_in_watched_topic(topic_under_test)
+
+        msg_rate = broker.get_message_rate_in_watched_topic(topic_under_test)
+        def almost_equal(x,y,threshold=0.5):
+            return abs(x-y) < threshold
+        
+        assert almost_equal(msg_rate, expected_msg_rate)
+
+        print("BROKER LOGS:")
         print(broker.get_logs()[0].decode())
+        print("CONTAINER LOGS:")
         print(container.get_logs()[0].decode())
-        print(broker.get_messages_received())
+        print(f"Msg rate in topic [{topic_under_test}]: {msg_rate} msgs/sec")
+        print(f"Total messages received by the broker: {broker.get_messages_received()}")
     

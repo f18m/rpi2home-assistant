@@ -134,6 +134,10 @@ class AppConfig:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
 
+        print(f"Successfully loaded configuration")
+        return True
+    
+    def print_config_summary(self):
         print(f"MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
         if self.mqtt_broker_user != None:
             print(f"MQTT broker authentication: ON")
@@ -142,15 +146,16 @@ class AppConfig:
         print(f"MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
         print(f"MQTT publish period: {self.mqtt_publish_period_sec}s")
 
-        print(f"Successfully loaded configuration")
-
-        return True
 
     @property
     def mqtt_broker_host(self) -> str:
         if self.config is None:
             return ""  # no meaningful default value
         return self.config["mqtt_broker"]["host"]
+    
+    @mqtt_broker_host.setter
+    def mqtt_broker_host(self, value):
+        self.config["mqtt_broker"]["host"] = value
 
     @property
     def mqtt_broker_user(self) -> str:
@@ -175,6 +180,10 @@ class AppConfig:
         if "port" not in self.config["mqtt_broker"]:
             return 1883  # the default MQTT broker port
         return self.config["mqtt_broker"]["port"]
+
+    @mqtt_broker_port.setter
+    def mqtt_broker_port(self, value):
+        self.config["mqtt_broker"]["port"] = int(value)
 
     @property
     def mqtt_reconnection_period_sec(self) -> float:

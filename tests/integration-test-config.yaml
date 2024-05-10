@@ -1,7 +1,7 @@
 # Config file used by the docker-compose to start the ha-alarm-raspy2mqtt container
 
 mqtt_broker:
-  host: tests-mqtt-broker-1
+  host: overridden_via_env_variable
   publish_period_msec: 500
 
 log_stats_every: 30
