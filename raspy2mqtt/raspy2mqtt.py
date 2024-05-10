@@ -420,16 +420,16 @@ async def main_loop():
     cfg.verbose = args.verbose
 
     # merge env vars into the configuration object:
-    if os.environ.get('DISABLE_HW', None) != None:
+    if os.environ.get("DISABLE_HW", None) != None:
         cfg.disable_hw = True
-    if os.environ.get('VERBOSE', None) != None:
+    if os.environ.get("VERBOSE", None) != None:
         cfg.verbose = True
-    if os.environ.get('MQTT_BROKER_HOST', None) != None:
+    if os.environ.get("MQTT_BROKER_HOST", None) != None:
         # this particular env var can override the value coming from the config file:
-        cfg.mqtt_broker_host = os.environ.get('MQTT_BROKER_HOST')
-    if os.environ.get('MQTT_BROKER_PORT', None) != None:
+        cfg.mqtt_broker_host = os.environ.get("MQTT_BROKER_HOST")
+    if os.environ.get("MQTT_BROKER_PORT", None) != None:
         # this particular env var can override the value coming from the config file:
-        cfg.mqtt_broker_port = os.environ.get('MQTT_BROKER_PORT')
+        cfg.mqtt_broker_port = os.environ.get("MQTT_BROKER_PORT")
 
     cfg.print_config_summary()
 

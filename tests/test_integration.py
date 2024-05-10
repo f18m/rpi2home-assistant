@@ -2,7 +2,8 @@ import pytest, os, time
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 from testcontainers.core.waiting_utils import wait_container_is_ready
-#from testcontainers.core.utils import raise_for_deprecated_parameter
+
+# from testcontainers.core.utils import raise_for_deprecated_parameter
 from paho.mqtt import client as mqtt_client
 import paho.mqtt.enums
 from queue import Queue
@@ -19,8 +20,15 @@ class MosquittoContainer(DockerContainer):
     TESTCONTAINER_CLIENT_ID = "TESTCONTAINER-CLIENT"
     DEFAULT_PORT = 1883
 
-    def __init__(self, image: str = "eclipse-mosquitto:latest", port: int = None, configfile: Optional[str] = None, password: Optional[str] = None, **kwargs) -> None:
-        #raise_for_deprecated_parameter(kwargs, "port_to_expose", "port")
+    def __init__(
+        self,
+        image: str = "eclipse-mosquitto:latest",
+        port: int = None,
+        configfile: Optional[str] = None,
+        password: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        # raise_for_deprecated_parameter(kwargs, "port_to_expose", "port")
         super().__init__(image, **kwargs)
 
         if port is None:
@@ -38,7 +46,7 @@ class MosquittoContainer(DockerContainer):
         if self.password:
             # TODO: add authentication
             pass
-            #self.with_command(f"redis-server --requirepass {self.password}")
+            # self.with_command(f"redis-server --requirepass {self.password}")
 
         # helper used to turn asynchronous methods into synchronous:
         self.msg_queue = Queue()
@@ -82,31 +90,35 @@ class MosquittoContainer(DockerContainer):
         err = paho.mqtt.enums.MQTTErrorCode.MQTT_ERR_SUCCESS
         if self.client is None:
             self.client = mqtt_client.Client(
-                    client_id=MosquittoContainer.TESTCONTAINER_CLIENT_ID, 
-                    callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2,
-                    userdata=self,
-                    **kwargs)
-        
+                client_id=MosquittoContainer.TESTCONTAINER_CLIENT_ID,
+                callback_api_version=mqtt_client.CallbackAPIVersion.VERSION2,
+                userdata=self,
+                **kwargs,
+            )
+
             # connect() is a blocking call:
             err = self.client.connect(self.get_container_host_ip(), int(self.get_exposed_port(self.port)))
             self.client.on_message = MosquittoContainer.on_message
-            self.client.loop_start() # launch a thread to call loop() and dequeue the message
-        
+            self.client.loop_start()  # launch a thread to call loop() and dequeue the message
+
         return self.client, err
 
     def start(self) -> "MosquittoContainer":
         super().start()
         self._connect()
         return self
-    
+
     class WatchedTopicInfo:
         def __init__(self):
             self.count = 0
             self.timestamp_start_watch = time.time()
+
         def increment_msg_count(self):
             self.count += 1
+
         def get_count(self):
             return self.count
+
         def get_rate(self):
             duration = time.time() - self.timestamp_start_watch
             if duration > 0:
@@ -115,7 +127,7 @@ class MosquittoContainer(DockerContainer):
 
     def on_message(client, mosquitto_container, msg):
         # very verbose but useful for debug:
-        #print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+        # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
         if msg.topic == "$SYS/broker/messages/received":
             mosquitto_container.msg_queue.put(msg)
         else:
@@ -142,7 +154,7 @@ class MosquittoContainer(DockerContainer):
 
     def watch_topic(self, topic: str):
         if topic in self.watched_topics:
-            return # nothing to do... the topic had already been subscribed
+            return  # nothing to do... the topic had already been subscribed
 
         client, err = self.get_client()
         if not client.is_connected():
@@ -152,11 +164,12 @@ class MosquittoContainer(DockerContainer):
 
         # after subscribe() the on_message() callback will be invoked
         client.subscribe(topic)
-        
+
     def get_messages_received_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
             return 0
         return self.watched_topics[topic].get_count()
+
     def get_message_rate_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
             return 0
@@ -182,7 +195,9 @@ class Raspy2MQTTContainer(DockerContainer):
         #            docker container that has been started inside a docker network!
         broker_container = broker.get_wrapped_container()
         broker_ip = broker.get_docker_client().bridge_ip(broker_container.id)
-        print(f"Linking the {self.image} container with the MQTT broker at host:ip {broker_ip}:{MosquittoContainer.DEFAULT_PORT}")
+        print(
+            f"Linking the {self.image} container with the MQTT broker at host:ip {broker_ip}:{MosquittoContainer.DEFAULT_PORT}"
+        )
 
         self.with_env("MQTT_BROKER_HOST", broker_ip)
         self.with_env("MQTT_BROKER_PORT", MosquittoContainer.DEFAULT_PORT)
@@ -193,6 +208,7 @@ class Raspy2MQTTContainer(DockerContainer):
 broker = MosquittoContainer()
 
 # HELPERS
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup(request):
@@ -210,12 +226,13 @@ def setup(request):
 
 # TESTS
 
+
 @pytest.mark.integration
 def test_basic_publish():
 
     topic_under_test = "home/opto_input_1"
     min_expected_msg = 10
-    expected_msg_rate = 2   # in msgs/sec; see the 'publish_period_msec' inside Raspy2MQTTContainer.CONFIG_FILE  
+    expected_msg_rate = 2  # in msgs/sec; see the 'publish_period_msec' inside Raspy2MQTTContainer.CONFIG_FILE
 
     broker.watch_topic(topic_under_test)
     with Raspy2MQTTContainer(broker=broker) as container:
@@ -226,9 +243,10 @@ def test_basic_publish():
             msg_count = broker.get_messages_received_in_watched_topic(topic_under_test)
 
         msg_rate = broker.get_message_rate_in_watched_topic(topic_under_test)
-        def almost_equal(x,y,threshold=0.5):
-            return abs(x-y) < threshold
-        
+
+        def almost_equal(x, y, threshold=0.5):
+            return abs(x - y) < threshold
+
         assert almost_equal(msg_rate, expected_msg_rate)
 
         print("BROKER LOGS:")
@@ -237,4 +255,3 @@ def test_basic_publish():
         print(container.get_logs()[0].decode())
         print(f"Msg rate in topic [{topic_under_test}]: {msg_rate} msgs/sec")
         print(f"Total messages received by the broker: {broker.get_messages_received()}")
-    

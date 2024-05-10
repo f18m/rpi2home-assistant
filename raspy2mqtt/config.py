@@ -136,7 +136,7 @@ class AppConfig:
 
         print(f"Successfully loaded configuration")
         return True
-    
+
     def print_config_summary(self):
         print(f"MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
         if self.mqtt_broker_user != None:
@@ -146,13 +146,12 @@ class AppConfig:
         print(f"MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
         print(f"MQTT publish period: {self.mqtt_publish_period_sec}s")
 
-
     @property
     def mqtt_broker_host(self) -> str:
         if self.config is None:
             return ""  # no meaningful default value
         return self.config["mqtt_broker"]["host"]
-    
+
     @mqtt_broker_host.setter
     def mqtt_broker_host(self, value):
         self.config["mqtt_broker"]["host"] = value
