@@ -231,15 +231,16 @@ def init_hardware(cfg: AppConfig):
 
 
 async def print_stats_periodically(cfg: AppConfig):
-    loop = asyncio.get_running_loop()
-    next_stat_time = loop.time() + cfg.stats_log_period_sec
+    # loop = asyncio.get_running_loop()
+    next_stat_time = time.time() + cfg.stats_log_period_sec
+    print(f"fmon {time.time()} -> {next_stat_time}")
     while True:
         # Print out stats to help debugging
-        if loop.time() >= next_stat_time:
+        if time.time() >= next_stat_time:
             print_stats()
-            next_stat_time = loop.time() + cfg.stats_log_period_sec
+            next_stat_time = time.time() + cfg.stats_log_period_sec
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.25)
 
 
 async def publish_optoisolated_inputs(cfg: AppConfig):
@@ -469,6 +470,7 @@ async def main_loop():
             print("Stopped by CTRL+C... aborting")
             keyb_interrupted = True
 
+    print(f"Exiting gracefully with exit code 0... printing stats for the last time:")
     print_stats()
     return 0
 

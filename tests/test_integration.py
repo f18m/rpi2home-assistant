@@ -264,6 +264,7 @@ def test_publish_optoisolated_inputs():
         time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
         if not container.is_running():
             print(f"Container under test has stopped running... test failed.")
+            container.print_logs()
             assert False
 
         broker.watch_topics(topics_under_test)  # start watching topic only after start to get accurate msg rate
