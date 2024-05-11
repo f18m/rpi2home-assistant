@@ -290,7 +290,7 @@ async def publish_optoisolated_inputs(cfg: AppConfig):
             if actual_sleep_time_sec > update_loop_duration_sec:
                 # adjust for the time it took to update on MQTT broker all topics
                 actual_sleep_time_sec -= update_loop_duration_sec
-            
+
             await asyncio.sleep(actual_sleep_time_sec)
 
 
@@ -445,8 +445,10 @@ async def main_loop():
         class DummyOutputCh:
             def __init__(self) -> None:
                 self.is_lit = False
+
             def on(self):
                 pass
+
             def off(self):
                 pass
 
@@ -495,7 +497,7 @@ async def main_loop():
             # IMPORTANT: this seems to work correctly/as-expected only in Python >=3.11.4 (including 3.12)
             # see this note: https://docs.python.org/3/whatsnew/3.12.html, which contains something that might be related:
             #  'When a try-except* construct handles the entire ExceptionGroup and raises one other exception,
-            #   that exception is no longer wrapped in an ExceptionGroup. 
+            #   that exception is no longer wrapped in an ExceptionGroup.
             #   Also changed in version 3.11.4. (Contributed by Irit Katriel in gh-103590.)'
             print(f"Got exception of type [{e}], which is unhandled.")
     print(f"Exiting gracefully with exit code 0... printing stats for the last time:")
