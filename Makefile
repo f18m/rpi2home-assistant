@@ -61,4 +61,5 @@ docker:
 	docker build -t ha-alarm-raspy2mqtt:latest .
 
 test:
+	cd tests && pytest -vvv --log-level=INFO -m unit
 	cd tests && pytest -vvvv --log-level=INFO -s -m integration

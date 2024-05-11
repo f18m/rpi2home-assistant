@@ -39,7 +39,17 @@ jobs:
     - name: install pypi-packaged dependencies for unit and integration tests
       run: sudo pip3 install pytest testcontainers paho-mqtt
 
+    # FIXME: we should have all dependencies centralized in the TOML file and install them as:
+    # - name: Install dependencies
+    #   run: |
+    #     poetry install --no-interaction --with dev --all-extras
+    #     poetry show --tree
+
     - name: run unit tests
       run: pytest -vvv -m unit
+
+
+    - name: build docker image
+      run: docker build -t ha-alarm-raspy2mqtt:latest .
     - name: run integration tests
       run: pytest -vvv --capture=no -m integration
