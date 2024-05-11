@@ -269,7 +269,7 @@ def test_publish_optoisolated_inputs():
 
         broker.watch_topics(topics_under_test)  # start watching topic only after start to get accurate msg rate
         print(f"Waiting 6 seconds to measure msg rate in topics: {topics_under_test}")
-        time.sleep(6)
+        time.sleep(600)
 
         broker.print_logs()
         container.print_logs()
