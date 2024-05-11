@@ -211,7 +211,10 @@ class Raspy2MQTTContainer(DockerContainer):
         self.with_env("MQTT_BROKER_PORT", MosquittoContainer.DEFAULT_PORT)
 
     def is_running(self):
-        return self.get_wrapped_container().attrs["State"] == "running"
+        self.get_wrapped_container().reload() # force refresh of container status
+        #status = self.get_wrapped_container().attrs["State"]['Status']
+        status = self.get_wrapped_container().status # same as above
+        return status == "running"
 
     def print_logs(self) -> str:
         print("** Raspy2MQTTContainer LOGS [STDOUT]:")
@@ -277,4 +280,6 @@ def test_basic_publish():
         def almost_equal(x, y, threshold=0.5):
             return abs(x - y) < threshold
 
+        # checks
+        assert msg_count >= min_expected_msg
         assert almost_equal(msg_rate, expected_msg_rate)
