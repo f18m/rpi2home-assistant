@@ -177,6 +177,11 @@ class MosquittoContainer(DockerContainer):
             return 0
         return self.watched_topics[topic].get_rate()
 
+    def print_logs(self) -> str:
+        print("** BROKER LOGS [STDOUT]:")
+        print(self.get_logs()[0].decode())
+        print("** BROKER LOGS [STDERR]:")
+        print(self.get_logs()[1].decode())
 
 class Raspy2MQTTContainer(DockerContainer):
     """
@@ -207,6 +212,12 @@ class Raspy2MQTTContainer(DockerContainer):
 
     def is_running(self):
         return self.get_wrapped_container().attrs["State"] == "running"
+
+    def print_logs(self) -> str:
+        print("** Raspy2MQTTContainer LOGS [STDOUT]:")
+        print(self.get_logs()[0].decode())
+        print("** Raspy2MQTTContainer LOGS [STDERR]:")
+        print(self.get_logs()[1].decode())
 
 
 # GLOBALs
@@ -254,11 +265,11 @@ def test_basic_publish():
                 print(f"Container under test has stopped running... test failed.")
                 break
 
-        print("BROKER LOGS:")
-        print(broker.get_logs()[0].decode())
-        print("CONTAINER LOGS:")
-        print(container.get_logs()[0].decode())
+        broker.print_logs()
+        container.print_logs()
 
+        print("** TEST RESULTS")
+        print(f"Total messages in topic [{topic_under_test}]: {msg_count} msgs")
         msg_rate = broker.get_message_rate_in_watched_topic(topic_under_test)
         print(f"Msg rate in topic [{topic_under_test}]: {msg_rate} msgs/sec")
         print(f"Total messages received by the broker: {broker.get_messages_received()}")
