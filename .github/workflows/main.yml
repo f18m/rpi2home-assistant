@@ -35,8 +35,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: install pypi-packaged dependencies
-      run: sudo pip3 install pytest testcontainers
+
+    - name: install pypi-packaged dependencies for unit and integration tests
+      run: sudo pip3 install pytest testcontainers paho-mqtt
+
     - name: run unit tests
       run: pytest -vvv -m unit
     - name: run integration tests
