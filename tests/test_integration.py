@@ -165,7 +165,7 @@ class MosquittoContainer(DockerContainer):
                 continue  # nothing to do... the topic had already been subscribed
             self.watched_topics[t] = MosquittoContainer.WatchedTopicInfo()
             # the topic list is actually a list of tuples (topic_name,qos)
-            filtered_topics.append((t,0))
+            filtered_topics.append((t, 0))
 
         # after subscribe() the on_message() callback will be invoked
         err, _ = client.subscribe(filtered_topics)
@@ -187,6 +187,7 @@ class MosquittoContainer(DockerContainer):
         print(self.get_logs()[0].decode())
         print("** BROKER LOGS [STDERR]:")
         print(self.get_logs()[1].decode())
+
 
 class Raspy2MQTTContainer(DockerContainer):
     """
@@ -216,9 +217,9 @@ class Raspy2MQTTContainer(DockerContainer):
         self.with_env("MQTT_BROKER_PORT", MosquittoContainer.DEFAULT_PORT)
 
     def is_running(self):
-        self.get_wrapped_container().reload() # force refresh of container status
-        #status = self.get_wrapped_container().attrs["State"]['Status']
-        status = self.get_wrapped_container().status # same as above
+        self.get_wrapped_container().reload()  # force refresh of container status
+        # status = self.get_wrapped_container().attrs["State"]['Status']
+        status = self.get_wrapped_container().status  # same as above
         return status == "running"
 
     def print_logs(self) -> str:
@@ -255,7 +256,7 @@ def setup(request):
 @pytest.mark.integration
 def test_publish_optoisolated_inputs():
 
-    topics_under_test = [ "home/opto_input_1", "home/opto_input_2" ]
+    topics_under_test = ["home/opto_input_1", "home/opto_input_2"]
     min_expected_msg = 10
     expected_msg_rate = 2  # in msgs/sec; see the 'publish_period_msec' inside Raspy2MQTTContainer.CONFIG_FILE
 
