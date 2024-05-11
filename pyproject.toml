@@ -35,6 +35,9 @@ authors = ["Francesco Montorsi <francesco.montorsi@gmail.com>"]
 readme = "README.md"
 packages = [{include = "raspy2mqtt"}]
 
+[tool.poetry.scripts]
+raspy2mqtt = "raspy2mqtt.raspy2mqtt:main"
+
 # DEPENDENCIES
 # 1) since Renovate bot is used, it's best to pin dependency versions; 
 #    see https://docs.renovatebot.com/modules/manager/poetry/

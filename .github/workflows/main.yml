@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build_and_test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,12 +15,41 @@ jobs:
     - name: install pypi-packaged dependencies
       run: sudo pip3 install build
 
-    # test Python tools
-    #- name: run python integration tests
-    #  run: |
-    #    make python_tests
-
-    # finally test Python packaging
+    # test Python packaging
     - name: package the pypi
       run: |
         python3 -m build
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: install pypi-packaged dependencies
+      run: sudo pip3 install black
+    - name: lint the code
+      run: black .
+
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: install pypi-packaged dependencies for unit and integration tests
+      run: sudo pip3 install pytest testcontainers paho-mqtt
+
+    # FIXME: we should have all dependencies centralized in the TOML file and install them as:
+    # - name: Install dependencies
+    #   run: |
+    #     poetry install --no-interaction --with dev --all-extras
+    #     poetry show --tree
+
+    - name: run unit tests
+      run: pytest -vvv -m unit
+
+
+    - name: build docker image
+      run: docker build -t ha-alarm-raspy2mqtt:latest .
+    - name: run integration tests
+      run: pytest -vvv --capture=no -m integration

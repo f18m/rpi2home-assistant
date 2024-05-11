@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import yaml
-from constants import *
+from raspy2mqtt.constants import *
 
 #
 # Author: fmontorsi
@@ -10,18 +10,24 @@ from constants import *
 #
 
 # =======================================================================================================
-# CfgFile
+# AppConfig
 # =======================================================================================================
 
 
-class CfgFile:
+class AppConfig:
     """
-    This class represents the YAML config file for this utility
+    This class represents the configuration of this application.
+    It contains helpers to read the YAML config file for this utility plus helpers to
+    receive configurations from CLI options.
     """
 
     def __init__(self):
         self.config: Optional[Dict[str, Any]] = None
         self.optoisolated_inputs_map: Optional[Dict[int, Any]] = None  # None means "not loaded at all"
+
+        # config options related to CLI options:
+        self.disable_hw = False  # can be get/set from the outside
+        self.verbose = False
 
     def load(self, cfg_yaml: str) -> bool:
         print(f"Loading configuration file {cfg_yaml}")
@@ -31,7 +37,7 @@ class CfgFile:
             if not isinstance(self.config, dict):
                 raise ValueError("Invalid YAML format: root element must be a dictionary")
             # check MQTT
-            if "mqtt_broker" not in self.config:
+            if "mqtt_broker" not in self.config or self.config["mqtt_broker"] is None:
                 raise ValueError("Missing 'mqtt_broker' section in the YAML config file")
             if "host" not in self.config["mqtt_broker"]:
                 raise ValueError("Missing 'mqtt_broker.host' field in the YAML config file")
@@ -128,6 +134,10 @@ class CfgFile:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
 
+        print(f"Successfully loaded configuration")
+        return True
+
+    def print_config_summary(self):
         print(f"MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
         if self.mqtt_broker_user != None:
             print(f"MQTT broker authentication: ON")
@@ -136,15 +146,15 @@ class CfgFile:
         print(f"MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
         print(f"MQTT publish period: {self.mqtt_publish_period_sec}s")
 
-        print(f"Successfully loaded configuration")
-
-        return True
-
     @property
     def mqtt_broker_host(self) -> str:
         if self.config is None:
             return ""  # no meaningful default value
         return self.config["mqtt_broker"]["host"]
+
+    @mqtt_broker_host.setter
+    def mqtt_broker_host(self, value):
+        self.config["mqtt_broker"]["host"] = value
 
     @property
     def mqtt_broker_user(self) -> str:
@@ -169,6 +179,10 @@ class CfgFile:
         if "port" not in self.config["mqtt_broker"]:
             return 1883  # the default MQTT broker port
         return self.config["mqtt_broker"]["port"]
+
+    @mqtt_broker_port.setter
+    def mqtt_broker_port(self, value):
+        self.config["mqtt_broker"]["port"] = int(value)
 
     @property
     def mqtt_reconnection_period_sec(self) -> float:
