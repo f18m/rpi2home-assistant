@@ -154,18 +154,23 @@ class MosquittoContainer(DockerContainer):
         except Queue.Empty:
             return 0
 
-    def watch_topic(self, topic: str):
-        if topic in self.watched_topics:
-            return  # nothing to do... the topic had already been subscribed
-
+    def watch_topics(self, topics: list):
         client, err = self.get_client()
         if not client.is_connected():
             raise RuntimeError(f"Could not connect to Mosquitto broker: {err}")
 
-        self.watched_topics[topic] = MosquittoContainer.WatchedTopicInfo()
+        filtered_topics = []
+        for t in topics:
+            if t in self.watched_topics:
+                continue  # nothing to do... the topic had already been subscribed
+            self.watched_topics[t] = MosquittoContainer.WatchedTopicInfo()
+            # the topic list is actually a list of tuples (topic_name,qos)
+            filtered_topics.append((t,0))
 
         # after subscribe() the on_message() callback will be invoked
-        client.subscribe(topic)
+        err, _ = client.subscribe(filtered_topics)
+        if err != paho.mqtt.enums.MQTTErrorCode.MQTT_ERR_SUCCESS:
+            raise RuntimeError(f"Failed to subscribe to topics: {filtered_topics}")
 
     def get_messages_received_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
@@ -248,38 +253,36 @@ def setup(request):
 
 
 @pytest.mark.integration
-def test_basic_publish():
+def test_publish_optoisolated_inputs():
 
-    topic_under_test = "home/opto_input_1"
+    topics_under_test = [ "home/opto_input_1", "home/opto_input_2" ]
     min_expected_msg = 10
     expected_msg_rate = 2  # in msgs/sec; see the 'publish_period_msec' inside Raspy2MQTTContainer.CONFIG_FILE
 
     with Raspy2MQTTContainer(broker=broker) as container:
-
         time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
-        broker.watch_topic(topic_under_test)  # start watching topic only after start to get accurate msg rate
+        if not container.is_running():
+            print(f"Container under test has stopped running... test failed.")
+            assert False
 
-        msg_count = 0
-        while msg_count < min_expected_msg:
-            print(f"In watched topic [{topic_under_test}] counted {msg_count} messages so far...")
-            time.sleep(1)
-            msg_count = broker.get_messages_received_in_watched_topic(topic_under_test)
-            if not container.is_running():
-                print(f"Container under test has stopped running... test failed.")
-                break
+        broker.watch_topics(topics_under_test)  # start watching topic only after start to get accurate msg rate
+        print(f"Waiting 6 seconds to measure msg rate in topics: {topics_under_test}")
+        time.sleep(6)
 
         broker.print_logs()
         container.print_logs()
 
-        print("** TEST RESULTS")
-        print(f"Total messages in topic [{topic_under_test}]: {msg_count} msgs")
-        msg_rate = broker.get_message_rate_in_watched_topic(topic_under_test)
-        print(f"Msg rate in topic [{topic_under_test}]: {msg_rate} msgs/sec")
         print(f"Total messages received by the broker: {broker.get_messages_received()}")
+        for t in topics_under_test:
+            msg_count = broker.get_messages_received_in_watched_topic(t)
+            msg_rate = broker.get_message_rate_in_watched_topic(t)
+            print(f"** TEST RESULTS [{t}]")
+            print(f"Total messages in topic [{t}]: {msg_count} msgs")
+            print(f"Msg rate in topic [{t}]: {msg_rate} msgs/sec")
 
-        def almost_equal(x, y, threshold=0.5):
-            return abs(x - y) < threshold
+            def almost_equal(x, y, threshold=0.5):
+                return abs(x - y) < threshold
 
-        # checks
-        assert msg_count >= min_expected_msg
-        assert almost_equal(msg_rate, expected_msg_rate)
+            # checks
+            assert msg_count >= min_expected_msg
+            assert almost_equal(msg_rate, expected_msg_rate)
