@@ -2,11 +2,13 @@ import pytest
 from raspy2mqtt.config import AppConfig
 
 
+@pytest.mark.unit
 def test_nonexisting_config_file_fails():
     x = AppConfig()
     assert x.load("a/path/that/does/not/exists") == False
 
 
+@pytest.mark.unit
 def test_empty_config_file_fails(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
@@ -25,6 +27,7 @@ outputs: []
 """
 
 
+@pytest.mark.unit
 def test_minimal_config_file_succeeds(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
@@ -61,6 +64,7 @@ outputs:
 """
 
 
+@pytest.mark.unit
 def test_minimal_config_file2_succeeds(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
@@ -86,6 +90,7 @@ outputs: []
 """
 
 
+@pytest.mark.unit
 def test_wrong_config_file_fails(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")

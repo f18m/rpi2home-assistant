@@ -19,6 +19,7 @@ class MosquittoContainer(DockerContainer):
 
     TESTCONTAINER_CLIENT_ID = "TESTCONTAINER-CLIENT"
     DEFAULT_PORT = 1883
+    CONFIG_FILE = "integration-test-mosquitto.conf"
 
     def __init__(
         self,
@@ -41,7 +42,8 @@ class MosquittoContainer(DockerContainer):
         self.with_exposed_ports(self.port)
         if configfile is None:
             # default config ifle
-            configfile = os.path.join(os.getcwd(), "integration-test-mosquitto.conf")
+            TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+            configfile = os.path.join(TEST_DIR, MosquittoContainer.CONFIG_FILE)
         self.with_volume_mapping(configfile, "/mosquitto/config/mosquitto.conf")
         if self.password:
             # TODO: add authentication
@@ -186,7 +188,8 @@ class Raspy2MQTTContainer(DockerContainer):
     def __init__(self, broker: MosquittoContainer) -> None:
         super().__init__(image="ha-alarm-raspy2mqtt")
 
-        cfgfile = os.path.join(os.getcwd(), Raspy2MQTTContainer.CONFIG_FILE)
+        TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+        cfgfile = os.path.join(TEST_DIR, Raspy2MQTTContainer.CONFIG_FILE)
         self.with_volume_mapping(cfgfile, "/etc/ha-alarm-raspy2mqtt.yaml")
         self.with_env("DISABLE_HW", "true")
 
@@ -201,6 +204,9 @@ class Raspy2MQTTContainer(DockerContainer):
 
         self.with_env("MQTT_BROKER_HOST", broker_ip)
         self.with_env("MQTT_BROKER_PORT", MosquittoContainer.DEFAULT_PORT)
+
+    def is_running(self):
+        return self.get_wrapped_container().attrs["State"] == "running"
 
 
 # GLOBALs
@@ -234,24 +240,30 @@ def test_basic_publish():
     min_expected_msg = 10
     expected_msg_rate = 2  # in msgs/sec; see the 'publish_period_msec' inside Raspy2MQTTContainer.CONFIG_FILE
 
-    broker.watch_topic(topic_under_test)
     with Raspy2MQTTContainer(broker=broker) as container:
+
+        time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
+        broker.watch_topic(topic_under_test)  # start watching topic only after start to get accurate msg rate
+
         msg_count = 0
         while msg_count < min_expected_msg:
             print(f"In watched topic [{topic_under_test}] counted {msg_count} messages so far...")
             time.sleep(1)
             msg_count = broker.get_messages_received_in_watched_topic(topic_under_test)
-
-        msg_rate = broker.get_message_rate_in_watched_topic(topic_under_test)
-
-        def almost_equal(x, y, threshold=0.5):
-            return abs(x - y) < threshold
-
-        assert almost_equal(msg_rate, expected_msg_rate)
+            if not container.is_running():
+                print(f"Container under test has stopped running... test failed.")
+                break
 
         print("BROKER LOGS:")
         print(broker.get_logs()[0].decode())
         print("CONTAINER LOGS:")
         print(container.get_logs()[0].decode())
+
+        msg_rate = broker.get_message_rate_in_watched_topic(topic_under_test)
         print(f"Msg rate in topic [{topic_under_test}]: {msg_rate} msgs/sec")
         print(f"Total messages received by the broker: {broker.get_messages_received()}")
+
+        def almost_equal(x, y, threshold=0.5):
+            return abs(x - y) < threshold
+
+        assert almost_equal(msg_rate, expected_msg_rate)
