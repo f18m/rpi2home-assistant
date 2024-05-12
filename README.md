@@ -81,7 +81,17 @@ journalctl  --since="5min ago"
 
 ## Development
 
-To develop changes you can create a branch, then check it out on your raspberry and then run:
+To develop changes you can create a branch and push changes there. Then:
+
+```
+   black .
+   make docker
+   make test
+```
+
+To validate locally your changes.
+
+Finally, once ready, check out your branch on your raspberry and then run:
 
 ```
 	python3 -m venv ~/ha-alarm-raspy2mqtt-venv

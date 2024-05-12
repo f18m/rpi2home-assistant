@@ -469,9 +469,10 @@ async def main_loop():
     g_mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     # wrap with error-handling code the main loop
-    keyb_interrupted = False
+    main_loop_interrupted = False
+    exit_code = 0
     print(f"Starting main loop")
-    while not keyb_interrupted:
+    while not main_loop_interrupted:
         try:
             # Use a task group to manage and await all (endless) tasks
             async with asyncio.TaskGroup() as tg:
@@ -490,7 +491,8 @@ async def main_loop():
         except* KeyboardInterrupt:
             print_stats()
             print("Stopped by CTRL+C... aborting")
-            keyb_interrupted = True
+            main_loop_interrupted = True
+            exit_code = 1
         except* ExceptionGroup as e:
             # this is very important... it's the 'default' case entered whenever an exception does
             # not match any of the more specific 'except' clauses above
@@ -500,9 +502,12 @@ async def main_loop():
             #   that exception is no longer wrapped in an ExceptionGroup.
             #   Also changed in version 3.11.4. (Contributed by Irit Katriel in gh-103590.)'
             print(f"Got exception of type [{e}], which is unhandled.")
+            main_loop_interrupted = True
+            exit_code = 2
+
     print(f"Exiting gracefully with exit code 0... printing stats for the last time:")
     print_stats()
-    return 0
+    return exit_code
 
 
 def main():

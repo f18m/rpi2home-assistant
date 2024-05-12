@@ -288,3 +288,21 @@ def test_publish_optoisolated_inputs():
             # checks
             assert msg_count >= min_expected_msg
             assert almost_equal(msg_rate, expected_msg_rate)
+
+
+@pytest.mark.integration
+def test_publish_gpio_inputs():
+    # FIXME TODO
+    pass
+
+
+@pytest.mark.integration
+def test_subscribe_outputs():
+    # FIXME TODO
+    pass
+
+
+@pytest.mark.integration
+def test_publish_outputs():
+    # FIXME TODO
+    pass
