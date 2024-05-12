@@ -4,7 +4,7 @@ mqtt_broker:
   host: overridden_via_env_variable
   publish_period_msec: 500
 
-log_stats_every: 30
+log_stats_every: 1
 
 # --disable-hw is provided when running integration tests, still we need a few entries to be able to test MQTT publish
 i2c_optoisolated_inputs:

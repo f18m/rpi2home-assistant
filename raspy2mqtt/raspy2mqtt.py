@@ -231,15 +231,15 @@ def init_hardware(cfg: AppConfig):
 
 
 async def print_stats_periodically(cfg: AppConfig):
-    loop = asyncio.get_running_loop()
-    next_stat_time = loop.time() + cfg.stats_log_period_sec
+    # loop = asyncio.get_running_loop()
+    next_stat_time = time.time() + cfg.stats_log_period_sec
     while True:
         # Print out stats to help debugging
-        if loop.time() >= next_stat_time:
+        if time.time() >= next_stat_time:
             print_stats()
-            next_stat_time = loop.time() + cfg.stats_log_period_sec
+            next_stat_time = time.time() + cfg.stats_log_period_sec
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.25)
 
 
 async def publish_optoisolated_inputs(cfg: AppConfig):
@@ -286,7 +286,12 @@ async def publish_optoisolated_inputs(cfg: AppConfig):
             # print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
 
             # Now sleep a little bit before repeating
-            await asyncio.sleep(cfg.mqtt_publish_period_sec - update_loop_duration_sec)
+            actual_sleep_time_sec = cfg.mqtt_publish_period_sec
+            if actual_sleep_time_sec > update_loop_duration_sec:
+                # adjust for the time it took to update on MQTT broker all topics
+                actual_sleep_time_sec -= update_loop_duration_sec
+
+            await asyncio.sleep(actual_sleep_time_sec)
 
 
 async def process_gpio_inputs_queue_and_publish(cfg: AppConfig):
@@ -387,6 +392,7 @@ async def publish_outputs_state(cfg: AppConfig):
         while True:
             for output_ch in cfg.get_all_outputs():
                 output_name = output_ch["name"]
+                assert output_name in g_output_channels  # this should be garantueed due to initial setup
                 output_status = g_output_channels[output_name].is_lit
 
                 if output_name not in output_status_map or output_status_map[output_name] != output_status:
@@ -435,6 +441,23 @@ async def main_loop():
 
     if cfg.disable_hw:
         print("Skipping HW initialization (--disable-hw was given)")
+
+        class DummyOutputCh:
+            def __init__(self) -> None:
+                self.is_lit = False
+
+            def on(self):
+                pass
+
+            def off(self):
+                pass
+
+        # populate with dummies the output channels:
+        global g_output_channels
+        for output_ch in cfg.get_all_outputs():
+            output_name = output_ch["name"]
+            g_output_channels[output_name] = DummyOutputCh()
+
     else:
         print("Initializing HW (optoisolated inputs, GPIOs, etc)")
         button_instances = init_hardware(cfg)
@@ -446,9 +469,10 @@ async def main_loop():
     g_mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     # wrap with error-handling code the main loop
-    keyb_interrupted = False
+    main_loop_interrupted = False
+    exit_code = 0
     print(f"Starting main loop")
-    while not keyb_interrupted:
+    while not main_loop_interrupted:
         try:
             # Use a task group to manage and await all (endless) tasks
             async with asyncio.TaskGroup() as tg:
@@ -467,10 +491,23 @@ async def main_loop():
         except* KeyboardInterrupt:
             print_stats()
             print("Stopped by CTRL+C... aborting")
-            keyb_interrupted = True
+            main_loop_interrupted = True
+            exit_code = 1
+        except* ExceptionGroup as e:
+            # this is very important... it's the 'default' case entered whenever an exception does
+            # not match any of the more specific 'except' clauses above
+            # IMPORTANT: this seems to work correctly/as-expected only in Python >=3.11.4 (including 3.12)
+            # see this note: https://docs.python.org/3/whatsnew/3.12.html, which contains something that might be related:
+            #  'When a try-except* construct handles the entire ExceptionGroup and raises one other exception,
+            #   that exception is no longer wrapped in an ExceptionGroup.
+            #   Also changed in version 3.11.4. (Contributed by Irit Katriel in gh-103590.)'
+            print(f"Got exception of type [{e}], which is unhandled.")
+            main_loop_interrupted = True
+            exit_code = 2
 
+    print(f"Exiting gracefully with exit code 0... printing stats for the last time:")
     print_stats()
-    return 0
+    return exit_code
 
 
 def main():

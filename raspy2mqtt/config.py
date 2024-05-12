@@ -145,6 +145,7 @@ class AppConfig:
             print(f"MQTT broker authentication: OFF")
         print(f"MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
         print(f"MQTT publish period: {self.mqtt_publish_period_sec}s")
+        print(f"Log stats every: {self.stats_log_period_sec}s")
 
     @property
     def mqtt_broker_host(self) -> str:
