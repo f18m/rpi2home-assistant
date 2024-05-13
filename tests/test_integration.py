@@ -1,4 +1,4 @@
-import pytest, os, time
+import pytest, os, time, signal
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 from testcontainers.core.waiting_utils import wait_container_is_ready
@@ -114,12 +114,17 @@ class MosquittoContainer(DockerContainer):
         def __init__(self):
             self.count = 0
             self.timestamp_start_watch = time.time()
+            self.last_payload = ""
 
-        def increment_msg_count(self):
+        def on_message(self, msg: mqtt_client.MQTTMessage):
             self.count += 1
+            self.last_payload = msg.payload
 
         def get_count(self):
             return self.count
+
+        def get_last_payload(self):
+            return self.last_payload
 
         def get_rate(self):
             duration = time.time() - self.timestamp_start_watch
@@ -127,7 +132,7 @@ class MosquittoContainer(DockerContainer):
                 return self.count / duration
             return 0
 
-    def on_message(client, mosquitto_container, msg):
+    def on_message(client: mqtt_client.Client, mosquitto_container: "MosquittoContainer", msg: mqtt_client.MQTTMessage):
         # very verbose but useful for debug:
         # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
         if msg.topic == "$SYS/broker/messages/received":
@@ -136,7 +141,7 @@ class MosquittoContainer(DockerContainer):
             # this should be a topic added through the watch_topics() API...
             # just check it has not been removed (e.g. by unwatch_all):
             if msg.topic in mosquitto_container.watched_topics:
-                mosquitto_container.watched_topics[msg.topic].increment_msg_count()
+                mosquitto_container.watched_topics[msg.topic].on_message(msg)
             else:
                 print(f"Received msg on topic [{msg.topic}] that is not being watched")
 
@@ -190,6 +195,11 @@ class MosquittoContainer(DockerContainer):
         if topic not in self.watched_topics:
             return 0
         return self.watched_topics[topic].get_count()
+
+    def get_last_payload_received_in_watched_topic(self, topic: str) -> int:
+        if topic not in self.watched_topics:
+            return 0
+        return self.watched_topics[topic].get_last_payload()
 
     def get_message_rate_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
@@ -308,6 +318,12 @@ def test_publish_optoisolated_inputs():
 
 @pytest.mark.integration
 def test_publish_gpio_inputs():
+
+    topics_under_test = [
+        {"name": "gpio1", "expected_payload": b"HEY"},
+        {"name": "gpio4", "expected_payload": b"BYEBYE"},
+    ]
+
     with Raspy2MQTTContainer(broker=broker) as container:
         time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
         if not container.is_running():
@@ -315,8 +331,28 @@ def test_publish_gpio_inputs():
             container.print_logs()
             assert False
 
-        container.get_wrapped_container().kill("SIGUSR1")
-        time.sleep(100)
+        broker.watch_topics([t["name"] for t in topics_under_test])
+
+        container.get_wrapped_container().kill(signal.SIGUSR1)  # gpio #1 should trigger an MQTT message
+        time.sleep(1)
+        container.get_wrapped_container().kill(signal.SIGUSR1)  # gpio #2 should be skipped since it's unconfigured
+        container.get_wrapped_container().kill(signal.SIGUSR1)  # gpio #3 should be skipped since it's unconfigured
+        container.get_wrapped_container().kill(signal.SIGUSR1)  # gpio #4 should trigger an MQTT message
+        time.sleep(1)
+
+        container.print_logs()
+
+        for t in topics_under_test:
+            tname = t["name"]
+            msg_count = broker.get_messages_received_in_watched_topic(tname)
+            last_payload = broker.get_last_payload_received_in_watched_topic(tname)
+            print(f"** TEST RESULTS [{tname}]")
+            print(f"Total messages in topic [{tname}]: {msg_count} msgs")
+            print(f"Last payload in topic [{tname}]: {last_payload}")
+            assert msg_count == 1
+            assert last_payload == t["expected_payload"]
+
+        broker.unwatch_all()
 
 
 @pytest.mark.integration

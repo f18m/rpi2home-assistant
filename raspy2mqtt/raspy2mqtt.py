@@ -331,21 +331,13 @@ async def process_gpio_inputs_queue_and_publish(cfg: AppConfig):
             else:
                 # extract MQTT config
                 mqtt_topic = gpio_config["mqtt"]["topic"]
-                mqtt_command = gpio_config["mqtt"]["command"]
-                mqtt_code = gpio_config["mqtt"]["code"]
+                mqtt_payload = gpio_config["mqtt"]["payload"]
                 print(
-                    f"Main thread got notification of GPIO#{gpio_number} being activated; a valid MQTT configuration is attached: topic={mqtt_topic}, command={mqtt_command}, code={mqtt_code}"
+                    f"Main thread got notification of GPIO#{gpio_number} being activated; a valid MQTT configuration is attached: topic={mqtt_topic}, payload={mqtt_payload}"
                 )
 
-                # now launch the MQTT publish
-                # mqtt_payload = {
-                #    "command": mqtt_command,
-                #    "code": mqtt_code
-                # }
-                # mqtt_payload_str = json.dumps(mqtt_payload)
-                mqtt_payload_str = mqtt_command
-                await client.publish(mqtt_topic, mqtt_payload_str, qos=MQTT_QOS_AT_LEAST_ONCE)
-                print(f"Sent on topic={mqtt_topic}, payload={mqtt_payload_str}")
+                await client.publish(mqtt_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                print(f"Sent on topic={mqtt_topic}, payload={mqtt_payload}")
                 g_stats["gpio_inputs"]["num_mqtt_messages"] += 1
 
             g_gpio_queue.task_done()
@@ -423,12 +415,14 @@ async def signal_handler(sig: signal.Signals) -> None:
     # raise RuntimeError("Stopping via signal")
 
 
+g_last_emulated_gpio_number = 1
+
+
 async def emulate_gpio_input(sig: signal.Signals) -> None:
-    gpio_number = sig.value - signal.SIGUSR1.value
-    print(f"Received signal {sig.name}: emulating press of GPIO {gpio_number}")
-
-
-background_tasks = set()
+    global g_last_emulated_gpio_number
+    print(f"Received signal {sig.name}: emulating press of GPIO {g_last_emulated_gpio_number}")
+    g_gpio_queue.put(g_last_emulated_gpio_number)
+    g_last_emulated_gpio_number += 1
 
 
 async def main_loop():

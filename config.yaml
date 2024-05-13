@@ -45,14 +45,14 @@ i2c_optoisolated_inputs:
 # NOTE1: a fundamental difference with 'i2c_optoisolated_inputs' is that the MQTT topics configured
 #        for these GPIO inputs are updated with a message only when the GPIO transition from "inactive -> active"
 #        is detected. If no "inactive -> active" transitions are detected, no MQTT messages are published
+# NOTE2: the MQTT topic will be in the form "<topic>" and will receive the configured "<payload>"
 gpio_inputs:
   - name: radio_channel_a
     gpio: 27
     active_low: false
     mqtt:
       topic: alarmo/command
-      command: ARM_AWAY
-      code: none
+      payload: ARM_AWAY
 
 
 # outputs channels are used to drive the SeenGreat 2ch optoinsulated board

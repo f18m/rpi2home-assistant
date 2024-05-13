@@ -17,13 +17,18 @@ i2c_optoisolated_inputs:
 
 # --disable-hw is provided when running integration tests, still we need a few entries to be able to test MQTT publish
 gpio_inputs:
-  - name: radio_channel_a
-    gpio: 27
+  - name: gpio_input_1
+    gpio: 1
     active_low: false
     mqtt:
-      topic: alarmo/command
-      command: ARM_AWAY
-      code: none
+      topic: gpio1
+      payload: HEY
+  - name: gpio_input_4
+    gpio: 4
+    active_low: false
+    mqtt:
+      topic: gpio4
+      payload: BYEBYE
 
 # --disable-hw is provided when running integration tests, still we need a few entries to be able to test MQTT publish
 outputs:
