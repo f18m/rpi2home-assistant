@@ -181,7 +181,7 @@ class MosquittoContainer(DockerContainer):
         client, err = self.get_client()
         if not client.is_connected():
             raise RuntimeError(f"Could not connect to Mosquitto broker: {err}")
-        
+
         # unsubscribe from all topics
         client.unsubscribe(list(self.watched_topics.keys()))
         self.watched_topics = {}
@@ -314,10 +314,9 @@ def test_publish_gpio_inputs():
             print(f"Container under test has stopped running... test failed.")
             container.print_logs()
             assert False
-        
+
         container.get_wrapped_container().kill("SIGUSR1")
         time.sleep(100)
-
 
 
 @pytest.mark.integration

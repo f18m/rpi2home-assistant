@@ -417,8 +417,10 @@ async def publish_outputs_state(cfg: AppConfig):
 async def shutdown(sig: signal.Signals) -> None:
     print(f"Received signal {sig}")
 
+
 async def emulate_gpio_input(sig: signal.Signals) -> None:
     print(f"Received signal {sig}")
+
 
 async def main_loop():
     global g_stats, g_mqtt_identifier_prefix
@@ -474,7 +476,6 @@ async def main_loop():
             loop.add_signal_handler(sig, lambda: asyncio.create_task(emulate_gpio_input(sig)))
 
     else:
-
 
         print("Initializing HW (optoisolated inputs, GPIOs, etc)")
         button_instances = init_hardware(cfg)
