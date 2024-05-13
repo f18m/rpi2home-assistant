@@ -16,6 +16,7 @@ import aiomqtt
 import lib16inpind
 import gpiozero
 import subprocess
+import signal
 import time
 import queue
 from datetime import datetime, timezone
@@ -413,6 +414,12 @@ async def publish_outputs_state(cfg: AppConfig):
             await asyncio.sleep(cfg.mqtt_publish_period_sec)
 
 
+async def shutdown(sig: signal.Signals) -> None:
+    print(f"Received signal {sig}")
+
+async def emulate_gpio_input(sig: signal.Signals) -> None:
+    print(f"Received signal {sig}")
+
 async def main_loop():
     global g_stats, g_mqtt_identifier_prefix
 
@@ -439,6 +446,11 @@ async def main_loop():
 
     cfg.print_config_summary()
 
+    # install signal handler
+    loop = asyncio.get_running_loop()
+    for sig in [signal.SIGINT, signal.SIGTERM]:
+        loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown(sig)))
+
     if cfg.disable_hw:
         print("Skipping HW initialization (--disable-hw was given)")
 
@@ -458,7 +470,12 @@ async def main_loop():
             output_name = output_ch["name"]
             g_output_channels[output_name] = DummyOutputCh()
 
+        for sig in [signal.SIGUSR1, signal.SIGUSR2]:
+            loop.add_signal_handler(sig, lambda: asyncio.create_task(emulate_gpio_input(sig)))
+
     else:
+
+
         print("Initializing HW (optoisolated inputs, GPIOs, etc)")
         button_instances = init_hardware(cfg)
 

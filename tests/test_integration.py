@@ -133,7 +133,12 @@ class MosquittoContainer(DockerContainer):
         if msg.topic == "$SYS/broker/messages/received":
             mosquitto_container.msg_queue.put(msg)
         else:
-            mosquitto_container.watched_topics[msg.topic].increment_msg_count()
+            # this should be a topic added through the watch_topics() API...
+            # just check it has not been removed (e.g. by unwatch_all):
+            if msg.topic in mosquitto_container.watched_topics:
+                mosquitto_container.watched_topics[msg.topic].increment_msg_count()
+            else:
+                print(f"Received msg on topic [{msg.topic}] that is not being watched")
 
     def get_messages_received(self) -> int:
         """
@@ -171,6 +176,15 @@ class MosquittoContainer(DockerContainer):
         err, _ = client.subscribe(filtered_topics)
         if err != paho.mqtt.enums.MQTTErrorCode.MQTT_ERR_SUCCESS:
             raise RuntimeError(f"Failed to subscribe to topics: {filtered_topics}")
+
+    def unwatch_all(self):
+        client, err = self.get_client()
+        if not client.is_connected():
+            raise RuntimeError(f"Could not connect to Mosquitto broker: {err}")
+        
+        # unsubscribe from all topics
+        client.unsubscribe(list(self.watched_topics.keys()))
+        self.watched_topics = {}
 
     def get_messages_received_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
@@ -289,11 +303,21 @@ def test_publish_optoisolated_inputs():
             assert msg_count >= min_expected_msg
             assert almost_equal(msg_rate, expected_msg_rate)
 
+        broker.unwatch_all()
+
 
 @pytest.mark.integration
 def test_publish_gpio_inputs():
-    # FIXME TODO
-    pass
+    with Raspy2MQTTContainer(broker=broker) as container:
+        time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
+        if not container.is_running():
+            print(f"Container under test has stopped running... test failed.")
+            container.print_logs()
+            assert False
+        
+        container.get_wrapped_container().kill("SIGUSR1")
+        time.sleep(100)
+
 
 
 @pytest.mark.integration
