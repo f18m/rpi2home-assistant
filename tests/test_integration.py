@@ -357,9 +357,15 @@ def test_publish_gpio_inputs():
 
 @pytest.mark.integration
 def test_subscribe_outputs():
-    # FIXME TODO
-    pass
+    with Raspy2MQTTContainer(broker=broker) as container:
+        time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
+        if not container.is_running():
+            print(f"Container under test has stopped running... test failed.")
+            container.print_logs()
+            assert False
 
+        # send on the broker a msg
+        # verify 
 
 @pytest.mark.integration
 def test_publish_outputs():
