@@ -40,6 +40,8 @@ g_optoisolated_inputs_sampled_values = 0
 # global prefix for MQTT client identifiers
 g_mqtt_identifier_prefix = ""
 
+# sets to True when the application was asked to exit:
+g_stop_requested = False
 
 # =======================================================================================================
 # MAIN HELPERS
@@ -232,9 +234,10 @@ def init_hardware(cfg: AppConfig):
 
 
 async def print_stats_periodically(cfg: AppConfig):
+    global g_stop_requested
     # loop = asyncio.get_running_loop()
     next_stat_time = time.time() + cfg.stats_log_period_sec
-    while True:
+    while not g_stop_requested:
         # Print out stats to help debugging
         if time.time() >= next_stat_time:
             print_stats()
@@ -247,14 +250,14 @@ async def publish_optoisolated_inputs(cfg: AppConfig):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
-    global g_stats, g_optoisolated_inputs_sampled_values, g_mqtt_identifier_prefix
+    global g_stats, g_optoisolated_inputs_sampled_values, g_mqtt_identifier_prefix, g_stop_requested
 
     print(
         f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OPTOISOLATED INPUT states"
     )
     g_stats["optoisolated_inputs"]["num_connections_publish"] += 1
     async with create_aiomqtt_client(cfg, "_optoisolated_publisher") as client:
-        while True:
+        while not g_stop_requested:
             # Publish each sampled value as a separate MQTT topic
             update_loop_start_sec = time.perf_counter()
             for i in range(SEQMICRO_INPUTHAT_MAX_CHANNELS):
@@ -299,14 +302,14 @@ async def process_gpio_inputs_queue_and_publish(cfg: AppConfig):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
-    global g_stats, g_mqtt_identifier_prefix
+    global g_stats, g_mqtt_identifier_prefix, g_stop_requested
 
     print(
         f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish GPIO INPUT states"
     )
     g_stats["gpio_inputs"]["num_connections_publish"] += 1
     async with create_aiomqtt_client(cfg, "_gpio_publisher") as client:
-        while True:
+        while not g_stop_requested:
             # get next notification coming from the gpiozero secondary thread:
             try:
                 gpio_number = g_gpio_queue.get_nowait()
@@ -352,8 +355,7 @@ async def subscribe_and_activate_outputs(cfg: AppConfig):
     """
     This function may throw an aiomqtt.MqttError exception indicating a connection issue!
     """
-    global g_stats
-    global g_output_channels, g_mqtt_identifier_prefix
+    global g_stats, g_output_channels, g_mqtt_identifier_prefix, g_stop_requested
 
     print(
         f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to subscribe to OUTPUT commands"
@@ -382,7 +384,7 @@ async def publish_outputs_state(cfg: AppConfig):
     """
     This function may throw a aiomqtt.MqttError exception indicating a connection issue!
     """
-    global g_stats, g_output_channels, g_mqtt_identifier_prefix
+    global g_stats, g_output_channels, g_mqtt_identifier_prefix, g_stop_requested
 
     print(
         f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OUTPUT states"
@@ -390,7 +392,7 @@ async def publish_outputs_state(cfg: AppConfig):
     g_stats["outputs"]["num_connections_publish"] += 1
     output_status_map = {}
     async with create_aiomqtt_client(cfg, "_outputs_state_publisher") as client:
-        while True:
+        while not g_stop_requested:
             for output_ch in cfg.get_all_outputs():
                 output_name = output_ch["name"]
                 assert output_name in g_output_channels  # this should be garantueed due to initial setup
@@ -414,16 +416,23 @@ async def publish_outputs_state(cfg: AppConfig):
             await asyncio.sleep(cfg.mqtt_publish_period_sec)
 
 
-async def shutdown(sig: signal.Signals) -> None:
-    print(f"Received signal {sig}")
+async def signal_handler(sig: signal.Signals) -> None:
+    global g_stop_requested
+    g_stop_requested = True
+    print(f"Received signal {sig.name}... stopping all async tasks")
+    # raise RuntimeError("Stopping via signal")
 
 
 async def emulate_gpio_input(sig: signal.Signals) -> None:
-    print(f"Received signal {sig}")
+    gpio_number = sig.value - signal.SIGUSR1.value
+    print(f"Received signal {sig.name}: emulating press of GPIO {gpio_number}")
+
+
+background_tasks = set()
 
 
 async def main_loop():
-    global g_stats, g_mqtt_identifier_prefix
+    global g_stats, g_mqtt_identifier_prefix, g_stop_requested
 
     args = parse_command_line()
     cfg = AppConfig()
@@ -451,7 +460,7 @@ async def main_loop():
     # install signal handler
     loop = asyncio.get_running_loop()
     for sig in [signal.SIGINT, signal.SIGTERM]:
-        loop.add_signal_handler(sig, lambda: asyncio.create_task(shutdown(sig)))
+        loop.add_signal_handler(sig, lambda: asyncio.create_task(signal_handler(sig)))
 
     if cfg.disable_hw:
         print("Skipping HW initialization (--disable-hw was given)")
@@ -487,31 +496,68 @@ async def main_loop():
     g_mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     # wrap with error-handling code the main loop
-    main_loop_interrupted = False
     exit_code = 0
     print(f"Starting main loop")
-    while not main_loop_interrupted:
+    while not g_stop_requested:
+        # the double-nested 'try' is the only way I found in Python 3.11.2 to catch properly
+        # both exception groups (using the 'except*' syntax) and also have a default catch-all
+        # label using regular 'except' syntax.
         try:
-            # Use a task group to manage and await all (endless) tasks
-            async with asyncio.TaskGroup() as tg:
-                tg.create_task(print_stats_periodically(cfg))
-                # inputs:
-                tg.create_task(publish_optoisolated_inputs(cfg))
-                tg.create_task(process_gpio_inputs_queue_and_publish(cfg))
-                # outputs:
-                tg.create_task(subscribe_and_activate_outputs(cfg))
-                tg.create_task(publish_outputs_state(cfg))
+            try:
+                # NOTE: unfortunately we cannot use a taskgroup: the problem is the function
+                # subscribe_and_activate_outputs() which uses the aiomqtt.Client.messages generator
+                # which does not allow to easily stop the 'waiting for next message' operation.
+                # This means we need to create each task manually with asyncio.EventLoop.create_task()
+                # and cancel() them whenever a SIGTERM is received.
+                #
+                # async with asyncio.TaskGroup() as tg:
+                #     tg.create_task(print_stats_periodically(cfg))
+                #     # inputs:
+                #     tg.create_task(publish_optoisolated_inputs(cfg))
+                #     tg.create_task(process_gpio_inputs_queue_and_publish(cfg))
+                #     # outputs:
+                #     tg.create_task(subscribe_and_activate_outputs(cfg))
+                #     tg.create_task(publish_outputs_state(cfg))
 
-        except* aiomqtt.MqttError as err:
-            print(f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
-            g_stats["num_connections_lost"] += 1
-            await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
-        except* KeyboardInterrupt:
-            print_stats()
-            print("Stopped by CTRL+C... aborting")
-            main_loop_interrupted = True
-            exit_code = 1
-        except* ExceptionGroup as e:
+                # launch all coroutines:
+                loop = asyncio.get_running_loop()
+                tasks = [
+                    loop.create_task(print_stats_periodically(cfg)),
+                    loop.create_task(publish_optoisolated_inputs(cfg)),
+                    loop.create_task(process_gpio_inputs_queue_and_publish(cfg)),
+                    loop.create_task(subscribe_and_activate_outputs(cfg)),
+                    loop.create_task(publish_outputs_state(cfg)),
+                ]
+
+                # this main coroutine will simply wait till a SIGTERM arrives and
+                # we get g_stop_requested=True:
+                while not g_stop_requested:
+                    await asyncio.sleep(1)
+
+                print("Main coroutine is now cancelling all sub-tasks (coroutines)")
+                for t in tasks:
+                    t.cancel()
+
+                print("Waiting cancellation of all tasks")
+                for t in tasks:
+                    # Wait for the task to be cancelled
+                    try:
+                        await t
+                    except asyncio.CancelledError:
+                        pass
+
+            except* aiomqtt.MqttError as err:
+                print(
+                    f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
+                )
+                g_stats["num_connections_lost"] += 1
+                await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
+            except* KeyboardInterrupt:
+                print_stats()
+                print("Stopped by CTRL+C... aborting")
+                g_stop_requested = True
+                exit_code = 1
+        except ExceptionGroup as e:
             # this is very important... it's the 'default' case entered whenever an exception does
             # not match any of the more specific 'except' clauses above
             # IMPORTANT: this seems to work correctly/as-expected only in Python >=3.11.4 (including 3.12)
@@ -520,10 +566,14 @@ async def main_loop():
             #   that exception is no longer wrapped in an ExceptionGroup.
             #   Also changed in version 3.11.4. (Contributed by Irit Katriel in gh-103590.)'
             print(f"Got exception of type [{e}], which is unhandled.")
-            main_loop_interrupted = True
+            g_stop_requested = True
+            exit_code = 2
+        except Exception as e:
+            print(f"Got exception of type [{e}], which is unhandled.")
+            g_stop_requested = True
             exit_code = 2
 
-    print(f"Exiting gracefully with exit code 0... printing stats for the last time:")
+    print(f"Exiting gracefully with exit code {exit_code}... printing stats for the last time:")
     print_stats()
     return exit_code
 

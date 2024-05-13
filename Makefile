@@ -60,6 +60,10 @@ raspbian_update_dependencies:
 docker:
 	docker build -t ha-alarm-raspy2mqtt:latest .
 
-test:
+test: unit-test integration-test
+
+unit-test:
 	cd tests && pytest -vvv --log-level=INFO -m unit
+
+integration-test:
 	cd tests && pytest -vvvv --log-level=INFO -s -m integration
