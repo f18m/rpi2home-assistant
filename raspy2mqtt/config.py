@@ -138,14 +138,28 @@ class AppConfig:
         return True
 
     def print_config_summary(self):
-        print(f"MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
+        print("Config summary:")
+        print("** MQTT")
+        print(f"   MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
         if self.mqtt_broker_user != None:
-            print(f"MQTT broker authentication: ON")
+            print(f"   MQTT broker authentication: ON")
         else:
-            print(f"MQTT broker authentication: OFF")
-        print(f"MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
-        print(f"MQTT publish period: {self.mqtt_publish_period_sec}s")
-        print(f"Log stats every: {self.stats_log_period_sec}s")
+            print(f"   MQTT broker authentication: OFF")
+        print(f"   MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
+        print(f"   MQTT publish period: {self.mqtt_publish_period_sec}s")
+        print("** I2C isolated inputs:")
+        for k, v in self.optoisolated_inputs_map.items():
+            print(f"   input#{k}: {v['name']}")
+        print("** GPIO inputs:")
+        for k, v in self.gpio_inputs_map.items():
+            print(f"   input#{k}: {v['name']}")
+        print("** OUTPUTs:")
+        i = 1
+        for k, v in self.outputs_map.items():
+            print(f"   output#{i}: {k}")
+            i += 1
+        print("** MISC:")
+        print(f"   Log stats every: {self.stats_log_period_sec}s")
 
     @property
     def mqtt_broker_host(self) -> str:
