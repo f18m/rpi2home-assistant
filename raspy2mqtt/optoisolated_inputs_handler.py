@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import lib16inpind, time, asyncio
+import lib16inpind, time, asyncio, gpiozero
 from raspy2mqtt.constants import *
 from raspy2mqtt.config import *
 
@@ -30,6 +30,7 @@ class OptoIsolatedInputsHandler:
 
 
     def __init__(self):
+        # last reading of the 16 digital opto-isolated inputs
         self.optoisolated_inputs_sampled_values = None
         
         self.stats = {
@@ -39,6 +40,35 @@ class OptoIsolatedInputsHandler:
         }
 
 
+    def init_hardware(self, cfg: AppConfig) -> list[gpiozero.Button]:
+
+        buttons = []
+        if cfg.disable_hw:
+            print("Skipping optoisolated inputs HW initialization (--disable-hw was given)")
+        else:
+            # check if the opto-isolated input board from Sequent Microsystem is indeed present:
+            try:
+                _ = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
+            except FileNotFoundError as e:
+                print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
+                return 2
+            except OSError as e:
+                print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
+                return 2
+            except BaseException as e:
+                print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
+                return 2
+
+            print(f"Initializing SequentMicrosystem GPIO interrupt line")
+            b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pull_up=True)
+            b.when_held = self.sample_optoisolated_inputs
+            buttons.append(b)
+
+            # do first sampling operation immediately:
+            self.sample_optoisolated_inputs()
+
+        return buttons
+    
     def sample_optoisolated_inputs(self):
         # This function is invoked when the SequentMicrosystem hat triggers an interrupt saying
         # "hey there is some change in my inputs"... so we read all the 16 digital inputs

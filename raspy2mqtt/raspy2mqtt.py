@@ -17,32 +17,19 @@ import gpiozero
 import subprocess
 import signal
 import time
-import queue
-from datetime import datetime, timezone
 from raspy2mqtt.stats import *
 from raspy2mqtt.config import *
 from raspy2mqtt.constants import *
+from raspy2mqtt.optoisolated_inputs_handler import *
+from raspy2mqtt.gpio_inputs_handler import *
+from raspy2mqtt.gpio_outputs_handler import *
 
 # =======================================================================================================
 # GLOBALs
 # =======================================================================================================
 
-# global dictionary of gpiozero.LED instances used to drive outputs
-g_output_channels = {}
-
-# thread-safe queue to communicate from GPIOzero secondary threads to main thread
-g_gpio_queue = queue.Queue()
-
-# last reading of the 16 digital opto-isolated inputs
-g_optoisolated_inputs_sampled_values = 0
-
-# global prefix for MQTT client identifiers
-g_mqtt_identifier_prefix = ""
-
 # sets to True when the application was asked to exit:
 g_stop_requested = False
-
-g_last_emulated_gpio_number = 1
 
 
 # =======================================================================================================
@@ -136,27 +123,10 @@ def shutdown():
     print(f"!! Detected long-press on the Sequent Microsystem button. Triggering clean shutdown of the Raspberry PI !!")
     subprocess.call(["sudo", "shutdown", "-h", "now"])
 
-
-
-def on_gpio_input(device):
-    print(f"!! Detected activation of GPIO{device.pin.number} !! ")
-    g_gpio_queue.put(device.pin.number)
-
-
 def init_hardware(cfg: AppConfig):
-    # check if the opto-isolated input board from Sequent Microsystem is indeed present:
-    try:
-        _ = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
-    except FileNotFoundError as e:
-        print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
-        return 2
-    except OSError as e:
-        print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
-        return 2
-    except BaseException as e:
-        print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
-        return 2
-
+    if cfg.disable_hw:
+        return []
+    
     # setup GPIO connected to the pushbutton (input) and
     # assign the when_held function to be called when the button is held for more than 5 seconds
     # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
@@ -166,34 +136,12 @@ def init_hardware(cfg: AppConfig):
         print(
             f"GPIO factory backend is the default one. This might fail on newer Raspbian versions with Linux kernel >= 6.6.20"
         )
+
     buttons = []
     print(f"Initializing SequentMicrosystem GPIO shutdown button")
     b = gpiozero.Button(SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, hold_time=5)
     b.when_held = shutdown
     buttons.append(b)
-
-    print(f"Initializing SequentMicrosystem GPIO interrupt line")
-    b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pull_up=True)
-    b.when_held = sample_optoisolated_inputs
-    buttons.append(b)
-
-    # setup GPIO pins for the INPUTs
-    print(f"Initializing GPIO input pins")
-    for input_ch in cfg.get_all_gpio_inputs():
-        # the short hold-time is to ensure that the digital input is served ASAP (i.e. on_gpio_input gets
-        # invoked almost immediately)
-        active_high = not bool(input_ch["active_low"])
-        b = gpiozero.Button(input_ch["gpio"], hold_time=0.1, pull_up=None, active_state=active_high)
-        b.when_held = on_gpio_input
-        buttons.append(b)
-
-    # setup GPIO pins for the OUTPUTs
-    print(f"Initializing GPIO output pins")
-    global g_output_channels
-    for output_ch in cfg.get_all_outputs():
-        output_name = output_ch["name"]
-        active_high = not bool(output_ch["active_low"])
-        g_output_channels[output_name] = gpiozero.LED(pin=output_ch["gpio"], active_high=active_high)
 
     return buttons
 
@@ -201,7 +149,6 @@ def init_hardware(cfg: AppConfig):
 # =======================================================================================================
 # ASYNC HELPERS
 # =======================================================================================================
-
 
 async def print_stats_periodically(cfg: AppConfig):
     global g_stop_requested
@@ -215,115 +162,6 @@ async def print_stats_periodically(cfg: AppConfig):
 
         await asyncio.sleep(0.25)
 
-async def process_gpio_inputs_queue_and_publish(cfg: AppConfig):
-    """
-    This function may throw a aiomqtt.MqttError exception indicating a connection issue!
-    """
-    global g_stats, g_mqtt_identifier_prefix, g_stop_requested
-
-    print(
-        f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish GPIO INPUT states"
-    )
-    g_stats["gpio_inputs"]["num_connections_publish"] += 1
-    async with create_aiomqtt_client(cfg, "_gpio_publisher") as client:
-        while not g_stop_requested:
-            # get next notification coming from the gpiozero secondary thread:
-            try:
-                gpio_number = g_gpio_queue.get_nowait()
-            except queue.Empty:
-                # if there's no notification (typical case), then do not block the event loop
-                # and keep processing other tasks... to ensure low-latency in processing the
-                # GPIO inputs the sleep time is set equal to the MQTT publish freq
-                await asyncio.sleep(cfg.mqtt_publish_period_sec)
-                continue
-
-            # there is a GPIO notification to process:
-            gpio_config = cfg.get_gpio_input_config(gpio_number)
-            g_stats["gpio_inputs"]["num_gpio_notifications"] += 1
-            if gpio_config is None or "mqtt" not in gpio_config:
-                print(
-                    f"Main thread got notification of GPIO#{gpio_number} being activated but there is NO CONFIGURATION for that pin. Ignoring."
-                )
-                g_stats["gpio_inputs"]["ERROR_noconfig"] += 1
-            else:
-                # extract MQTT config
-                mqtt_topic = gpio_config["mqtt"]["topic"]
-                mqtt_payload = gpio_config["mqtt"]["payload"]
-                print(
-                    f"Main thread got notification of GPIO#{gpio_number} being activated; a valid MQTT configuration is attached: topic={mqtt_topic}, payload={mqtt_payload}"
-                )
-
-                await client.publish(mqtt_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
-                print(f"Sent on topic={mqtt_topic}, payload={mqtt_payload}")
-                g_stats["gpio_inputs"]["num_mqtt_messages"] += 1
-
-            g_gpio_queue.task_done()
-
-
-async def subscribe_and_activate_outputs(cfg: AppConfig):
-    """
-    This function may throw an aiomqtt.MqttError exception indicating a connection issue!
-    """
-    global g_stats, g_output_channels, g_mqtt_identifier_prefix, g_stop_requested
-
-    print(
-        f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to subscribe to OUTPUT commands"
-    )
-    g_stats["outputs"]["num_connections_subscribe"] += 1
-    async with create_aiomqtt_client(cfg, "_outputs_subscriber") as client:
-        for output_ch in cfg.get_all_outputs():
-            topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}"
-            print(f"Subscribing to topic {topic}")
-            await client.subscribe(topic)
-
-        async for message in client.messages:
-            output_name = str(message.topic).removeprefix(f"{MQTT_TOPIC_PREFIX}/")
-            c = cfg.get_output_config(output_name)
-            print(
-                f"Received message for digital output [{output_name}] with payload {message.payload}... changing GPIO output pin state"
-            )
-            if message.payload == b"ON":
-                g_output_channels[output_name].on()
-            else:
-                g_output_channels[output_name].off()
-            g_stats["outputs"]["num_mqtt_commands_processed"] += 1
-
-
-async def publish_outputs_state(cfg: AppConfig):
-    """
-    This function may throw a aiomqtt.MqttError exception indicating a connection issue!
-    """
-    global g_stats, g_output_channels, g_mqtt_identifier_prefix, g_stop_requested
-
-    print(
-        f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OUTPUT states"
-    )
-    g_stats["outputs"]["num_connections_publish"] += 1
-    output_status_map = {}
-    async with create_aiomqtt_client(cfg, "_outputs_state_publisher") as client:
-        while not g_stop_requested:
-            for output_ch in cfg.get_all_outputs():
-                output_name = output_ch["name"]
-                assert output_name in g_output_channels  # this should be garantueed due to initial setup
-                output_status = g_output_channels[output_name].is_lit
-
-                if output_name not in output_status_map or output_status_map[output_name] != output_status:
-                    # need to publish an update over MQTT... the state has changed
-                    topic = f"{MQTT_TOPIC_PREFIX}/{output_name}/state"
-                    payload = "ON" if output_status else "OFF"
-
-                    # publish with RETAIN flag so that Home Assistant will always find an updated status on
-                    # the broker about each switch
-                    # print(f"Publishing to topic {topic} the payload {payload}")
-                    await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True)
-                    g_stats["outputs"]["num_mqtt_states_published"] += 1
-
-                    # remember the status we just published in order to later skip meaningless updates
-                    # when there is no state change:
-                    output_status_map[output_name] = output_status
-
-            await asyncio.sleep(cfg.mqtt_publish_period_sec)
-
 
 async def signal_handler(sig: signal.Signals) -> None:
     global g_stop_requested
@@ -332,15 +170,8 @@ async def signal_handler(sig: signal.Signals) -> None:
     # raise RuntimeError("Stopping via signal")
 
 
-async def emulate_gpio_input(sig: signal.Signals) -> None:
-    global g_last_emulated_gpio_number
-    print(f"Received signal {sig.name}: emulating press of GPIO {g_last_emulated_gpio_number}")
-    g_gpio_queue.put(g_last_emulated_gpio_number)
-    g_last_emulated_gpio_number += 1
-
-
 async def main_loop():
-    global g_stats, g_mqtt_identifier_prefix, g_stop_requested
+    global g_stats, g_stop_requested
 
     args = parse_command_line()
     cfg = AppConfig()
@@ -370,46 +201,15 @@ async def main_loop():
     for sig in [signal.SIGINT, signal.SIGTERM]:
         loop.add_signal_handler(sig, lambda: asyncio.create_task(signal_handler(sig)))
 
-    if cfg.disable_hw:
-        print("Skipping HW initialization (--disable-hw was given)")
+    # initialize handlers
+    opto_inputs_handler = OptoIsolatedInputsHandler()
+    gpio_inputs_handler = GpioInputsHandler()
+    gpio_outputs_handler = GpioOutputsHandler()
 
-        class DummyOutputCh:
-            def __init__(self, gpio: int) -> None:
-                self.is_lit = False
-                self.gpio = gpio
-
-            def on(self):
-                print(
-                    f"INTEGRATION-TEST-HELPER: DummyOutputCh: ON method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
-                )
-                self.is_lit = True
-                with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
-                    opened_file.write(f"{self.gpio}: ON")
-
-            def off(self):
-                print(
-                    f"INTEGRATION-TEST-HELPER: DummyOutputCh: OFF method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
-                )
-                self.is_lit = False
-                with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
-                    opened_file.write(f"{self.gpio}: OFF")
-
-        # populate with dummies the output channels:
-        global g_output_channels
-        for output_ch in cfg.get_all_outputs():
-            output_name = output_ch["name"]
-            g_output_channels[output_name] = DummyOutputCh(output_ch["gpio"])
-
-        for sig in [signal.SIGUSR1, signal.SIGUSR2]:
-            loop.add_signal_handler(sig, lambda: asyncio.create_task(emulate_gpio_input(sig)))
-
-    else:
-
-        print("Initializing HW (optoisolated inputs, GPIOs, etc)")
-        button_instances = init_hardware(cfg)
-
-        # do first sampling operation immediately:
-        sample_optoisolated_inputs()
+    button_instances = init_hardware(cfg)
+    button_instances += opto_inputs_handler.init_hardware(cfg, loop)
+    button_instances += gpio_inputs_handler.init_hardware(cfg)
+    gpio_outputs_handler.init_hardware(cfg)
 
     # wrap with error-handling code the main loop
     exit_code = 0
@@ -439,10 +239,10 @@ async def main_loop():
                 loop = asyncio.get_running_loop()
                 tasks = [
                     loop.create_task(print_stats_periodically(cfg)),
-                    loop.create_task(publish_optoisolated_inputs(cfg)),
-                    loop.create_task(process_gpio_inputs_queue_and_publish(cfg)),
-                    loop.create_task(subscribe_and_activate_outputs(cfg)),
-                    loop.create_task(publish_outputs_state(cfg)),
+                    loop.create_task(opto_inputs_handler.publish_optoisolated_inputs(cfg)),
+                    loop.create_task(gpio_inputs_handler.process_gpio_inputs_queue_and_publish(cfg)),
+                    loop.create_task(gpio_outputs_handler.subscribe_and_activate_outputs(cfg)),
+                    loop.create_task(gpio_outputs_handler.publish_outputs_state(cfg)),
                 ]
 
                 # this main coroutine will simply wait till a SIGTERM arrives and
