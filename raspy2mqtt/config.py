@@ -33,7 +33,6 @@ class AppConfig:
         # before launching MQTT connections, define a unique MQTT prefix identifier:
         self.mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
-
     def load(self, cfg_yaml: str) -> bool:
         print(f"Loading configuration file {cfg_yaml}")
         try:
@@ -166,8 +165,7 @@ class AppConfig:
         print("** MISC:")
         print(f"   Log stats every: {self.stats_log_period_sec}s")
 
-
-    # MQTT 
+    # MQTT
 
     @property
     def mqtt_broker_host(self) -> str:
@@ -231,7 +229,6 @@ class AppConfig:
             # in this case the key is completely missing or does contain an integer value
             return 1.0  # default value
 
-
     def create_aiomqtt_client(self, identifier_str: str):
         return aiomqtt.Client(
             hostname=self.mqtt_broker_host,
@@ -241,8 +238,6 @@ class AppConfig:
             password=self.mqtt_broker_password,
             identifier=self.mqtt_identifier_prefix + identifier_str,
         )
-
-
 
     @property
     def stats_log_period_sec(self) -> int:

@@ -20,6 +20,7 @@ class DummyOutputCh:
     This class exists just to make it easier to run integration tests on platforms that do not have
     true GPIO output pins (like a GitHub runner)
     """
+
     def __init__(self, gpio: int) -> None:
         self.is_lit = False
         self.gpio = gpio
@@ -56,8 +57,6 @@ class GpioOutputsHandler:
     # the stop-request is not related to a particular instance of this class... it applies to any instance
     stop_requested = False
 
-
-
     def __init__(self):
         # global dictionary of gpiozero.LED instances used to drive outputs
         self.output_channels = {}
@@ -73,7 +72,7 @@ class GpioOutputsHandler:
 
         if cfg.disable_hw:
             # populate with dummies the output channels:
-            print("Skipping output HW initialization (--disable-hw was given)")
+            print("Skipping GPIO outputs HW initialization (--disable-hw was given)")
             for output_ch in cfg.get_all_outputs():
                 output_name = output_ch["name"]
                 self.output_channels[output_name] = DummyOutputCh(output_ch["gpio"])
@@ -111,7 +110,6 @@ class GpioOutputsHandler:
                     self.output_channels[output_name].off()
                 self.stats["outputs"]["num_mqtt_commands_processed"] += 1
 
-
     async def publish_outputs_state(self, cfg: AppConfig):
         """
         This function may throw a aiomqtt.MqttError exception indicating a connection issue!
@@ -145,3 +143,16 @@ class GpioOutputsHandler:
                         output_status_map[output_name] = output_status
 
                 await asyncio.sleep(cfg.mqtt_publish_period_sec)
+
+    def print_stats(self):
+        print(f">> OUTPUTS:")
+        print(
+            f">>   Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_subscribe']}"
+        )
+        print(
+            f">>   Num commands for output channels processed from MQTT broker: {self.stats['num_mqtt_commands_processed']}"
+        )
+        print(f">>   Num (re)connections to the MQTT broker [publish channel]: {self.stats['num_connections_publish']}")
+        print(
+            f">>   Num states for output channels published on the MQTT broker: {self.stats['num_mqtt_states_published']}"
+        )

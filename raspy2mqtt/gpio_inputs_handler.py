@@ -27,7 +27,7 @@ class GpioInputsHandler:
     def __init__(self):
         # thread-safe queue to communicate from GPIOzero secondary threads to main thread
         self.gpio_queue = queue.Queue()
-        
+
         self.last_emulated_gpio_number = 0
 
         self.stats = {
@@ -37,17 +37,15 @@ class GpioInputsHandler:
             "ERROR_noconfig": 0,
         }
 
-
     def on_gpio_input(self, device):
         print(f"!! Detected activation of GPIO{device.pin.number} !! ")
         self.gpio_queue.put(device.pin.number)
-
 
     def init_hardware(self, cfg: AppConfig, loop: asyncio.BaseEventLoop) -> list[gpiozero.Button]:
         buttons = []
 
         if cfg.disable_hw:
-            print("Skipping HW initialization (--disable-hw was given)")
+            print("Skipping GPIO inputs HW initialization (--disable-hw was given)")
 
             for sig in [signal.SIGUSR1, signal.SIGUSR2]:
                 loop.add_signal_handler(sig, lambda: asyncio.create_task(self.emulate_gpio_input(sig)))
@@ -65,7 +63,7 @@ class GpioInputsHandler:
                 buttons.append(b)
 
         return buttons
-        
+
     async def emulate_gpio_input(self, sig: signal.Signals) -> None:
         print(f"Received signal {sig.name}: emulating press of GPIO {self.last_emulated_gpio_number}")
         self.gpio_queue.put(self.last_emulated_gpio_number)
@@ -112,3 +110,10 @@ class GpioInputsHandler:
                     self.stats["gpio_inputs"]["num_mqtt_messages"] += 1
 
                 self.gpio_queue.task_done()
+
+    def print_stats(self):
+        print(f">> GPIO INPUTS:")
+        print(f">>   Num (re)connections to the MQTT broker [publish channel]: {self.stats['num_connections_publish']}")
+        print(f">>   Num GPIO activations detected: {self.stats['num_gpio_notifications']}")
+        print(f">>   Num MQTT messages published to the broker: {self.stats['num_mqtt_messages']}")
+        print(f">>   ERROR: GPIO inputs detected but missing configuration: {self.stats['ERROR_noconfig']}")

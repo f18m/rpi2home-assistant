@@ -111,7 +111,6 @@ def instance_already_running(label="default"):
     return already_running
 
 
-
 # =======================================================================================================
 # GPIOZERO helper functions
 # These functions execute in the context of secondary threads created by gpiozero library
@@ -123,10 +122,11 @@ def shutdown():
     print(f"!! Detected long-press on the Sequent Microsystem button. Triggering clean shutdown of the Raspberry PI !!")
     subprocess.call(["sudo", "shutdown", "-h", "now"])
 
+
 def init_hardware(cfg: AppConfig):
     if cfg.disable_hw:
         return []
-    
+
     # setup GPIO connected to the pushbutton (input) and
     # assign the when_held function to be called when the button is held for more than 5 seconds
     # (NOTE: the way gpiozero works is that a new thread is spawned to listed for this event on the Raspy GPIO)
@@ -150,28 +150,15 @@ def init_hardware(cfg: AppConfig):
 # ASYNC HELPERS
 # =======================================================================================================
 
-async def print_stats_periodically(cfg: AppConfig):
-    global g_stop_requested
-    # loop = asyncio.get_running_loop()
-    next_stat_time = time.time() + cfg.stats_log_period_sec
-    while not g_stop_requested:
-        # Print out stats to help debugging
-        if time.time() >= next_stat_time:
-            print_stats()
-            next_stat_time = time.time() + cfg.stats_log_period_sec
-
-        await asyncio.sleep(0.25)
-
 
 async def signal_handler(sig: signal.Signals) -> None:
     global g_stop_requested
     g_stop_requested = True
     print(f"Received signal {sig.name}... stopping all async tasks")
-    # raise RuntimeError("Stopping via signal")
 
 
 async def main_loop():
-    global g_stats, g_stop_requested
+    global g_stop_requested
 
     args = parse_command_line()
     cfg = AppConfig()
@@ -205,10 +192,11 @@ async def main_loop():
     opto_inputs_handler = OptoIsolatedInputsHandler()
     gpio_inputs_handler = GpioInputsHandler()
     gpio_outputs_handler = GpioOutputsHandler()
+    stats_collector = StatsCollector([opto_inputs_handler, gpio_inputs_handler, gpio_outputs_handler])
 
     button_instances = init_hardware(cfg)
-    button_instances += opto_inputs_handler.init_hardware(cfg, loop)
-    button_instances += gpio_inputs_handler.init_hardware(cfg)
+    button_instances += opto_inputs_handler.init_hardware(cfg)
+    button_instances += gpio_inputs_handler.init_hardware(cfg, loop)
     gpio_outputs_handler.init_hardware(cfg)
 
     # wrap with error-handling code the main loop
@@ -238,7 +226,7 @@ async def main_loop():
                 # launch all coroutines:
                 loop = asyncio.get_running_loop()
                 tasks = [
-                    loop.create_task(print_stats_periodically(cfg)),
+                    loop.create_task(stats_collector.print_stats_periodically(cfg)),
                     loop.create_task(opto_inputs_handler.publish_optoisolated_inputs(cfg)),
                     loop.create_task(gpio_inputs_handler.process_gpio_inputs_queue_and_publish(cfg)),
                     loop.create_task(gpio_outputs_handler.subscribe_and_activate_outputs(cfg)),
@@ -266,10 +254,10 @@ async def main_loop():
                 print(
                     f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
                 )
-                g_stats["num_connections_lost"] += 1
+                stats_collector.stats["num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
             except* KeyboardInterrupt:
-                print_stats()
+                stats_collector.print_stats()
                 print("Stopped by CTRL+C... aborting")
                 g_stop_requested = True
                 exit_code = 1
@@ -290,7 +278,7 @@ async def main_loop():
             exit_code = 2
 
     print(f"Exiting gracefully with exit code {exit_code}... printing stats for the last time:")
-    print_stats()
+    stats_collector.print_stats()
     return exit_code
 
 

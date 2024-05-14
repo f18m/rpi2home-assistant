@@ -28,17 +28,15 @@ class OptoIsolatedInputsHandler:
     payload_on = "ON"
     payload_off = "OFF"
 
-
     def __init__(self):
         # last reading of the 16 digital opto-isolated inputs
         self.optoisolated_inputs_sampled_values = None
-        
+
         self.stats = {
             "num_readings": 0,
             "num_connections_publish": 0,
             "num_mqtt_messages": 0,
         }
-
 
     def init_hardware(self, cfg: AppConfig) -> list[gpiozero.Button]:
 
@@ -68,7 +66,7 @@ class OptoIsolatedInputsHandler:
             self.sample_optoisolated_inputs()
 
         return buttons
-    
+
     def sample_optoisolated_inputs(self):
         # This function is invoked when the SequentMicrosystem hat triggers an interrupt saying
         # "hey there is some change in my inputs"... so we read all the 16 digital inputs
@@ -121,7 +119,11 @@ class OptoIsolatedInputsHandler:
                             logical_value = bit_value
                             input_type = "active high"
 
-                        payload = OptoIsolatedInputsHandler.payload_on if logical_value else OptoIsolatedInputsHandler.payload_off
+                        payload = (
+                            OptoIsolatedInputsHandler.payload_on
+                            if logical_value
+                            else OptoIsolatedInputsHandler.payload_off
+                        )
                         # print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
 
                         await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE)
@@ -137,3 +139,9 @@ class OptoIsolatedInputsHandler:
                     actual_sleep_time_sec -= update_loop_duration_sec
 
                 await asyncio.sleep(actual_sleep_time_sec)
+
+    def print_stats(self):
+        print(f">> OPTO-ISOLATED INPUTS:")
+        print(f">>   Num (re)connections to the MQTT broker [publish channel]: {self.stats['num_connections_publish']}")
+        print(f">>   Num MQTT messages published to the broker: {self.stats['num_mqtt_messages']}")
+        print(f">>   Num actual readings of optoisolated inputs: {self.stats['num_readings']}")
