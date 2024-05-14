@@ -10,7 +10,8 @@ StartLimitBurst=5
 Type=simple
 ExecStart=/root/ha-alarm-raspy2mqtt-venv/bin/python3 /root/ha-alarm-raspy2mqtt/raspy2mqtt/raspy2mqtt.py -c /etc/ha-alarm-raspy2mqtt.yaml
 
-# attempt to avoid warning at startup:
+# the following env variable is important; lack of that will result in 
+#  RuntimeError: Failed to add edge detection
 Environment="GPIOZERO_PIN_FACTORY=pigpio"
 
 # PYTHONUNBUFFERED is important to ensure sdtout is flushed timely so "journalctl" shows logs of this service unit:

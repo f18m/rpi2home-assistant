@@ -76,7 +76,7 @@ the documentation of the configuration options, with some basic example.
 After starting the application you can verify from the logs whether it's running successfully:
 
 ```
-journalctl  --since="5min ago"
+journalctl -u ha-alarm-raspy2mqtt --since="5min ago"
 ```
 
 ## Development
