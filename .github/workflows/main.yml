@@ -30,25 +30,6 @@ jobs:
     - name: lint the code
       run: black .
 
-  docker_push:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: build and push Docker image
-      uses: mr-smithers-excellent/docker-build-push@v6
-      with:
-        # options related to BUILDing the docker image:
-        multiPlatform: true
-        platform: linux/amd64,linux/arm64,linux/arm/v7
-        image: raspy-sensors2mqtt
-        addLatest: true
-        # options related to PUSHing the docker image:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.PAT_TOKEN_FOR_GITHUB }}
-
   tests:
     runs-on: ubuntu-latest
 
