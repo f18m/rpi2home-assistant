@@ -1,3 +1,8 @@
+#
+# IMPORTANT: this docker-compose file is not actually used during automatic integration tests
+#            but it can be useful to do some manual tests
+#
+
 services:
   mqtt-broker:
     image: eclipse-mosquitto
@@ -14,5 +19,6 @@ services:
       - mqtt-broker
     volumes:
       - ./integration-test-config.yaml:/etc/ha-alarm-raspy2mqtt.yaml:ro
+      - /tmp:/tmp:rw
     environment:
       - DISABLE_HW=true

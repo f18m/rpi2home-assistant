@@ -57,7 +57,9 @@ gpio_inputs:
 
 # outputs channels are used to drive the SeenGreat 2ch optoinsulated board
 # NOTE1: all outputs are active low in this kind of board (i.e. to trigger the relay the GPIO must be driven low)
-# NOTE2: the MQTT topic will be in the form "home/<output name>", don't use spaces in the name!
+# NOTE2: the MQTT topic subscribed will be in the form "home/<output name>", don't use spaces in the name!
+# NOTE3: the MQTT topic "home/<output name>/state" will be updated after confirming that the output has successfully
+#        changed status
 outputs:
   - name: ext_alarm_siren
     gpio: 20

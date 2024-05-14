@@ -48,7 +48,6 @@ class MosquittoContainer(DockerContainer):
         if self.password:
             # TODO: add authentication
             pass
-            # self.with_command(f"redis-server --requirepass {self.password}")
 
         # helper used to turn asynchronous methods into synchronous:
         self.msg_queue = Queue()
@@ -193,18 +192,24 @@ class MosquittoContainer(DockerContainer):
 
     def get_messages_received_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
-            return 0
+            raise RuntimeError(f"Topic {topic} is not watched! Fix the test")
         return self.watched_topics[topic].get_count()
 
     def get_last_payload_received_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
-            return 0
+            raise RuntimeError(f"Topic {topic} is not watched! Fix the test")
         return self.watched_topics[topic].get_last_payload()
 
     def get_message_rate_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
-            return 0
+            raise RuntimeError(f"Topic {topic} is not watched! Fix the test")
         return self.watched_topics[topic].get_rate()
+
+    def publish_message(self, topic: str, payload: str):
+        ret = self.client.publish(topic, payload)
+        ret.wait_for_publish(timeout=2)
+        if not ret.is_published():
+            raise RuntimeError(f"Could not publish a message on topic {topic} to Mosquitto broker: {ret}")
 
     def print_logs(self) -> str:
         print("** BROKER LOGS [STDOUT]:")
@@ -225,7 +230,8 @@ class Raspy2MQTTContainer(DockerContainer):
 
         TEST_DIR = os.path.dirname(os.path.abspath(__file__))
         cfgfile = os.path.join(TEST_DIR, Raspy2MQTTContainer.CONFIG_FILE)
-        self.with_volume_mapping(cfgfile, "/etc/ha-alarm-raspy2mqtt.yaml")
+        self.with_volume_mapping(cfgfile, "/etc/ha-alarm-raspy2mqtt.yaml", mode="ro")
+        self.with_volume_mapping("/tmp", "/tmp", mode="rw")
         self.with_env("DISABLE_HW", "true")
 
         # IMPORTANT: to link with the MQTT broker we want to use the IP address internal to the docker network,
@@ -278,7 +284,7 @@ def setup(request):
 
 
 @pytest.mark.integration
-def test_publish_optoisolated_inputs():
+def test_publish_for_optoisolated_inputs():
 
     topics_under_test = ["home/opto_input_1", "home/opto_input_2"]
     min_expected_msg = 10
@@ -317,7 +323,7 @@ def test_publish_optoisolated_inputs():
 
 
 @pytest.mark.integration
-def test_publish_gpio_inputs():
+def test_publish_for_gpio_inputs():
 
     topics_under_test = [
         {"name": "gpio1", "expected_payload": b"HEY"},
@@ -356,12 +362,51 @@ def test_publish_gpio_inputs():
 
 
 @pytest.mark.integration
-def test_subscribe_outputs():
-    # FIXME TODO
-    pass
+def test_publish_subscribe_for_outputs():
 
+    test_runs = [
+        {"name": "home/output_1", "payload": b"ON", "expected_file_contents": "20: ON"},
+        {"name": "home/output_1", "payload": b"OFF", "expected_file_contents": "20: OFF"},
+        {"name": "home/output_2", "payload": b"OFF", "expected_file_contents": "21: OFF"},
+        {"name": "home/output_2", "payload": b"ON", "expected_file_contents": "21: ON"},
+    ]
+    INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
 
-@pytest.mark.integration
-def test_publish_outputs():
-    # FIXME TODO
-    pass
+    def get_associated_state_topic(topic_name: str):
+        return topic_name + "/state"
+
+    with Raspy2MQTTContainer(broker=broker) as container:
+        time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
+        if not container.is_running():
+            print(f"Container under test has stopped running... test failed.")
+            container.print_logs()
+            assert False
+
+        i = 0
+        for t in test_runs:
+            state_topic = get_associated_state_topic(t["name"])
+            broker.watch_topics([state_topic])
+
+            # send on the broker a msg
+            print(f"TEST#{i}: Asking the software to drive the output [{t['name']}] to state [{t['payload']}]")
+            broker.publish_message(t["name"], t["payload"])
+
+            # give time to the app to react to the published message:
+            time.sleep(1)
+
+            # container.print_logs()
+
+            # verify file gets written inside /tmp
+            with open(INTEGRATION_TESTS_OUTPUT_FILE, "r") as opened_file:
+                assert opened_file.read() == t["expected_file_contents"]
+
+            # verify that the STATE TOPIC in the broker has been updated:
+            msg_count = broker.get_messages_received_in_watched_topic(state_topic)
+            last_payload = broker.get_last_payload_received_in_watched_topic(state_topic)
+            assert (
+                msg_count >= 1
+            )  # the software should publish an initial message and then an update after it processes the request to change output state
+            assert last_payload == t["payload"]
+            broker.unwatch_all()
+
+            i += 1
