@@ -24,22 +24,34 @@ mqtt_broker:
 log_stats_every: 30
 
 # opto-isolated inputs are those sampled by the Sequent Microsystem 16ch-optoinsulated board
-# NOTE1: a simple wiring for alarm system sensors is to get their NC relay fed with positive voltage on
-#        one side and then drive the other wire to the Sequent Microsystem input board; this means the
-#        Sequent Microsystem input will normally be high and will go low in case of MOTION DETECTION/CONTACT-OPEN/etc...
-#        in other words it's an "active low" pin
-# NOTE2: the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
-# NOTE3: the MQTT topic will be in the form "home/<input name>", don't use spaces in the name!
-# NOTE4: to raise security/robustness of the alarm system, on HomeAssistant the "expire_after" property
+# NOTE1: the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
+# NOTE2: the MQTT topic will be in the form "home/<name>", don't use spaces in the name!
+# NOTE3: to raise security/robustness of the alarm system, on HomeAssistant the "expire_after" property
 #        should be used; the MQTT topics for opto-isolated inputs are continuously updated at a frequency
 #        configured by 'mqtt_broker.publish_period_msec'
 i2c_optoisolated_inputs:
   - name: opto_input_1
+    description: Opto-isolated Input for Sensor XYZ
     input_num: 1
     active_low: true
+    mqtt:
+      #topic defaults to 'home/<name>'
+      payload_on: "ON"
+      payload_off: "OFF"
+    home-assistant:
+      device_class: tamper
+      expire_after: 30
   - name: opto_input_2
+    description: Opto-isolated Input for Sensor BCD
     input_num: 2
     active_low: true
+    mqtt:
+      #topic defaults to 'home/<name>'
+      payload_on: "ON"
+      payload_off: "OFF"
+    home-assistant:
+      device_class: tamper
+      expire_after: 30
 
 # GPIO inputs are those sampled by Raspberry directly using its own GPIO pins (3.3V compatible)
 # NOTE1: a fundamental difference with 'i2c_optoisolated_inputs' is that the MQTT topics configured
@@ -48,11 +60,13 @@ i2c_optoisolated_inputs:
 # NOTE2: the MQTT topic will be in the form "<topic>" and will receive the configured "<payload>"
 gpio_inputs:
   - name: radio_channel_a
+    description: Radio Channel A
     gpio: 27
     active_low: false
     mqtt:
       topic: alarmo/command
       payload: ARM_AWAY
+    # NO 'home-assistant' dictionary here... no additional properties are provided
 
 
 # outputs channels are used to drive the SeenGreat 2ch optoinsulated board
@@ -62,8 +76,23 @@ gpio_inputs:
 #        changed status
 outputs:
   - name: ext_alarm_siren
+    description: External Alarm Siren
     gpio: 20
     active_low: true
+    mqtt:
+      #command_topic defaults to 'home/<name>'
+      #state_topic defaults to 'home/<name>/state'
+      payload_on: "ON"
+      payload_off: "OFF"
+    home-assistant:
+      device_class: switch # could be 'outlet'
   - name: int_alarm_siren
     gpio: 21
     active_low: true
+    mqtt:
+      #command_topic defaults to 'home/<name>'
+      #state_topic defaults to 'home/<name>/state'
+      payload_on: "ON"
+      payload_off: "OFF"
+    home-assistant:
+      device_class: switch # could be 'outlet'
