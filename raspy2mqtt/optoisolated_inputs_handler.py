@@ -91,7 +91,7 @@ class OptoIsolatedInputsHandler:
     async def publish_optoisolated_inputs(self, cfg: AppConfig):
         """
         Publishes over MQTT the status of all opto-isolated inputs.
-        This function has a particularity: it's designed to continuously publish over MQTT the status of 
+        This function has a particularity: it's designed to continuously publish over MQTT the status of
         the input channels. This is a safety feature designed for alarm system: the subscriber can trigger
         an alarm if the stream of input sensors stops for some reason.
 

@@ -98,7 +98,7 @@ class GpioOutputsHandler:
         async with cfg.create_aiomqtt_client("_outputs_subscriber") as client:
             for output_ch in cfg.get_all_outputs():
                 topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}"
-                print(f"Subscribing to topic {topic}")
+                print(f"GpioOutputsHandler: Subscribing to topic [{topic}]")
                 await client.subscribe(topic)
 
             async for message in client.messages:
