@@ -43,6 +43,9 @@ g_mqtt_identifier_prefix = ""
 # sets to True when the application was asked to exit:
 g_stop_requested = False
 
+g_last_emulated_gpio_number = 1
+
+
 # =======================================================================================================
 # MAIN HELPERS
 # =======================================================================================================
@@ -67,8 +70,8 @@ def parse_command_line():
     parser.add_argument(
         "-c",
         "--config",
-        help="YAML file specifying the software configuration. Defaults to '/etc/ha-alarm-raspy2mqtt.yaml'",
-        default="/etc/ha-alarm-raspy2mqtt.yaml",
+        help=f"YAML file specifying the software configuration. Defaults to '{DEFAULT_CONFIG_FILE}'",
+        default=DEFAULT_CONFIG_FILE,
     )
     parser.add_argument(
         "-d",
@@ -414,10 +417,6 @@ async def signal_handler(sig: signal.Signals) -> None:
     print(f"Received signal {sig.name}... stopping all async tasks")
     # raise RuntimeError("Stopping via signal")
 
-
-g_last_emulated_gpio_number = 1
-
-
 async def emulate_gpio_input(sig: signal.Signals) -> None:
     global g_last_emulated_gpio_number
     print(f"Received signal {sig.name}: emulating press of GPIO {g_last_emulated_gpio_number}")
@@ -460,20 +459,23 @@ async def main_loop():
         print("Skipping HW initialization (--disable-hw was given)")
 
         class DummyOutputCh:
-            def __init__(self) -> None:
+            def __init__(self, gpio: int) -> None:
                 self.is_lit = False
-
+                self.gpio = gpio
             def on(self):
-                pass
-
+                print(f"INTEGRATION-TEST-HELPER: DummyOutputCh: ON method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}")
+                with open(INTEGRATION_TESTS_OUTPUT_FILE, 'w') as opened_file:
+                    opened_file.write(f"{self.gpio}: ON")
             def off(self):
-                pass
+                print(f"INTEGRATION-TEST-HELPER: DummyOutputCh: OFF method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}")
+                with open(INTEGRATION_TESTS_OUTPUT_FILE, 'w') as opened_file:
+                    opened_file.write(f"{self.gpio}: OFF")
 
         # populate with dummies the output channels:
         global g_output_channels
         for output_ch in cfg.get_all_outputs():
             output_name = output_ch["name"]
-            g_output_channels[output_name] = DummyOutputCh()
+            g_output_channels[output_name] = DummyOutputCh(output_ch["gpio"])
 
         for sig in [signal.SIGUSR1, signal.SIGUSR2]:
             loop.add_signal_handler(sig, lambda: asyncio.create_task(emulate_gpio_input(sig)))

@@ -19,3 +19,7 @@ SEQMICRO_INPUTHAT_INTERRUPT_GPIO = (
 )
 SEQMICRO_INPUTHAT_I2C_SDA = 2  # reserved for I2C communication between Raspberry CPU and the input HAT
 SEQMICRO_INPUTHAT_I2C_SCL = 3  # reserved for I2C communication between Raspberry CPU and the input HAT
+
+# file paths
+DEFAULT_CONFIG_FILE = "/etc/ha-alarm-raspy2mqtt.yaml"
+INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"

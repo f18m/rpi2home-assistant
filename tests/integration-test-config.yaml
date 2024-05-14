@@ -2,11 +2,16 @@
 
 mqtt_broker:
   host: overridden_via_env_variable
+  # NOTE: the publish-period is checked by integration tests: 500msec -> 2Hz publish frequency
   publish_period_msec: 500
 
+# logging stats every 1sec is nice to debug failed integration tests, since they last very few secs
 log_stats_every: 1
 
-# --disable-hw is provided when running integration tests, still we need a few entries to be able to test MQTT publish
+# --disable-hw is provided when running integration tests, 
+# still we need a few entries for each type of input and output
+# to be able to test MQTT publish/subscribe operations
+
 i2c_optoisolated_inputs:
   - name: opto_input_1
     input_num: 1
@@ -15,7 +20,6 @@ i2c_optoisolated_inputs:
     input_num: 2
     active_low: true
 
-# --disable-hw is provided when running integration tests, still we need a few entries to be able to test MQTT publish
 gpio_inputs:
   - name: gpio_input_1
     gpio: 1
@@ -30,7 +34,6 @@ gpio_inputs:
       topic: gpio4
       payload: BYEBYE
 
-# --disable-hw is provided when running integration tests, still we need a few entries to be able to test MQTT publish
 outputs:
   - name: output_1
     gpio: 20

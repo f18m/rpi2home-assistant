@@ -48,7 +48,6 @@ class MosquittoContainer(DockerContainer):
         if self.password:
             # TODO: add authentication
             pass
-            # self.with_command(f"redis-server --requirepass {self.password}")
 
         # helper used to turn asynchronous methods into synchronous:
         self.msg_queue = Queue()
@@ -206,6 +205,13 @@ class MosquittoContainer(DockerContainer):
             return 0
         return self.watched_topics[topic].get_rate()
 
+
+    def publish_message(self, topic: str, payload: str):
+        ret = self.client.publish(topic, payload)
+        ret.wait_for_publish(timeout=2)
+        if not ret.is_published():
+            raise RuntimeError(f"Could not publish a message on topic {topic} to Mosquitto broker: {ret}")
+
     def print_logs(self) -> str:
         print("** BROKER LOGS [STDOUT]:")
         print(self.get_logs()[0].decode())
@@ -225,7 +231,8 @@ class Raspy2MQTTContainer(DockerContainer):
 
         TEST_DIR = os.path.dirname(os.path.abspath(__file__))
         cfgfile = os.path.join(TEST_DIR, Raspy2MQTTContainer.CONFIG_FILE)
-        self.with_volume_mapping(cfgfile, "/etc/ha-alarm-raspy2mqtt.yaml")
+        self.with_volume_mapping(cfgfile, "/etc/ha-alarm-raspy2mqtt.yaml", mode="ro")
+        self.with_volume_mapping("/tmp", "/tmp", mode="rw")
         self.with_env("DISABLE_HW", "true")
 
         # IMPORTANT: to link with the MQTT broker we want to use the IP address internal to the docker network,
@@ -354,9 +361,41 @@ def test_publish_gpio_inputs():
 
         broker.unwatch_all()
 
-
 @pytest.mark.integration
 def test_subscribe_outputs():
+
+    test_runs = [
+        {"name": "home/output_1", "payload": b"ON", "expected_file_contents": "20: ON"},
+        {"name": "home/output_1", "payload": b"OFF", "expected_file_contents": "20: OFF"},
+        {"name": "home/output_2", "payload": b"OFF", "expected_file_contents": "21: OFF"},
+        {"name": "home/output_2", "payload": b"ON", "expected_file_contents": "21: ON"},
+    ]
+    INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
+
+    with Raspy2MQTTContainer(broker=broker) as container:
+        time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
+        if not container.is_running():
+            print(f"Container under test has stopped running... test failed.")
+            container.print_logs()
+            assert False
+
+        for t in test_runs:
+            # send on the broker a msg
+            print(f"Trying to activate output {t['name']}")
+            broker.publish_message(t['name'], t['payload'])
+
+            # give time to the app to react to the published message:
+            time.sleep(1)
+
+            container.print_logs()
+
+            # verify file gets written inside /tmp
+            with open(INTEGRATION_TESTS_OUTPUT_FILE, 'r') as opened_file:
+                assert opened_file.read() == t['expected_file_contents']
+
+
+@pytest.mark.integration
+def test_publish_outputs():
     with Raspy2MQTTContainer(broker=broker) as container:
         time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
         if not container.is_running():
@@ -365,9 +404,4 @@ def test_subscribe_outputs():
             assert False
 
         # send on the broker a msg
-        # verify 
-
-@pytest.mark.integration
-def test_publish_outputs():
-    # FIXME TODO
-    pass
+        # verify topic gets updated
