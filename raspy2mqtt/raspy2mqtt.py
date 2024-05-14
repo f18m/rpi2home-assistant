@@ -89,7 +89,11 @@ def instance_already_running(label="default"):
     released if the file pointer were closed.
     """
 
-    lock_file_pointer = os.open(f"/tmp/instance_{label}.lock", os.O_WRONLY | os.O_CREAT)
+    try:
+        lock_file_pointer = os.open(f"/tmp/instance_{label}.lock", os.O_WRONLY | os.O_CREAT)
+    except PermissionError:
+        print("Not enough permissions to write files under /tmp. Run this application as root.")
+        sys.exit(4)
 
     try:
         # LOCK_NB = lock non-blocking
@@ -127,6 +131,12 @@ def init_hardware(cfg: AppConfig):
         print(
             f"GPIO factory backend is the default one. This might fail on newer Raspbian versions with Linux kernel >= 6.6.20"
         )
+
+    try:
+        gpiozero.Device.ensure_pin_factory()
+    except gpiozero.exc.BadPinFactory:
+        print("Unable to load a gpiozero pin factory. Typically this happens if you don't have pigpio installed.")
+        print("Alternatively you can run this software for basic testing exporting the env variable DISABLE_HW.")
 
     buttons = []
     print(f"Initializing SequentMicrosystem GPIO shutdown button")

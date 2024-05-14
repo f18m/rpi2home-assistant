@@ -30,7 +30,7 @@ class StatsCollector:
         }
 
         self.start_time = time.time()
-        self.counter = 0
+        self.counter = 1
         self.objs_with_stats = objs_with_stats
 
     async def print_stats_periodically(self, cfg: AppConfig):
