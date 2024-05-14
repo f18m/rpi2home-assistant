@@ -394,6 +394,7 @@ def test_publish_subscribe_for_outputs():
             # give time to the app to react to the published message:
             time.sleep(1)
 
+            broker.print_logs()
             container.print_logs()
 
             # verify file gets written inside /tmp

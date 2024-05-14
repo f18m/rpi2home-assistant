@@ -91,7 +91,7 @@ class GpioOutputsHandler:
         print(
             f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to subscribe to OUTPUT commands"
         )
-        self.stats["outputs"]["num_connections_subscribe"] += 1
+        self.stats["num_connections_subscribe"] += 1
         async with cfg.create_aiomqtt_client("_outputs_subscriber") as client:
             for output_ch in cfg.get_all_outputs():
                 topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}"
@@ -108,7 +108,7 @@ class GpioOutputsHandler:
                     self.output_channels[output_name].on()
                 else:
                     self.output_channels[output_name].off()
-                self.stats["outputs"]["num_mqtt_commands_processed"] += 1
+                self.stats["num_mqtt_commands_processed"] += 1
 
     async def publish_outputs_state(self, cfg: AppConfig):
         """
@@ -118,7 +118,7 @@ class GpioOutputsHandler:
         print(
             f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OUTPUT states"
         )
-        self.stats["outputs"]["num_connections_publish"] += 1
+        self.stats["num_connections_publish"] += 1
         output_status_map = {}
         async with cfg.create_aiomqtt_client("_outputs_state_publisher") as client:
             while not GpioOutputsHandler.stop_requested:
@@ -136,7 +136,7 @@ class GpioOutputsHandler:
                         # the broker about each switch
                         # print(f"Publishing to topic {topic} the payload {payload}")
                         await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True)
-                        self.stats["outputs"]["num_mqtt_states_published"] += 1
+                        self.stats["num_mqtt_states_published"] += 1
 
                         # remember the status we just published in order to later skip meaningless updates
                         # when there is no state change:

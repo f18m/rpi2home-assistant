@@ -77,7 +77,7 @@ class OptoIsolatedInputsHandler:
         # NOTE1: this is a blocking call that will block until the 16 inputs are sampled
         # NOTE2: this might raise a TimeoutError exception in case the I2C bus transaction fails
         self.optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
-        self.stats["optoisolated_inputs"]["num_readings"] += 1
+        self.stats["num_readings"] += 1
 
         # FIXME: right now, it's hard to force-wake the coroutine
         # which handles publishing to MQTT
@@ -94,7 +94,7 @@ class OptoIsolatedInputsHandler:
         print(
             f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OPTOISOLATED INPUT states"
         )
-        self.stats["optoisolated_inputs"]["num_connections_publish"] += 1
+        self.stats["num_connections_publish"] += 1
         async with cfg.create_aiomqtt_client("_optoisolated_publisher") as client:
             while not OptoIsolatedInputsHandler.stop_requested:
                 # Publish each sampled value as a separate MQTT topic
@@ -127,7 +127,7 @@ class OptoIsolatedInputsHandler:
                         # print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
 
                         await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE)
-                        self.stats["optoisolated_inputs"]["num_mqtt_messages"] += 1
+                        self.stats["num_mqtt_messages"] += 1
 
                 update_loop_duration_sec = time.perf_counter() - update_loop_start_sec
                 # print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
