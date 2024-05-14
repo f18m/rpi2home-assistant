@@ -79,6 +79,19 @@ After starting the application you can verify from the logs whether it's running
 journalctl -u ha-alarm-raspy2mqtt --since="5min ago"
 ```
 
+## How to test with Docker
+
+This project also provides a multi-arch docker image to ease testing.
+You can launch this software into a docker container by running:
+
+```
+   docker run -d \
+      --volume <your config file>:/etc/ha-alarm-raspy2mqtt.yaml \
+      --privileged --hostname $(hostname) \
+      ghcr.io/f18m/raspy-sensors2mqtt:<latest version>
+```
+
+
 ## Development
 
 To develop changes you can create a branch and push changes there. Then:
