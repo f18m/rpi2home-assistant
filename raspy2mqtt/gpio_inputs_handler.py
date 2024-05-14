@@ -28,6 +28,7 @@ class GpioInputsHandler:
         # thread-safe queue to communicate from GPIOzero secondary threads to main thread
         self.gpio_queue = queue.Queue()
 
+        # in case integration tests are running:
         self.last_emulated_gpio_number = 0
 
         self.stats = {
@@ -38,8 +39,22 @@ class GpioInputsHandler:
         }
 
     def on_gpio_input(self, device):
+        """
+        This is a gpiozero callback function.
+        Remember: gpiozero will invoke such functions from a SECONDARY thread. That's why we use a
+        thread-safe queue to communicate back to the main thread (which runs the event loop)
+        """
         print(f"!! Detected activation of GPIO{device.pin.number} !! ")
         self.gpio_queue.put(device.pin.number)
+
+    async def emulate_gpio_input(self, sig: signal.Signals) -> None:
+        """
+        Used for integration tests.
+        Emulates a GPIO input activation
+        """
+        self.last_emulated_gpio_number += 1
+        print(f"Received signal {sig.name}: emulating press of GPIO {self.last_emulated_gpio_number}")
+        self.gpio_queue.put(self.last_emulated_gpio_number)
 
     def init_hardware(self, cfg: AppConfig, loop: asyncio.BaseEventLoop) -> list[gpiozero.Button]:
         buttons = []
@@ -64,13 +79,10 @@ class GpioInputsHandler:
 
         return buttons
 
-    async def emulate_gpio_input(self, sig: signal.Signals) -> None:
-        self.last_emulated_gpio_number += 1
-        print(f"Received signal {sig.name}: emulating press of GPIO {self.last_emulated_gpio_number}")
-        self.gpio_queue.put(self.last_emulated_gpio_number)
-
     async def process_gpio_inputs_queue_and_publish(self, cfg: AppConfig):
         """
+        Publishes over MQTT a message each time a GPIO input changes status.
+
         This function may throw a aiomqtt.MqttError exception indicating a connection issue!
         """
         print(

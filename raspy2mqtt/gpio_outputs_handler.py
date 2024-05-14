@@ -86,6 +86,9 @@ class GpioOutputsHandler:
 
     async def subscribe_and_activate_outputs(self, cfg: AppConfig):
         """
+        Subscribes to MQTT topics that will receive commands to activate/turn-off GPIO outputs
+        and takes care of interfacing with gpiozero to actually drive the GPIO output pin high or low.
+
         This function may throw an aiomqtt.MqttError exception indicating a connection issue!
         """
         print(
@@ -112,6 +115,10 @@ class GpioOutputsHandler:
 
     async def publish_outputs_state(self, cfg: AppConfig):
         """
+        For each output GPIO pin this function publishes over MQTT the 'state topic'.
+        The 'state topic' is a HomeAssistant-thing that acts as confirmation of the output commands:
+        only when the output truly can change from OFF->ON or from ON->OFF the state topic gets updated.
+
         This function may throw a aiomqtt.MqttError exception indicating a connection issue!
         """
 

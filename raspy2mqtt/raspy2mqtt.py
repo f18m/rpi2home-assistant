@@ -106,13 +106,6 @@ def instance_already_running(label="default"):
     return already_running
 
 
-# =======================================================================================================
-# GPIOZERO helper functions
-# These functions execute in the context of secondary threads created by gpiozero library
-# and attached to INPUT button pressure
-# =======================================================================================================
-
-
 def shutdown():
     print(f"!! Detected long-press on the Sequent Microsystem button. Triggering clean shutdown of the Raspberry PI !!")
     subprocess.call(["sudo", "shutdown", "-h", "now"])

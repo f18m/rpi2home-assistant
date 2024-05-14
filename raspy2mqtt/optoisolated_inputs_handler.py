@@ -67,9 +67,11 @@ class OptoIsolatedInputsHandler:
         return buttons
 
     def sample_optoisolated_inputs(self):
-        # This function is invoked when the SequentMicrosystem hat triggers an interrupt saying
-        # "hey there is some change in my inputs"... so we read all the 16 digital inputs
-        #
+        """
+        This function is invoked when the SequentMicrosystem hat triggers an interrupt saying
+        "hey there is some change in my inputs"... so we read all the 16 digital inputs
+        """
+
         # NOTE0: since this routine is invoked by the gpiozero library, it runs on a secondary OS thread
         #        so _in theory_ we should be using a mutex when writing to the global 'optoisolated_inputs_sampled_values'
         #        variable. In practice since it's a simple integer variable, I don't think the mutex is needed.
@@ -88,6 +90,11 @@ class OptoIsolatedInputsHandler:
 
     async def publish_optoisolated_inputs(self, cfg: AppConfig):
         """
+        Publishes over MQTT the status of all opto-isolated inputs.
+        This function has a particularity: it's designed to continuously publish over MQTT the status of 
+        the input channels. This is a safety feature designed for alarm system: the subscriber can trigger
+        an alarm if the stream of input sensors stops for some reason.
+
         This function may throw a aiomqtt.MqttError exception indicating a connection issue!
         """
         print(
