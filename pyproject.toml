@@ -29,7 +29,7 @@ line-length = 120
 
 [tool.poetry]
 name = "ha-alarm-raspy2mqtt"
-version = "1.1.1"
+version = "1.1.2"
 description = "HomeAssistant Alarm bridge for wired sensors/actuators"
 authors = ["Francesco Montorsi <francesco.montorsi@gmail.com>"]
 readme = "README.md"
