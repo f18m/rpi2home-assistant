@@ -1,4 +1,4 @@
-name: CI for publishing new docker images
+name: docker-push CI
 
 on:
   push:

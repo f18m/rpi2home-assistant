@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import yaml
+import yaml, aiomqtt, datetime, timezone
 from raspy2mqtt.constants import *
 
 #
@@ -28,6 +28,10 @@ class AppConfig:
         # config options related to CLI options:
         self.disable_hw = False  # can be get/set from the outside
         self.verbose = False
+
+        # before launching MQTT connections, define a unique MQTT prefix identifier:
+        self.mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
 
     def load(self, cfg_yaml: str) -> bool:
         print(f"Loading configuration file {cfg_yaml}")
@@ -161,6 +165,9 @@ class AppConfig:
         print("** MISC:")
         print(f"   Log stats every: {self.stats_log_period_sec}s")
 
+
+    # MQTT 
+
     @property
     def mqtt_broker_host(self) -> str:
         if self.config is None:
@@ -222,6 +229,19 @@ class AppConfig:
         except:
             # in this case the key is completely missing or does contain an integer value
             return 1.0  # default value
+
+
+    def create_aiomqtt_client(self, identifier_str: str):
+        return aiomqtt.Client(
+            hostname=self.mqtt_broker_host,
+            port=self.mqtt_broker_port,
+            timeout=self.mqtt_reconnection_period_sec,
+            username=self.mqtt_broker_user,
+            password=self.mqtt_broker_password,
+            identifier=self.mqtt_identifier_prefix + identifier_str,
+        )
+
+
 
     @property
     def stats_log_period_sec(self) -> int:

@@ -13,7 +13,6 @@ import fcntl
 import sys
 import asyncio
 import aiomqtt
-import lib16inpind
 import gpiozero
 import subprocess
 import signal
@@ -125,16 +124,6 @@ def instance_already_running(label="default"):
     return already_running
 
 
-def create_aiomqtt_client(cfg: AppConfig, identifier_str: str):
-    return aiomqtt.Client(
-        hostname=cfg.mqtt_broker_host,
-        port=cfg.mqtt_broker_port,
-        timeout=cfg.mqtt_reconnection_period_sec,
-        username=cfg.mqtt_broker_user,
-        password=cfg.mqtt_broker_password,
-        identifier=g_mqtt_identifier_prefix + identifier_str,
-    )
-
 
 # =======================================================================================================
 # GPIOZERO helper functions
@@ -147,28 +136,6 @@ def shutdown():
     print(f"!! Detected long-press on the Sequent Microsystem button. Triggering clean shutdown of the Raspberry PI !!")
     subprocess.call(["sudo", "shutdown", "-h", "now"])
 
-
-def sample_optoisolated_inputs():
-    global g_stats, g_optoisolated_inputs_sampled_values
-
-    # This function is invoked when the SequentMicrosystem hat triggers an interrupt saying
-    # "hey there is some change in my inputs"... so we read all the 16 digital inputs
-    #
-    # NOTE0: since this routine is invoked by the gpiozero library, it runs on a secondary OS thread
-    #        so _in theory_ we should be using a mutex when writing to the global 'g_optoisolated_inputs_sampled_values'
-    #        variable. In practice since it's a simple integer variable, I don't think the mutex is needed.
-    # NOTE1: this is a blocking call that will block until the 16 inputs are sampled
-    # NOTE2: this might raise a TimeoutError exception in case the I2C bus transaction fails
-    g_optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
-    g_stats["optoisolated_inputs"]["num_readings"] += 1
-
-    # FIXME: right now, it's hard to force-wake the coroutine
-    # which handles publishing to MQTT
-    # the reason is that we should be using
-    #   https://docs.python.org/3/library/asyncio-sync.html#asyncio.Event
-    # which is not thread-safe. And this function executes in GPIOzero secondary thread :(
-    # This means that if an input changes rapidly from 0 to 1 and then back to 0, we might not
-    # publish this to MQTT (depends on the MQTT publish frequency... nyquist frequency)
 
 
 def on_gpio_input(device):
@@ -247,59 +214,6 @@ async def print_stats_periodically(cfg: AppConfig):
             next_stat_time = time.time() + cfg.stats_log_period_sec
 
         await asyncio.sleep(0.25)
-
-
-async def publish_optoisolated_inputs(cfg: AppConfig):
-    """
-    This function may throw a aiomqtt.MqttError exception indicating a connection issue!
-    """
-    global g_stats, g_optoisolated_inputs_sampled_values, g_mqtt_identifier_prefix, g_stop_requested
-
-    print(
-        f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OPTOISOLATED INPUT states"
-    )
-    g_stats["optoisolated_inputs"]["num_connections_publish"] += 1
-    async with create_aiomqtt_client(cfg, "_optoisolated_publisher") as client:
-        while not g_stop_requested:
-            # Publish each sampled value as a separate MQTT topic
-            update_loop_start_sec = time.perf_counter()
-            for i in range(SEQMICRO_INPUTHAT_MAX_CHANNELS):
-
-                # IMPORTANT: this function expects something else to update the 'g_optoisolated_inputs_sampled_values'
-                #            integer, whenever it is necessary to update it
-
-                # Extract the bit at position i-th using bitwise AND operation
-                bit_value = bool(g_optoisolated_inputs_sampled_values & (1 << i))
-
-                # convert from zero-based index 'i' to 1-based index, as used in the config file
-                input_cfg = cfg.get_optoisolated_input_config(1 + i)
-                if input_cfg is not None:
-                    # Choose the TOPIC and message PAYLOAD
-                    topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg['name']}"
-                    if input_cfg["active_low"]:
-                        logical_value = not bit_value
-                        input_type = "active low"
-                    else:
-                        logical_value = bit_value
-                        input_type = "active high"
-
-                    payload = "ON" if logical_value else "OFF"
-                    # print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
-
-                    await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE)
-                    g_stats["optoisolated_inputs"]["num_mqtt_messages"] += 1
-
-            update_loop_duration_sec = time.perf_counter() - update_loop_start_sec
-            # print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
-
-            # Now sleep a little bit before repeating
-            actual_sleep_time_sec = cfg.mqtt_publish_period_sec
-            if actual_sleep_time_sec > update_loop_duration_sec:
-                # adjust for the time it took to update on MQTT broker all topics
-                actual_sleep_time_sec -= update_loop_duration_sec
-
-            await asyncio.sleep(actual_sleep_time_sec)
-
 
 async def process_gpio_inputs_queue_and_publish(cfg: AppConfig):
     """
@@ -496,9 +410,6 @@ async def main_loop():
 
         # do first sampling operation immediately:
         sample_optoisolated_inputs()
-
-    # before launching MQTT connections, define a unique MQTT prefix identifier:
-    g_mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     # wrap with error-handling code the main loop
     exit_code = 0
