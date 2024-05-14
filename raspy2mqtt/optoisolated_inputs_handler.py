@@ -30,7 +30,7 @@ class OptoIsolatedInputsHandler:
 
     def __init__(self):
         # last reading of the 16 digital opto-isolated inputs
-        self.optoisolated_inputs_sampled_values = None
+        self.optoisolated_inputs_sampled_values = 0
 
         self.stats = {
             "num_readings": 0,
@@ -39,7 +39,6 @@ class OptoIsolatedInputsHandler:
         }
 
     def init_hardware(self, cfg: AppConfig) -> list[gpiozero.Button]:
-
         buttons = []
         if cfg.disable_hw:
             print("Skipping optoisolated inputs HW initialization (--disable-hw was given)")
