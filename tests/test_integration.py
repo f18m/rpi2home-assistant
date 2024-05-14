@@ -394,7 +394,8 @@ def test_publish_subscribe_for_outputs():
             # give time to the app to react to the published message:
             time.sleep(1)
 
-            # container.print_logs()
+            broker.print_logs()
+            container.print_logs()
 
             # verify file gets written inside /tmp
             with open(INTEGRATION_TESTS_OUTPUT_FILE, "r") as opened_file:
