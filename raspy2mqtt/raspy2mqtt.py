@@ -468,6 +468,7 @@ async def main_loop():
                 print(
                     f"INTEGRATION-TEST-HELPER: DummyOutputCh: ON method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
                 )
+                self.is_lit = True
                 with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
                     opened_file.write(f"{self.gpio}: ON")
 
@@ -475,6 +476,7 @@ async def main_loop():
                 print(
                     f"INTEGRATION-TEST-HELPER: DummyOutputCh: OFF method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
                 )
+                self.is_lit = False
                 with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
                     opened_file.write(f"{self.gpio}: OFF")
 

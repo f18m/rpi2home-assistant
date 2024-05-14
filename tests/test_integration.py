@@ -192,17 +192,17 @@ class MosquittoContainer(DockerContainer):
 
     def get_messages_received_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
-            return 0
+            raise RuntimeError(f"Topic {topic} is not watched! Fix the test")
         return self.watched_topics[topic].get_count()
 
     def get_last_payload_received_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
-            return 0
+            raise RuntimeError(f"Topic {topic} is not watched! Fix the test")
         return self.watched_topics[topic].get_last_payload()
 
     def get_message_rate_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
-            return 0
+            raise RuntimeError(f"Topic {topic} is not watched! Fix the test")
         return self.watched_topics[topic].get_rate()
 
     def publish_message(self, topic: str, payload: str):
@@ -284,7 +284,7 @@ def setup(request):
 
 
 @pytest.mark.integration
-def test_publish_optoisolated_inputs():
+def test_publish_for_optoisolated_inputs():
 
     topics_under_test = ["home/opto_input_1", "home/opto_input_2"]
     min_expected_msg = 10
@@ -323,7 +323,7 @@ def test_publish_optoisolated_inputs():
 
 
 @pytest.mark.integration
-def test_publish_gpio_inputs():
+def test_publish_for_gpio_inputs():
 
     topics_under_test = [
         {"name": "gpio1", "expected_payload": b"HEY"},
@@ -362,7 +362,7 @@ def test_publish_gpio_inputs():
 
 
 @pytest.mark.integration
-def test_subscribe_outputs():
+def test_publish_subscribe_for_outputs():
 
     test_runs = [
         {"name": "home/output_1", "payload": b"ON", "expected_file_contents": "20: ON"},
@@ -372,6 +372,9 @@ def test_subscribe_outputs():
     ]
     INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
 
+    def get_associated_state_topic(topic_name: str):
+        return topic_name + "/state"
+
     with Raspy2MQTTContainer(broker=broker) as container:
         time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
         if not container.is_running():
@@ -379,29 +382,31 @@ def test_subscribe_outputs():
             container.print_logs()
             assert False
 
+        i = 0
         for t in test_runs:
+            state_topic = get_associated_state_topic(t["name"])
+            broker.watch_topics([state_topic])
+
             # send on the broker a msg
-            print(f"Trying to activate output {t['name']}")
+            print(f"TEST#{i}: Asking the software to drive the output [{t['name']}] to state [{t['payload']}]")
             broker.publish_message(t["name"], t["payload"])
 
             # give time to the app to react to the published message:
             time.sleep(1)
 
-            container.print_logs()
+            # container.print_logs()
 
             # verify file gets written inside /tmp
             with open(INTEGRATION_TESTS_OUTPUT_FILE, "r") as opened_file:
                 assert opened_file.read() == t["expected_file_contents"]
 
+            # verify that the STATE TOPIC in the broker has been updated:
+            msg_count = broker.get_messages_received_in_watched_topic(state_topic)
+            last_payload = broker.get_last_payload_received_in_watched_topic(state_topic)
+            assert (
+                msg_count >= 1
+            )  # the software should publish an initial message and then an update after it processes the request to change output state
+            assert last_payload == t["payload"]
+            broker.unwatch_all()
 
-@pytest.mark.integration
-def test_publish_outputs():
-    with Raspy2MQTTContainer(broker=broker) as container:
-        time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
-        if not container.is_running():
-            print(f"Container under test has stopped running... test failed.")
-            container.print_logs()
-            assert False
-
-        # send on the broker a msg
-        # verify topic gets updated
+            i += 1
