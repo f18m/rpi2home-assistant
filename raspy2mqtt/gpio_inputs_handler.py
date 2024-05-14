@@ -65,9 +65,9 @@ class GpioInputsHandler:
         return buttons
 
     async def emulate_gpio_input(self, sig: signal.Signals) -> None:
+        self.last_emulated_gpio_number += 1
         print(f"Received signal {sig.name}: emulating press of GPIO {self.last_emulated_gpio_number}")
         self.gpio_queue.put(self.last_emulated_gpio_number)
-        self.last_emulated_gpio_number += 1
 
     async def process_gpio_inputs_queue_and_publish(self, cfg: AppConfig):
         """

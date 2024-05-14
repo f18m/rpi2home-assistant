@@ -7,16 +7,7 @@
 #
 # TODO: add HomeAssistant discovery messages
 
-import argparse
-import os
-import fcntl
-import sys
-import asyncio
-import aiomqtt
-import gpiozero
-import subprocess
-import signal
-import time
+import argparse, os, fcntl, sys, asyncio, aiomqtt, gpiozero, subprocess, signal
 from raspy2mqtt.stats import *
 from raspy2mqtt.config import *
 from raspy2mqtt.constants import *
