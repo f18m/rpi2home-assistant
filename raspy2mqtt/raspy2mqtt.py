@@ -417,6 +417,7 @@ async def signal_handler(sig: signal.Signals) -> None:
     print(f"Received signal {sig.name}... stopping all async tasks")
     # raise RuntimeError("Stopping via signal")
 
+
 async def emulate_gpio_input(sig: signal.Signals) -> None:
     global g_last_emulated_gpio_number
     print(f"Received signal {sig.name}: emulating press of GPIO {g_last_emulated_gpio_number}")
@@ -462,13 +463,19 @@ async def main_loop():
             def __init__(self, gpio: int) -> None:
                 self.is_lit = False
                 self.gpio = gpio
+
             def on(self):
-                print(f"INTEGRATION-TEST-HELPER: DummyOutputCh: ON method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}")
-                with open(INTEGRATION_TESTS_OUTPUT_FILE, 'w') as opened_file:
+                print(
+                    f"INTEGRATION-TEST-HELPER: DummyOutputCh: ON method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
+                )
+                with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
                     opened_file.write(f"{self.gpio}: ON")
+
             def off(self):
-                print(f"INTEGRATION-TEST-HELPER: DummyOutputCh: OFF method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}")
-                with open(INTEGRATION_TESTS_OUTPUT_FILE, 'w') as opened_file:
+                print(
+                    f"INTEGRATION-TEST-HELPER: DummyOutputCh: OFF method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
+                )
+                with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
                     opened_file.write(f"{self.gpio}: OFF")
 
         # populate with dummies the output channels:

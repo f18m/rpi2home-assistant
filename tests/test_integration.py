@@ -205,7 +205,6 @@ class MosquittoContainer(DockerContainer):
             return 0
         return self.watched_topics[topic].get_rate()
 
-
     def publish_message(self, topic: str, payload: str):
         ret = self.client.publish(topic, payload)
         ret.wait_for_publish(timeout=2)
@@ -361,6 +360,7 @@ def test_publish_gpio_inputs():
 
         broker.unwatch_all()
 
+
 @pytest.mark.integration
 def test_subscribe_outputs():
 
@@ -382,7 +382,7 @@ def test_subscribe_outputs():
         for t in test_runs:
             # send on the broker a msg
             print(f"Trying to activate output {t['name']}")
-            broker.publish_message(t['name'], t['payload'])
+            broker.publish_message(t["name"], t["payload"])
 
             # give time to the app to react to the published message:
             time.sleep(1)
@@ -390,8 +390,8 @@ def test_subscribe_outputs():
             container.print_logs()
 
             # verify file gets written inside /tmp
-            with open(INTEGRATION_TESTS_OUTPUT_FILE, 'r') as opened_file:
-                assert opened_file.read() == t['expected_file_contents']
+            with open(INTEGRATION_TESTS_OUTPUT_FILE, "r") as opened_file:
+                assert opened_file.read() == t["expected_file_contents"]
 
 
 @pytest.mark.integration
