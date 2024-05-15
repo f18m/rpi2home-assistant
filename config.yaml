@@ -16,8 +16,8 @@ mqtt_broker:
 
   # in case your broker has authentication turned on, please provide user/pw
   # TODO: password is cleartext right now, which is insecure
-  user: 
-  password:
+  #user: 
+  #password:
 
 
 # stats printed on stdout each N secs:
@@ -66,7 +66,8 @@ gpio_inputs:
     mqtt:
       topic: alarmo/command
       payload: ARM_AWAY
-    # NO 'home-assistant' dictionary here... no additional properties are provided
+    # NO 'home-assistant' dictionary here... reason is that the 'gpio_inputs' do not produce any
+    # HomeAssistant binary_sensor. They just trigger the publish of a particular payload on a particular topic... so far
 
 
 # outputs channels are used to drive the SeenGreat 2ch optoinsulated board
@@ -87,6 +88,7 @@ outputs:
     home-assistant:
       device_class: switch # could be 'outlet'
   - name: int_alarm_siren
+    description: Internal Alarm Siren
     gpio: 21
     active_low: true
     mqtt:

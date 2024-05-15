@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
-import yaml, aiomqtt, datetime
+import yaml, aiomqtt, datetime, sys
 from datetime import datetime, timezone
 from raspy2mqtt.constants import *
+
+from schema import Schema, And, Or, Use, Optional, SchemaError, Regex
+
 
 #
 # Author: fmontorsi
@@ -33,41 +36,88 @@ class AppConfig:
         # before launching MQTT connections, define a unique MQTT prefix identifier:
         self.mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
+        self.mqtt_schema_for_sensor_on_and_off = Schema({
+            Optional("topic"): str,
+            "payload_on": str,
+            "payload_off": str,
+        })
+        self.mqtt_schema_for_edge_triggered_sensor = Schema({
+            Optional("topic"): str,
+            "payload": str,
+        })
+        self.home_assistant_schema = Schema({
+            "device_class": str,
+            Optional("expire_after"): int,
+        })
+
+        self.config_file_schema = Schema(
+            {
+                "mqtt_broker": {
+                    "host": str,
+                    Optional("reconnection_period_msec"): int,
+                    Optional("publish_period_msec"): int,
+                    Optional("user"): str,
+                    Optional("password"): str,
+                },
+                Optional("log_stats_every"): int,
+                Optional("i2c_optoisolated_inputs"): [
+                    {
+                        "name": Regex(r'^[a-z0-9_]+$'),
+                        Optional("description"): str,
+                        "input_num": int,
+                        "active_low": bool,
+                        "mqtt": self.mqtt_schema_for_sensor_on_and_off,
+                        "home-assistant": self.home_assistant_schema,
+                    }
+                ],
+                Optional("gpio_inputs"): [
+                    {
+                        "name": Regex(r'^[a-z0-9_]+$'),
+                        Optional("description"): str,
+                        "gpio": int,
+                        "active_low": bool,
+                        "mqtt": self.mqtt_schema_for_edge_triggered_sensor,
+                    }
+                ],
+                Optional("outputs"): [
+                    {
+                        "name": str,
+                        Optional("description"): str,
+                        "gpio": int,
+                        "active_low": bool,
+                        "mqtt": self.mqtt_schema_for_sensor_on_and_off,
+                        "home-assistant": self.home_assistant_schema,
+                    }
+                ],
+            }
+        )
+
     def load(self, cfg_yaml: str) -> bool:
         print(f"Loading configuration file {cfg_yaml}")
         try:
             with open(cfg_yaml, "r") as file:
                 self.config = yaml.safe_load(file)
-            if not isinstance(self.config, dict):
-                raise ValueError("Invalid YAML format: root element must be a dictionary")
-            # check MQTT
-            if "mqtt_broker" not in self.config or self.config["mqtt_broker"] is None:
-                raise ValueError("Missing 'mqtt_broker' section in the YAML config file")
-            if "host" not in self.config["mqtt_broker"]:
-                raise ValueError("Missing 'mqtt_broker.host' field in the YAML config file")
-            # check inputs
-            if "i2c_optoisolated_inputs" not in self.config:
-                raise ValueError("Missing 'i2c_optoisolated_inputs' section in the YAML config file")
-            if self.config["i2c_optoisolated_inputs"] is None:
-                raise ValueError("Missing 'i2c_optoisolated_inputs' section in the YAML config file")
-            # check outputs
-            if "outputs" not in self.config:
-                raise ValueError("Missing 'outputs' section in the YAML config file")
-            if self.config["outputs"] is None:
-                raise ValueError("Missing 'outputs' section in the YAML config file")
         except FileNotFoundError:
             print(f"Error: configuration file '{cfg_yaml}' not found.")
             return False
         except yaml.YAMLError as e:
             print(f"Error parsing YAML config file '{cfg_yaml}': {e}")
             return False
-        except ValueError as e:
-            print(f"Error in YAML config file '{cfg_yaml}': {e}")
-            return False
+
+        try:
+            self.config_file_schema.validate(self.config)
+        except SchemaError as e:
+            print(e)
+            sys.exit(3)
 
         try:
             # convert the 'i2c_optoisolated_inputs' part in a dictionary indexed by the DIGITAL INPUT CHANNEL NUMBER:
             self.optoisolated_inputs_map = {}
+
+            if "i2c_optoisolated_inputs" not in self.config:
+                # empty list: feature disabled
+                self.config["i2c_optoisolated_inputs"] = []
+
             for input_item in self.config["i2c_optoisolated_inputs"]:
                 idx = int(input_item["input_num"])
                 if idx < 1 or idx > 16:
@@ -97,6 +147,11 @@ class AppConfig:
         try:
             # convert the 'gpio_inputs' part in a dictionary indexed by the GPIO PIN NUMBER:
             self.gpio_inputs_map = {}
+
+            if "gpio_inputs" not in self.config:
+                # empty list: feature disabled
+                self.config["gpio_inputs"] = []
+
             for input_item in self.config["gpio_inputs"]:
                 idx = int(input_item["gpio"])
                 if idx < 1 or idx > 40:
@@ -124,6 +179,11 @@ class AppConfig:
         try:
             # convert the 'outputs' part in a dictionary indexed by the NAME:
             self.outputs_map = {}
+
+            if "outputs" not in self.config:
+                # empty list: feature disabled
+                self.config["outputs"] = []
+
             for output_item in self.config["outputs"]:
                 self.outputs_map[output_item["name"]] = output_item
                 # print(output_item)
@@ -152,15 +212,18 @@ class AppConfig:
         print(f"   MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
         print(f"   MQTT publish period: {self.mqtt_publish_period_sec}s")
         print("** I2C isolated inputs:")
-        for k, v in self.optoisolated_inputs_map.items():
-            print(f"   input#{k}: {v['name']}")
+        if self.optoisolated_inputs_map is not None:
+            for k, v in self.optoisolated_inputs_map.items():
+                print(f"   input#{k}: {v['name']}")
         print("** GPIO inputs:")
-        for k, v in self.gpio_inputs_map.items():
-            print(f"   input#{k}: {v['name']}")
+        if self.gpio_inputs_map is not None:
+            for k, v in self.gpio_inputs_map.items():
+                print(f"   input#{k}: {v['name']}")
         print("** OUTPUTs:")
         i = 1
-        for k, v in self.outputs_map.items():
-            print(f"   output#{i}: {k}")
+        if self.outputs_map is not None:
+            for k, v in self.outputs_map.items():
+                print(f"   output#{i}: {k}")
             i += 1
         print("** MISC:")
         print(f"   Log stats every: {self.stats_log_period_sec}s")
