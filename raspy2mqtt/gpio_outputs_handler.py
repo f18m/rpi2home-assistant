@@ -66,6 +66,7 @@ class GpioOutputsHandler:
             "num_mqtt_commands_processed": 0,
             "num_connections_publish": 0,
             "num_mqtt_states_published": 0,
+            "ERR_invalid_payload_received": 0,
         }
 
     def init_hardware(self, cfg: AppConfig) -> None:
@@ -97,20 +98,22 @@ class GpioOutputsHandler:
         self.stats["num_connections_subscribe"] += 1
         async with cfg.create_aiomqtt_client("_outputs_subscriber") as client:
             for output_ch in cfg.get_all_outputs():
-                topic = f"{MQTT_TOPIC_PREFIX}/{output_ch['name']}"
+                topic = output_ch["mqtt"]["topic"]
                 print(f"GpioOutputsHandler: Subscribing to topic [{topic}]")
                 await client.subscribe(topic)
 
             async for message in client.messages:
-                output_name = str(message.topic).removeprefix(f"{MQTT_TOPIC_PREFIX}/")
-                c = cfg.get_output_config(output_name)
+                c = cfg.get_output_config_by_mqtt_topic(message.topic)
                 print(
-                    f"Received message for digital output [{output_name}] with payload {message.payload}... changing GPIO output pin state"
+                    f"Received message for digital output [{message.topic}] with payload {message.payload}... changing GPIO output pin state"
                 )
-                if message.payload == b"ON":
-                    self.output_channels[output_name].on()
+                if message.payload == output_ch["mqtt"]["payload_on"]:
+                    self.output_channels[message.topic].on()
+                elif message.payload == output_ch["mqtt"]["payload_off"]:
+                    self.output_channels[message.topic].off()
                 else:
-                    self.output_channels[output_name].off()
+                    self.stats["ERR_invalid_payload_received"] += 1
+
                 self.stats["num_mqtt_commands_processed"] += 1
 
     async def publish_outputs_state(self, cfg: AppConfig):
@@ -130,24 +133,24 @@ class GpioOutputsHandler:
         async with cfg.create_aiomqtt_client("_outputs_state_publisher") as client:
             while not GpioOutputsHandler.stop_requested:
                 for output_ch in cfg.get_all_outputs():
-                    output_name = output_ch["name"]
-                    assert output_name in self.output_channels  # this should be garantueed due to initial setup
-                    output_status = self.output_channels[output_name].is_lit
+                    mqtt_topic = output_ch["mqtt"]["topic"]
+                    assert mqtt_topic in self.output_channels  # this should be garantueed due to initial setup
+                    output_status = self.output_channels[mqtt_topic].is_lit
 
-                    if output_name not in output_status_map or output_status_map[output_name] != output_status:
+                    if mqtt_topic not in output_status_map or output_status_map[mqtt_topic] != output_status:
                         # need to publish an update over MQTT... the state has changed
-                        topic = f"{MQTT_TOPIC_PREFIX}/{output_name}/state"
-                        payload = "ON" if output_status else "OFF"
+                        state_topic = f"{mqtt_topic}/state"
+                        payload = output_ch["mqtt"]["payload_on"] if output_status else output_ch["mqtt"]["payload_off"]
 
                         # publish with RETAIN flag so that Home Assistant will always find an updated status on
                         # the broker about each switch
                         # print(f"Publishing to topic {topic} the payload {payload}")
-                        await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True)
+                        await client.publish(state_topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True)
                         self.stats["num_mqtt_states_published"] += 1
 
                         # remember the status we just published in order to later skip meaningless updates
                         # when there is no state change:
-                        output_status_map[output_name] = output_status
+                        output_status_map[mqtt_topic] = output_status
 
                 await asyncio.sleep(cfg.mqtt_publish_period_sec)
 
@@ -155,6 +158,9 @@ class GpioOutputsHandler:
         print(f">> OUTPUTS:")
         print(
             f">>   Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_subscribe']}"
+        )
+        print(
+            f">>   ERROR: invalid payloads received [subscribe channel]: {self.stats['ERR_invalid_payload_received']}"
         )
         print(
             f">>   Num commands for output channels processed from MQTT broker: {self.stats['num_mqtt_commands_processed']}"

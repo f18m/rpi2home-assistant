@@ -39,8 +39,8 @@ class AppConfig:
         self.mqtt_schema_for_sensor_on_and_off = Schema(
             {
                 Optional("topic"): str,
-                "payload_on": str,
-                "payload_off": str,
+                Optional("payload_on"): str,
+                Optional("payload_off"): str,
             }
         )
         self.mqtt_schema_for_edge_triggered_sensor = Schema(
@@ -72,7 +72,7 @@ class AppConfig:
                         Optional("description"): str,
                         "input_num": int,
                         "active_low": bool,
-                        "mqtt": self.mqtt_schema_for_sensor_on_and_off,
+                        Optional("mqtt"): self.mqtt_schema_for_sensor_on_and_off,
                         "home_assistant": self.home_assistant_schema,
                     }
                 ],
@@ -82,7 +82,9 @@ class AppConfig:
                         Optional("description"): str,
                         "gpio": int,
                         "active_low": bool,
+                        # mqtt is NOT optional for GPIO inputs... we need to have a meaningful payload to send
                         "mqtt": self.mqtt_schema_for_edge_triggered_sensor,
+                        # home_assistant is not allowed for GPIO inputs, since they do not create binary_sensors
                     }
                 ],
                 Optional("outputs"): [
@@ -91,7 +93,7 @@ class AppConfig:
                         Optional("description"): str,
                         "gpio": int,
                         "active_low": bool,
-                        "mqtt": self.mqtt_schema_for_sensor_on_and_off,
+                        Optional("mqtt"): self.mqtt_schema_for_sensor_on_and_off,
                         "home_assistant": self.home_assistant_schema,
                     }
                 ],
@@ -118,17 +120,25 @@ class AppConfig:
     def populate_defaults_in_list_entry(
         self, entry_dict: dict, has_mqtt_section: bool, has_homeassistant_section: bool
     ) -> dict:
-        if has_mqtt_section:
-            # the following assertion is justified because 'schema' library should garantuee
-            # that we get here only if all entries in the config file do have the 'mqtt' section
-            assert "mqtt" in entry_dict
+        if "description" not in entry_dict:
+            entry_dict["description"] = entry_dict["name"]
 
-            # the optional entry is the 'topic':
+        if has_mqtt_section:
+            if "mqtt" not in entry_dict:
+                entry_dict["mqtt"] = {}
+
+            # an optional entry is the 'topic':
             if "topic" not in entry_dict["mqtt"]:
                 entry_dict["mqtt"]["topic"] = f"{MQTT_TOPIC_PREFIX}/{entry_dict['name']}"
                 print(f"Topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['topic']}]")
+            if "payload_on" not in entry_dict["mqtt"]:
+                entry_dict["mqtt"]["payload_on"] = "ON"
+            if "payload_off" not in entry_dict["mqtt"]:
+                entry_dict["mqtt"]["payload_off"] = "OFF"
 
         if has_homeassistant_section:
+            # the following assertion is justified because 'schema' library should garantuee
+            # that we get here only if all entries in the config file do have the 'home_assistant' section
             assert "home_assistant" in entry_dict
 
             # the optional entry is the 'expire_after':
@@ -153,8 +163,9 @@ class AppConfig:
         try:
             self.config_file_schema.validate(self.config)
         except SchemaError as e:
+            print("Failed YAML config file validation. Error follows.")
             print(e)
-            sys.exit(3)
+            return False
 
         try:
             # convert the 'i2c_optoisolated_inputs' part in a dictionary indexed by the DIGITAL INPUT CHANNEL NUMBER:
@@ -222,7 +233,7 @@ class AppConfig:
                 idx = int(output_item["gpio"])
                 self.check_gpio(idx)
                 output_item = self.populate_defaults_in_list_entry(output_item, True, True)
-                self.outputs_map[output_item["name"]] = output_item
+                self.outputs_map[output_item["mqtt"]["topic"]] = output_item
                 # print(output_item)
             print(f"Loaded {len(self.outputs_map)} digital output configurations")
             if len(self.outputs_map) == 0:
@@ -351,10 +362,9 @@ class AppConfig:
 
     def get_optoisolated_input_config(self, index: int) -> dict[str, any]:
         """
-        Returns a dictionary exposing the fields:
-            'name': name of the digital input
-            'active_low': True or False
-        Note: the indexes are 1-based
+        Returns a dictionary containing all the possible keys that are
+        valid for an opto-isolated input config (see the SCHEMA in the load() API),
+        including optional keys that were not given in the YAML.
         """
         if self.optoisolated_inputs_map is None or index not in self.optoisolated_inputs_map:
             return None  # no meaningful default value
@@ -364,49 +374,41 @@ class AppConfig:
     # GPIO INPUTS
     #
 
-    def get_all_gpio_inputs(self):
-        """
-        Returns a list of dictionaries exposing the fields:
-             'name': name of the digital input
-             'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
-             'active_low': True or False
-        """
-        if "gpio_inputs" not in self.config:
-            return None  # no meaningful default value
-        return self.config["gpio_inputs"]
-
     def get_gpio_input_config(self, index: int) -> dict[str, any]:
         """
-        Returns a dictionary exposing the fields:
-            'name': name of the digital input
-            'active_low': True or False
-            'mqtt': a dictionary with more details about the TOPIC and PAYLOAD to send on input activation (see config.yaml)
+        Returns a dictionary containing all the possible keys that are
+        valid for a GPIO input config (see the SCHEMA in the load() API),
+        including optional keys that were not given in the YAML.
         """
         if self.gpio_inputs_map is None or index not in self.gpio_inputs_map:
             return None  # no meaningful default value
         return self.gpio_inputs_map[index]
 
+    def get_all_gpio_inputs(self) -> list:
+        """
+        Returns a list of dictionaries with configurations
+        """
+        if "gpio_inputs" not in self.config:
+            return None  # no meaningful default value
+        return self.config["gpio_inputs"]
+
     #
     # OUTPUTS CONFIG
     #
 
-    def get_output_config(self, name: str) -> dict[str, any]:
+    def get_output_config_by_mqtt_topic(self, topic: str) -> dict[str, any]:
         """
-        Returns a dictionary exposing the fields:
-            'name': name of the digital output
-            'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
-            'active_low': True or False
+        Returns a dictionary containing all the possible keys that are
+        valid for a GPIO output config (see the SCHEMA in the load() API),
+        including optional keys that were not given in the YAML.
         """
-        if self.outputs_map is None or name not in self.outputs_map:
+        if self.outputs_map is None or topic not in self.outputs_map:
             return None  # no meaningful default value
-        return self.outputs_map[name]
+        return self.outputs_map[topic]
 
-    def get_all_outputs(self):
+    def get_all_outputs(self) -> list:
         """
-        Returns a list of dictionaries exposing the fields:
-             'name': name of the digital output
-             'gpio': integer identifying the GPIO pin using Raspy standard 40pin naming
-             'active_low': True or False
+        Returns a list of dictionaries with configurations
         """
         if "outputs" not in self.config:
             return None  # no meaningful default value
