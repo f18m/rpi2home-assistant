@@ -36,19 +36,25 @@ class AppConfig:
         # before launching MQTT connections, define a unique MQTT prefix identifier:
         self.mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
-        self.mqtt_schema_for_sensor_on_and_off = Schema({
-            Optional("topic"): str,
-            "payload_on": str,
-            "payload_off": str,
-        })
-        self.mqtt_schema_for_edge_triggered_sensor = Schema({
-            Optional("topic"): str,
-            "payload": str,
-        })
-        self.home_assistant_schema = Schema({
-            "device_class": str,
-            Optional("expire_after"): int,
-        })
+        self.mqtt_schema_for_sensor_on_and_off = Schema(
+            {
+                Optional("topic"): str,
+                "payload_on": str,
+                "payload_off": str,
+            }
+        )
+        self.mqtt_schema_for_edge_triggered_sensor = Schema(
+            {
+                Optional("topic"): str,
+                "payload": str,
+            }
+        )
+        self.home_assistant_schema = Schema(
+            {
+                "device_class": str,
+                Optional("expire_after"): int,
+            }
+        )
 
         self.config_file_schema = Schema(
             {
@@ -62,17 +68,17 @@ class AppConfig:
                 Optional("log_stats_every"): int,
                 Optional("i2c_optoisolated_inputs"): [
                     {
-                        "name": Regex(r'^[a-z0-9_]+$'),
+                        "name": Regex(r"^[a-z0-9_]+$"),
                         Optional("description"): str,
                         "input_num": int,
                         "active_low": bool,
                         "mqtt": self.mqtt_schema_for_sensor_on_and_off,
-                        "home-assistant": self.home_assistant_schema,
+                        "home_assistant": self.home_assistant_schema,
                     }
                 ],
                 Optional("gpio_inputs"): [
                     {
-                        "name": Regex(r'^[a-z0-9_]+$'),
+                        "name": Regex(r"^[a-z0-9_]+$"),
                         Optional("description"): str,
                         "gpio": int,
                         "active_low": bool,
@@ -86,11 +92,51 @@ class AppConfig:
                         "gpio": int,
                         "active_low": bool,
                         "mqtt": self.mqtt_schema_for_sensor_on_and_off,
-                        "home-assistant": self.home_assistant_schema,
+                        "home_assistant": self.home_assistant_schema,
                     }
                 ],
             }
         )
+
+    def check_gpio(self, idx: int):
+        reserved_gpios = [
+            SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO,
+            SEQMICRO_INPUTHAT_INTERRUPT_GPIO,
+            SEQMICRO_INPUTHAT_I2C_SDA,
+            SEQMICRO_INPUTHAT_I2C_SCL,
+        ]
+        if idx < 1 or idx > 40:
+            raise ValueError(
+                f"Invalid GPIO index {idx}. The legal range is [1-40] since the Raspberry GPIO connector is a 40-pin connector."
+            )
+        # some GPIO pins are reserved and cannot be configured!
+        if idx in reserved_gpios:
+            raise ValueError(
+                f"Invalid GPIO index {idx}: that GPIO pin is reserved for communication with the Sequent Microsystem HAT. Choose a different GPIO."
+            )
+
+    def populate_defaults_in_list_entry(
+        self, entry_dict: dict, has_mqtt_section: bool, has_homeassistant_section: bool
+    ) -> dict:
+        if has_mqtt_section:
+            # the following assertion is justified because 'schema' library should garantuee
+            # that we get here only if all entries in the config file do have the 'mqtt' section
+            assert "mqtt" in entry_dict
+
+            # the optional entry is the 'topic':
+            if "topic" not in entry_dict["mqtt"]:
+                entry_dict["mqtt"]["topic"] = f"{MQTT_TOPIC_PREFIX}/{entry_dict['name']}"
+                print(f"Topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['topic']}]")
+
+        if has_homeassistant_section:
+            assert "home_assistant" in entry_dict
+
+            # the optional entry is the 'expire_after':
+            if "expire_after" not in entry_dict["home_assistant"]:
+                entry_dict["home_assistant"]["expire_after"] = 0
+                print(f"Expire-after for {entry_dict['name']} defaults to [0]")
+
+        return entry_dict
 
     def load(self, cfg_yaml: str) -> bool:
         print(f"Loading configuration file {cfg_yaml}")
@@ -124,6 +170,8 @@ class AppConfig:
                     raise ValueError(
                         f"Invalid input_num {idx}. The legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs."
                     )
+
+                input_item = self.populate_defaults_in_list_entry(input_item, True, True)
                 self.optoisolated_inputs_map[idx] = input_item
                 # print(input_item)
             print(f"Loaded {len(self.optoisolated_inputs_map)} opto-isolated input configurations")
@@ -137,13 +185,6 @@ class AppConfig:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
 
-        reserved_gpios = [
-            SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO,
-            SEQMICRO_INPUTHAT_INTERRUPT_GPIO,
-            SEQMICRO_INPUTHAT_I2C_SDA,
-            SEQMICRO_INPUTHAT_I2C_SCL,
-        ]
-
         try:
             # convert the 'gpio_inputs' part in a dictionary indexed by the GPIO PIN NUMBER:
             self.gpio_inputs_map = {}
@@ -154,15 +195,8 @@ class AppConfig:
 
             for input_item in self.config["gpio_inputs"]:
                 idx = int(input_item["gpio"])
-                if idx < 1 or idx > 40:
-                    raise ValueError(
-                        f"Invalid input_num {idx}. The legal range is [1-40] since the Raspberry GPIO connector is a 40-pin connector."
-                    )
-                # some GPIO pins are reserved and cannot be configured!
-                if idx in reserved_gpios:
-                    raise ValueError(
-                        f"Invalid input_num {idx}: that GPIO pin is reserved for communication with the Sequent Microsystem HAT. Choose a different GPIO."
-                    )
+                self.check_gpio(idx)
+                input_item = self.populate_defaults_in_list_entry(input_item, True, False)
                 self.gpio_inputs_map[idx] = input_item
                 # print(input_item)
             print(f"Loaded {len(self.gpio_inputs_map)} GPIO input configurations")
@@ -185,6 +219,9 @@ class AppConfig:
                 self.config["outputs"] = []
 
             for output_item in self.config["outputs"]:
+                idx = int(output_item["gpio"])
+                self.check_gpio(idx)
+                output_item = self.populate_defaults_in_list_entry(output_item, True, True)
                 self.outputs_map[output_item["name"]] = output_item
                 # print(output_item)
             print(f"Loaded {len(self.outputs_map)} digital output configurations")
