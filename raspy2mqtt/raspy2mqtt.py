@@ -91,8 +91,8 @@ def instance_already_running(label="default"):
 
     try:
         lock_file_pointer = os.open(f"/tmp/instance_{label}.lock", os.O_WRONLY | os.O_CREAT)
-    except PermissionError:
-        print("Not enough permissions to write files under /tmp. Run this application as root.")
+    except PermissionError as e:
+        print(f"Not enough permissions to write files under /tmp. Run this application as root: {e}")
         sys.exit(4)
 
     try:

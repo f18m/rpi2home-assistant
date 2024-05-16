@@ -104,14 +104,21 @@ class GpioOutputsHandler:
 
             async for message in client.messages:
                 c = cfg.get_output_config_by_mqtt_topic(message.topic)
-                print(
-                    f"Received message for digital output [{message.topic}] with payload {message.payload}... changing GPIO output pin state"
-                )
+                output_name = c["name"]
                 if message.payload == output_ch["mqtt"]["payload_on"]:
+                    print(
+                        f"Received message for digital output [{output_name}] from topic [{message.topic}] with payload {message.payload}... changing GPIO output pin state"
+                    )
                     self.output_channels[message.topic].on()
                 elif message.payload == output_ch["mqtt"]["payload_off"]:
+                    print(
+                        f"Received message for digital output [{output_name}] from topic [{message.topic}] with payload {message.payload}... changing GPIO output pin state"
+                    )
                     self.output_channels[message.topic].off()
                 else:
+                    print(
+                        f"Unrecognized payload received for digital output [{output_name}] from topic [{message.topic}]: {message.payload}"
+                    )
                     self.stats["ERR_invalid_payload_received"] += 1
 
                 self.stats["num_mqtt_commands_processed"] += 1

@@ -44,8 +44,14 @@ outputs:
     active_low: true
     home_assistant:
       device_class: switch
+    mqtt:
+      payload_on: b"ON"
+      payload_off: b"OFF"
   - name: output_2
     gpio: 21
     active_low: true
     home_assistant:
       device_class: switch
+    mqtt:
+      payload_on: b"ON"
+      payload_off: b"OFF"

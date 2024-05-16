@@ -326,8 +326,8 @@ def test_publish_for_optoisolated_inputs():
 def test_publish_for_gpio_inputs():
 
     topics_under_test = [
-        {"name": "gpio1", "expected_payload": b"HEY"},
-        {"name": "gpio4", "expected_payload": b"BYEBYE"},
+        {"topic_name": "gpio1", "expected_payload": b"HEY"},
+        {"topic_name": "gpio4", "expected_payload": b"BYEBYE"},
     ]
 
     with Raspy2MQTTContainer(broker=broker) as container:
@@ -337,7 +337,7 @@ def test_publish_for_gpio_inputs():
             container.print_logs()
             assert False
 
-        broker.watch_topics([t["name"] for t in topics_under_test])
+        broker.watch_topics([t["topic_name"] for t in topics_under_test])
 
         container.get_wrapped_container().kill(signal.SIGUSR1)  # gpio #1 should trigger an MQTT message
         time.sleep(1)
@@ -349,7 +349,7 @@ def test_publish_for_gpio_inputs():
         container.print_logs()
 
         for t in topics_under_test:
-            tname = t["name"]
+            tname = t["topic_name"]
             msg_count = broker.get_messages_received_in_watched_topic(tname)
             last_payload = broker.get_last_payload_received_in_watched_topic(tname)
             print(f"** TEST RESULTS [{tname}]")
@@ -365,10 +365,10 @@ def test_publish_for_gpio_inputs():
 def test_publish_subscribe_for_outputs():
 
     test_runs = [
-        {"name": "home/output_1", "payload": b"ON", "expected_file_contents": "20: ON"},
-        {"name": "home/output_1", "payload": b"OFF", "expected_file_contents": "20: OFF"},
-        {"name": "home/output_2", "payload": b"OFF", "expected_file_contents": "21: OFF"},
-        {"name": "home/output_2", "payload": b"ON", "expected_file_contents": "21: ON"},
+        {"topic_name": "home/output_1", "payload": "ON", "expected_file_contents": "20: ON"},
+        {"topic_name": "home/output_1", "payload": "OFF", "expected_file_contents": "20: OFF"},
+        {"topic_name": "home/output_2", "payload": "OFF", "expected_file_contents": "21: OFF"},
+        {"topic_name": "home/output_2", "payload": "ON", "expected_file_contents": "21: ON"},
     ]
     INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
 
@@ -376,7 +376,7 @@ def test_publish_subscribe_for_outputs():
         return topic_name + "/state"
 
     with Raspy2MQTTContainer(broker=broker) as container:
-        time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
+        time.sleep(2)  # give time to the Raspy2MQTTContainer to fully start
         if not container.is_running():
             print(f"Container under test has stopped running... test failed.")
             container.print_logs()
@@ -384,12 +384,12 @@ def test_publish_subscribe_for_outputs():
 
         i = 0
         for t in test_runs:
-            state_topic = get_associated_state_topic(t["name"])
+            state_topic = get_associated_state_topic(t["topic_name"])
             broker.watch_topics([state_topic])
 
             # send on the broker a msg
-            print(f"TEST#{i}: Asking the software to drive the output [{t['name']}] to state [{t['payload']}]")
-            broker.publish_message(t["name"], t["payload"])
+            print(f"TEST#{i}: Asking the software to drive the output [{t['topic_name']}] to state [{t['payload']}]")
+            broker.publish_message(t["topic_name"], t["payload"])
 
             # give time to the app to react to the published message:
             time.sleep(1)

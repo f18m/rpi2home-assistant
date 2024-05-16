@@ -118,12 +118,16 @@ class AppConfig:
             )
 
     def populate_defaults_in_list_entry(
-        self, entry_dict: dict, has_mqtt_section: bool, has_homeassistant_section: bool
+        self,
+        entry_dict: dict,
+        populate_mqtt: bool = True,
+        populate_homeassistant: bool = True,
+        has_payload_on_off: bool = True,
     ) -> dict:
         if "description" not in entry_dict:
             entry_dict["description"] = entry_dict["name"]
 
-        if has_mqtt_section:
+        if populate_mqtt:
             if "mqtt" not in entry_dict:
                 entry_dict["mqtt"] = {}
 
@@ -131,12 +135,14 @@ class AppConfig:
             if "topic" not in entry_dict["mqtt"]:
                 entry_dict["mqtt"]["topic"] = f"{MQTT_TOPIC_PREFIX}/{entry_dict['name']}"
                 print(f"Topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['topic']}]")
-            if "payload_on" not in entry_dict["mqtt"]:
-                entry_dict["mqtt"]["payload_on"] = "ON"
-            if "payload_off" not in entry_dict["mqtt"]:
-                entry_dict["mqtt"]["payload_off"] = "OFF"
 
-        if has_homeassistant_section:
+            if has_payload_on_off:
+                if "payload_on" not in entry_dict["mqtt"]:
+                    entry_dict["mqtt"]["payload_on"] = "ON"
+                if "payload_off" not in entry_dict["mqtt"]:
+                    entry_dict["mqtt"]["payload_off"] = "OFF"
+
+        if populate_homeassistant:
             # the following assertion is justified because 'schema' library should garantuee
             # that we get here only if all entries in the config file do have the 'home_assistant' section
             assert "home_assistant" in entry_dict
@@ -182,7 +188,7 @@ class AppConfig:
                         f"Invalid input_num {idx}. The legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs."
                     )
 
-                input_item = self.populate_defaults_in_list_entry(input_item, True, True)
+                input_item = self.populate_defaults_in_list_entry(input_item)
                 self.optoisolated_inputs_map[idx] = input_item
                 # print(input_item)
             print(f"Loaded {len(self.optoisolated_inputs_map)} opto-isolated input configurations")
@@ -207,7 +213,9 @@ class AppConfig:
             for input_item in self.config["gpio_inputs"]:
                 idx = int(input_item["gpio"])
                 self.check_gpio(idx)
-                input_item = self.populate_defaults_in_list_entry(input_item, True, False)
+                input_item = self.populate_defaults_in_list_entry(
+                    input_item, populate_homeassistant=False, has_payload_on_off=False
+                )
                 self.gpio_inputs_map[idx] = input_item
                 # print(input_item)
             print(f"Loaded {len(self.gpio_inputs_map)} GPIO input configurations")
@@ -232,7 +240,7 @@ class AppConfig:
             for output_item in self.config["outputs"]:
                 idx = int(output_item["gpio"])
                 self.check_gpio(idx)
-                output_item = self.populate_defaults_in_list_entry(output_item, True, True)
+                output_item = self.populate_defaults_in_list_entry(output_item)
                 self.outputs_map[output_item["mqtt"]["topic"]] = output_item
                 # print(output_item)
             print(f"Loaded {len(self.outputs_map)} digital output configurations")
@@ -271,7 +279,7 @@ class AppConfig:
         i = 1
         if self.outputs_map is not None:
             for k, v in self.outputs_map.items():
-                print(f"   output#{i}: {k}")
+                print(f"   output#{i}: {v['name']}")
             i += 1
         print("** MISC:")
         print(f"   Log stats every: {self.stats_log_period_sec}s")
