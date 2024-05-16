@@ -102,13 +102,15 @@ class GpioOutputsHandler:
                 await client.subscribe(topic)
 
             async for message in client.messages:
-                # IMPORTANT: the message.payload and message.topic are not strings and would fail 
+                # IMPORTANT: the message.payload and message.topic are not strings and would fail
                 #            a direct comparison to strings... so convert them explicitly to strings first:
                 mqtt_topic = str(message.topic)
-                mqtt_payload = message.payload.decode('UTF-8')
+                mqtt_payload = message.payload.decode("UTF-8")
 
                 output_ch = cfg.get_output_config_by_mqtt_topic(mqtt_topic)
-                assert output_ch is not None # this is garantueed because we subscribed only to topics that are present in config
+                assert (
+                    output_ch is not None
+                )  # this is garantueed because we subscribed only to topics that are present in config
 
                 output_name = output_ch["name"]
                 if mqtt_payload == output_ch["mqtt"]["payload_on"]:
