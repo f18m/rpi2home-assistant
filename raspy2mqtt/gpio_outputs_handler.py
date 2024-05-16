@@ -58,7 +58,7 @@ class GpioOutputsHandler:
     stop_requested = False
 
     def __init__(self):
-        # global dictionary of gpiozero.LED instances used to drive outputs
+        # global dictionary of gpiozero.LED instances used to drive outputs; key=MQTT topic
         self.output_channels = {}
 
         self.stats = {
@@ -70,20 +70,19 @@ class GpioOutputsHandler:
         }
 
     def init_hardware(self, cfg: AppConfig) -> None:
-
         if cfg.disable_hw:
             # populate with dummies the output channels:
             print("Skipping GPIO outputs HW initialization (--disable-hw was given)")
             for output_ch in cfg.get_all_outputs():
-                output_name = output_ch["name"]
-                self.output_channels[output_name] = DummyOutputCh(output_ch["gpio"])
+                topic_name = output_ch["mqtt"]["topic"]
+                self.output_channels[topic_name] = DummyOutputCh(output_ch["gpio"])
         else:
             # setup GPIO pins for the OUTPUTs
             print(f"Initializing GPIO output pins")
             for output_ch in cfg.get_all_outputs():
-                output_name = output_ch["name"]
+                topic_name = output_ch["mqtt"]["topic"]
                 active_high = not bool(output_ch["active_low"])
-                self.output_channels[output_name] = gpiozero.LED(pin=output_ch["gpio"], active_high=active_high)
+                self.output_channels[topic_name] = gpiozero.LED(pin=output_ch["gpio"], active_high=active_high)
 
     async def subscribe_and_activate_outputs(self, cfg: AppConfig):
         """
@@ -103,21 +102,28 @@ class GpioOutputsHandler:
                 await client.subscribe(topic)
 
             async for message in client.messages:
-                c = cfg.get_output_config_by_mqtt_topic(message.topic)
-                output_name = c["name"]
-                if message.payload == output_ch["mqtt"]["payload_on"]:
+                # IMPORTANT: the message.payload and message.topic are not strings and would fail 
+                #            a direct comparison to strings... so convert them explicitly to strings first:
+                mqtt_topic = str(message.topic)
+                mqtt_payload = message.payload.decode('UTF-8')
+
+                output_ch = cfg.get_output_config_by_mqtt_topic(mqtt_topic)
+                assert output_ch is not None # this is garantueed because we subscribed only to topics that are present in config
+
+                output_name = output_ch["name"]
+                if mqtt_payload == output_ch["mqtt"]["payload_on"]:
                     print(
-                        f"Received message for digital output [{output_name}] from topic [{message.topic}] with payload {message.payload}... changing GPIO output pin state"
+                        f"Received message for digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
                     )
-                    self.output_channels[message.topic].on()
-                elif message.payload == output_ch["mqtt"]["payload_off"]:
+                    self.output_channels[mqtt_topic].on()
+                elif mqtt_payload == output_ch["mqtt"]["payload_off"]:
                     print(
-                        f"Received message for digital output [{output_name}] from topic [{message.topic}] with payload {message.payload}... changing GPIO output pin state"
+                        f"Received message for digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
                     )
-                    self.output_channels[message.topic].off()
+                    self.output_channels[mqtt_topic].off()
                 else:
                     print(
-                        f"Unrecognized payload received for digital output [{output_name}] from topic [{message.topic}]: {message.payload}"
+                        f"Unrecognized payload received for digital output [{output_name}] from topic [{mqtt_topic}]: {mqtt_payload}"
                     )
                     self.stats["ERR_invalid_payload_received"] += 1
 

@@ -117,7 +117,8 @@ class MosquittoContainer(DockerContainer):
 
         def on_message(self, msg: mqtt_client.MQTTMessage):
             self.count += 1
-            self.last_payload = msg.payload
+            # for simplicity: assume strings are used in integration tests and are UTF8-encoded:
+            self.last_payload = msg.payload.decode('UTF-8')
 
         def get_count(self):
             return self.count

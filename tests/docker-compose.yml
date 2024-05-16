@@ -6,6 +6,7 @@
 services:
   mqtt-broker:
     image: eclipse-mosquitto
+    container_name: mqtt_broker
     ports:
       - "1883:1883" #default mqtt port
       - "9001:9001" #default mqtt port for websockets
@@ -22,3 +23,4 @@ services:
       - /tmp:/tmp:rw
     environment:
       - DISABLE_HW=true
+      - MQTT_BROKER_HOST=mqtt_broker

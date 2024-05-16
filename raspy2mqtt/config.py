@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import yaml, aiomqtt, datetime, sys
+import yaml, aiomqtt, datetime, os
 from datetime import datetime, timezone
 from raspy2mqtt.constants import *
 
@@ -256,6 +256,24 @@ class AppConfig:
 
         print(f"Successfully loaded configuration")
         return True
+
+    def merge_options_from_cli(self, args: dict):
+        # merge CLI options into the configuration object:
+        self.disable_hw = args.disable_hw
+        self.verbose = args.verbose
+
+    def merge_options_from_env_vars(self):
+        # merge env vars into the configuration object:
+        if os.environ.get("DISABLE_HW", None) != None:
+            self.disable_hw = True
+        if os.environ.get("VERBOSE", None) != None:
+            self.verbose = True
+        if os.environ.get("MQTT_BROKER_HOST", None) != None:
+            # this particular env var can override the value coming from the config file:
+            self.mqtt_broker_host = os.environ.get("MQTT_BROKER_HOST")
+        if os.environ.get("MQTT_BROKER_PORT", None) != None:
+            # this particular env var can override the value coming from the config file:
+            self.mqtt_broker_port = os.environ.get("MQTT_BROKER_PORT")
 
     def print_config_summary(self):
         print("Config summary:")
