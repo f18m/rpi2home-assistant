@@ -327,8 +327,8 @@ def test_publish_for_optoisolated_inputs():
 def test_publish_for_gpio_inputs():
 
     topics_under_test = [
-        {"topic_name": "gpio1", "expected_payload": b"HEY"},
-        {"topic_name": "gpio4", "expected_payload": b"BYEBYE"},
+        {"topic_name": "gpio1", "expected_payload": "HEY"},
+        {"topic_name": "gpio4", "expected_payload": "BYEBYE"},
     ]
 
     with Raspy2MQTTContainer(broker=broker) as container:
@@ -377,7 +377,7 @@ def test_publish_subscribe_for_outputs():
         return topic_name + "/state"
 
     with Raspy2MQTTContainer(broker=broker) as container:
-        time.sleep(2)  # give time to the Raspy2MQTTContainer to fully start
+        time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
         if not container.is_running():
             print(f"Container under test has stopped running... test failed.")
             container.print_logs()
