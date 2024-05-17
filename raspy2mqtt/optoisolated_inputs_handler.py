@@ -157,7 +157,7 @@ class OptoIsolatedInputsHandler:
         self.stats["num_connections_discovery_publish"] += 1
 
         try:
-            async with cfg.create_aiomqtt_client("_outputs_discovery_publisher") as client:
+            async with cfg.create_aiomqtt_client("_optoisolated_discovery_publisher") as client:
                 while not OptoIsolatedInputsHandler.stop_requested:
                     print(f"Publishing DISCOVERY messages for OPTOISOLATED INPUTs")
                     for entry in cfg.get_all_outputs():
