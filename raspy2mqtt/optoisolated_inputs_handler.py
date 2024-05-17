@@ -167,7 +167,7 @@ class OptoIsolatedInputsHandler:
                         mqtt_payload_dict = {
                             "unique_id": entry["name"],
                             "name": entry["description"],
-                            "state_topic": entry["mqtt"]["state_topic"],
+                            "state_topic": entry["mqtt"]["topic"],
                             "payload_on": entry["mqtt"]["payload_on"],
                             "payload_off": entry["mqtt"]["payload_off"],
                             "device_class": entry["home_assistant"]["device_class"],
