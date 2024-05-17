@@ -1,4 +1,4 @@
-import pytest
+import pytest, platform
 from raspy2mqtt.config import AppConfig
 
 
@@ -90,7 +90,7 @@ def test_config_file_using_defaults_succeeds(tmpdir):
     assert x.homeassistant_publish_period_sec == 1
     assert x.homeassistant_discovery_messages_enable == True
     assert x.homeassistant_discovery_topic_prefix == "homeassistant"
-    assert x.homeassistant_discovery_topic_node_id == "ha-alarm-raspy2mqtt"
+    assert x.homeassistant_discovery_topic_node_id == platform.node()
     assert x.homeassistant_discovery_message_period_sec == 1
 
     # OPTO-ISOLATED INPUTS
