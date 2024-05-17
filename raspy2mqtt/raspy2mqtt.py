@@ -211,6 +211,7 @@ async def main_loop():
 
                 if cfg.homeassistant_discovery_messages_enable:
                     tasks += [
+                        loop.create_task(opto_inputs_handler.homeassistant_discovery_message_publish(cfg)),
                         loop.create_task(gpio_outputs_handler.homeassistant_discovery_message_publish(cfg)),
                     ]
 
