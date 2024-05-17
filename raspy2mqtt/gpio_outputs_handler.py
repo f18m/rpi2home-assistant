@@ -149,18 +149,20 @@ class GpioOutputsHandler:
             while not GpioOutputsHandler.stop_requested:
                 for output_ch in cfg.get_all_outputs():
                     mqtt_topic = output_ch["mqtt"]["topic"]
+                    mqtt_state_topic = output_ch["mqtt"]["state_topic"]
                     assert mqtt_topic in self.output_channels  # this should be garantueed due to initial setup
                     output_status = self.output_channels[mqtt_topic].is_lit
 
                     if mqtt_topic not in output_status_map or output_status_map[mqtt_topic] != output_status:
                         # need to publish an update over MQTT... the state has changed
-                        state_topic = f"{mqtt_topic}/state"
-                        payload = output_ch["mqtt"]["payload_on"] if output_status else output_ch["mqtt"]["payload_off"]
+                        mqtt_payload = (
+                            output_ch["mqtt"]["payload_on"] if output_status else output_ch["mqtt"]["payload_off"]
+                        )
 
                         # publish with RETAIN flag so that Home Assistant will always find an updated status on
                         # the broker about each switch
-                        # print(f"Publishing to topic {topic} the payload {payload}")
-                        await client.publish(state_topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True)
+                        print(f"Publishing to topic {mqtt_state_topic} the payload {mqtt_payload}")
+                        await client.publish(mqtt_state_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True)
                         self.stats["num_mqtt_states_published"] += 1
 
                         # remember the status we just published in order to later skip meaningless updates

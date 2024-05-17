@@ -42,6 +42,9 @@ class AppConfig:
         self.mqtt_schema_for_sensor_on_and_off = Schema(
             {
                 Optional("topic"): str,
+                Optional(
+                    "state_topic"
+                ): str,  # the 'state_topic' makes sense only for OUTPUTs that have type=switch in HomeAssistant
                 Optional("payload_on"): str,
                 Optional("payload_off"): str,
             }
@@ -126,6 +129,7 @@ class AppConfig:
         populate_mqtt: bool = True,
         populate_homeassistant: bool = True,
         has_payload_on_off: bool = True,
+        has_state_topic: bool = True,
     ) -> dict:
         if "description" not in entry_dict:
             entry_dict["description"] = entry_dict["name"]
@@ -138,6 +142,11 @@ class AppConfig:
             if "topic" not in entry_dict["mqtt"]:
                 entry_dict["mqtt"]["topic"] = f"{MQTT_TOPIC_PREFIX}/{entry_dict['name']}"
                 print(f"Topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['topic']}]")
+
+            if has_state_topic:
+                if "state_topic" not in entry_dict["mqtt"]:
+                    entry_dict["mqtt"]["state_topic"] = f"{MQTT_TOPIC_PREFIX}/{entry_dict['name']}/state"
+                    print(f"State topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['state_topic']}]")
 
             if has_payload_on_off:
                 if "payload_on" not in entry_dict["mqtt"]:
@@ -191,7 +200,7 @@ class AppConfig:
                         f"Invalid input_num {idx}. The legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs."
                     )
 
-                input_item = self.populate_defaults_in_list_entry(input_item)
+                input_item = self.populate_defaults_in_list_entry(input_item, has_state_topic=False)
                 self.optoisolated_inputs_map[idx] = input_item
                 # print(input_item)
             print(f"Loaded {len(self.optoisolated_inputs_map)} opto-isolated input configurations")
@@ -217,7 +226,7 @@ class AppConfig:
                 idx = int(input_item["gpio"])
                 self.check_gpio(idx)
                 input_item = self.populate_defaults_in_list_entry(
-                    input_item, populate_homeassistant=False, has_payload_on_off=False
+                    input_item, populate_homeassistant=False, has_payload_on_off=False, has_state_topic=False
                 )
                 self.gpio_inputs_map[idx] = input_item
                 # print(input_item)

@@ -71,7 +71,7 @@ outputs:
 
 
 @pytest.mark.unit
-def test_minimal_config_file2_succeeds(tmpdir):
+def test_config_file_using_defaults_succeeds(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
     p.write(CFG_USING_DEFAULTS)
@@ -86,7 +86,7 @@ def test_minimal_config_file2_succeeds(tmpdir):
     assert x.get_optoisolated_input_config(1) == {
         "active_low": True,
         "description": "opto_input_1",
-        "home_assistant": {"device_class": "tamper", "expire_after": 0},
+        "home_assistant": {"device_class": "tamper", "expire_after": 30},
         "input_num": 1,
         "mqtt": {"payload_off": "OFF", "payload_on": "ON", "topic": "home/opto_input_1"},
         "name": "opto_input_1",
@@ -109,9 +109,14 @@ def test_minimal_config_file2_succeeds(tmpdir):
     assert x.get_output_config_by_mqtt_topic("home/ext_alarm_siren") == {
         "active_low": True,
         "description": "ext_alarm_siren",
-        "home_assistant": {"device_class": "switch", "expire_after": 0},
+        "home_assistant": {"device_class": "switch", "expire_after": 30},
         "gpio": 20,
-        "mqtt": {"payload_off": "OFF", "payload_on": "ON", "topic": "home/ext_alarm_siren"},
+        "mqtt": {
+            "payload_off": "OFF",
+            "payload_on": "ON",
+            "topic": "home/ext_alarm_siren",
+            "state_topic": "home/ext_alarm_siren/state",
+        },
         "name": "ext_alarm_siren",
     }
 
@@ -152,6 +157,7 @@ outputs:
       payload_on: FOO
       payload_off: BAR
       topic: test_topic_3
+      state_topic: test_state_topic_3
     home_assistant:
       device_class: switch
       expire_after: 1000
@@ -159,7 +165,7 @@ outputs:
 
 
 @pytest.mark.unit
-def test_minimal_config_file2_succeeds(tmpdir):
+def test_config_file_fully_specified_succeeds(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
     p.write(CFG_FULLY_SPECIFIED)
@@ -204,7 +210,12 @@ def test_minimal_config_file2_succeeds(tmpdir):
         "description": "yet another test",
         "home_assistant": {"device_class": "switch", "expire_after": 1000},
         "gpio": 20,
-        "mqtt": {"payload_off": "BAR", "payload_on": "FOO", "topic": "test_topic_3"},
+        "mqtt": {
+            "payload_off": "BAR",
+            "payload_on": "FOO",
+            "topic": "test_topic_3",
+            "state_topic": "test_state_topic_3",
+        },
         "name": "ext_alarm_siren",
     }
 
