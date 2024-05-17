@@ -27,6 +27,7 @@ g_stop_requested = False
 # MAIN HELPERS
 # =======================================================================================================
 
+
 def parse_command_line():
     """Parses the command line and returns the configuration as dictionary object."""
     parser = argparse.ArgumentParser(

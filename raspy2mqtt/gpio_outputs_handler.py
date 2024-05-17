@@ -67,6 +67,7 @@ class GpioOutputsHandler:
             "num_connections_publish": 0,
             "num_mqtt_states_published": 0,
             "num_connections_discovery_publish": 0,
+            "num_mqtt_discovery_messages_published": 0,
             "ERR_invalid_payload_received": 0,
         }
 
@@ -183,34 +184,37 @@ class GpioOutputsHandler:
         )
         self.stats["num_connections_discovery_publish"] += 1
 
-        async with cfg.create_aiomqtt_client("_outputs_discovery_publisher") as client:
-            for entry in cfg.get_all_gpio_inputs():
+        try:
+            async with cfg.create_aiomqtt_client("_outputs_discovery_publisher") as client:
+                while not GpioOutputsHandler.stop_requested:
+                    print(f"Publishing DISCOVERY messages for GPIO OUTPUTs")
+                    for entry in cfg.get_all_outputs():
+                        mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/switch/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
 
-                mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/switch/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
+                        # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
+                        mqtt_payload_dict = {
+                            "unique_id": entry["name"],
+                            "name": entry["description"],
+                            "command_topic": entry["mqtt"]["topic"],
+                            "state_topic": entry["mqtt"]["state_topic"],
+                            "payload_on": entry["mqtt"]["payload_on"],
+                            "payload_off": entry["mqtt"]["payload_off"],
+                            "device_class": entry["home_assistant"]["device_class"],
+                            # "expire_after": entry['home_assistant']["expire_after"], -- not supported by MQTT switch :(
+                            "device": {
+                                "manufacturer": HOME_ASSISTANT_MANUFACTURER,
+                                "model": THIS_SCRIPT_PYPI_PACKAGE,
+                                "name": "raspberrypi-ha-alarm",
+                                "sw_version": cfg.app_version,
+                            },
+                        }
+                        mqtt_payload = json.dumps(mqtt_payload_dict)
+                        await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                        self.stats["num_mqtt_discovery_messages_published"] += 1
 
-                # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
-                mqtt_payload_dict = {
-                    "unique_id": entry['name'],
-                    "name": entry['description'],
-                    "command_topic": entry['mqtt']["topic"],
-                    "state_topic": entry['mqtt']["state_topic"],
-                    "payload_on": entry['mqtt']["payload_on"],
-                    "payload_off": entry['mqtt']["payload_off"],
-                    "device_class": entry['homeassistant']["device_class"],
-                    #"expire_after": entry['homeassistant']["expire_after"], -- not supported by MQTT switch :(
-                    "device": {
-                        "manufacturer": HOME_ASSISTANT_MANUFACTURER,
-                        "model": THIS_SCRIPT_PYPI_PACKAGE,
-                        "name": "raspberrypi-ha-alarm",
-                        "sw_version": AppConfig.app_version,
-                    }
-                }
-                mqtt_payload = json.dumps(mqtt_payload_dict)
-
-                await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
-
-            await asyncio.sleep(cfg.home_assistant_discovery_message_period_sec)
-
+                    await asyncio.sleep(cfg.homeassistant_discovery_message_period_sec)
+        except Exception as e:
+            print(f"EXCEPTION: {e}")
 
     def print_stats(self):
         print(f">> OUTPUTS:")

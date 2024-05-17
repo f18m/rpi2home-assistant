@@ -52,7 +52,7 @@ class AppConfig:
                 Optional("topic"): str,
                 # the 'state_topic' makes sense only for OUTPUTs that have type=switch in HomeAssistant and
                 # are required to publish a state topic
-                Optional("state_topic"): str,  
+                Optional("state_topic"): str,
                 Optional("payload_on"): str,
                 Optional("payload_off"): str,
             }
@@ -60,14 +60,14 @@ class AppConfig:
         self.mqtt_schema_for_edge_triggered_sensor = Schema(
             {
                 Optional("topic"): str,
-                 # for edge-triggered sensors it's hard to propose a meaningful default payload...so it's not optional
-                "payload": str, 
+                # for edge-triggered sensors it's hard to propose a meaningful default payload...so it's not optional
+                "payload": str,
             }
         )
         self.home_assistant_schema = Schema(
             {
-                # device_class is required because it's hard to guess... 
-                "device_class": str,  
+                # device_class is required because it's hard to guess...
+                "device_class": str,
                 Optional("expire_after"): int,
             }
         )
@@ -88,9 +88,8 @@ class AppConfig:
                         Optional("topic_prefix"): str,
                         Optional("topic_node_id"): str,
                         Optional("message_period_sec"): int,
-                    }
+                    },
                 },
-
                 Optional("log_stats_every"): int,
                 Optional("i2c_optoisolated_inputs"): [
                     {
@@ -165,7 +164,9 @@ class AppConfig:
 
             if has_state_topic:
                 if "state_topic" not in entry_dict["mqtt"]:
-                    entry_dict["mqtt"]["state_topic"] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}/state"
+                    entry_dict["mqtt"][
+                        "state_topic"
+                    ] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}/state"
                     print(f"State topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['state_topic']}]")
 
             if has_payload_on_off:
@@ -465,7 +466,7 @@ class AppConfig:
         except:
             # in this case the key is completely missing or does contain an integer value
             return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_PREFIX  # default value
-        
+
     @property
     def homeassistant_discovery_topic_node_id(self) -> str:
         if self.config is None:
@@ -475,7 +476,7 @@ class AppConfig:
         except:
             # in this case the key is completely missing or does contain an integer value
             return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_NODE_ID  # default value
-    
+
     @property
     def homeassistant_discovery_message_period_sec(self) -> float:
         if self.config is None:
