@@ -2,6 +2,8 @@
 
 mqtt_broker:
   host: overridden_via_env_variable
+
+homeassistant:
   # NOTE: the publish-period is checked by integration tests: 500msec -> 2Hz publish frequency
   publish_period_msec: 500
 
