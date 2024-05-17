@@ -479,12 +479,12 @@ class AppConfig:
     @property
     def homeassistant_discovery_topic_node_id(self) -> str:
         if self.config is None:
-            return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_NODE_ID  # default value
+            return self.current_hostname  # default value
         try:
             return self.config["home_assistant"]["discovery_messages"]["topic_node_id"]
         except:
             # in this case the key is completely missing or does contain an integer value
-            return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_NODE_ID  # default value
+            return self.current_hostname  # default value
 
     @property
     def homeassistant_discovery_message_period_sec(self) -> float:
@@ -594,7 +594,11 @@ class AppConfig:
         return {
             "manufacturer": HOME_ASSISTANT_MANUFACTURER,
             "model": THIS_SCRIPT_PYPI_PACKAGE,
-            "name": self.current_hostname + "-sensors",
+            # rationale for having "device name == MQTT node_id": 
+            # a) in the unlikely event that you have more than 1 raspberry running this software
+            #    you likely have different hostnames on them and node_id defaults to the hostname
+            # b) node_id is configurable via config file
+            "name": self.homeassistant_discovery_topic_node_id,
             "sw_version": self.app_version,
             "identifiers": [THIS_SCRIPT_PYPI_PACKAGE + self.current_hostname],
         }

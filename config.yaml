@@ -28,7 +28,13 @@ home_assistant:
   discovery_messages:
     enable: true
     topic_prefix: homeassistant
+
+    # the topic_node_id will be prefixed to each and every entity exposed into HomeAssistant,
+    # so this should be a short string; it defaults to the hostname of the system
     topic_node_id: ha-alarm-raspy2mqtt
+
+    # discovery messages don't need to be published that often... but it's good to re-publish them every 
+    # now and then in case HomeAssistant is restarted 
     message_period_sec: 10
 
 # stats printed on stdout each N secs:
