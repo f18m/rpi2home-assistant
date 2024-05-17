@@ -209,6 +209,8 @@ class GpioOutputsHandler:
                                 "identifiers": [THIS_SCRIPT_PYPI_PACKAGE + platform.node()],
                             },
                         }
+                        if entry["mqtt"]["icon"] is not None:
+                            mqtt_payload_dict["icon"] = entry["mqtt"]["icon"]
                         mqtt_payload = json.dumps(mqtt_payload_dict)
                         await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
                         self.stats["num_mqtt_discovery_messages_published"] += 1

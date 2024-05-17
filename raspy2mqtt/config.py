@@ -69,6 +69,7 @@ class AppConfig:
                 # device_class is required because it's hard to guess...
                 "device_class": str,
                 Optional("expire_after"): int,
+                Optional("icon"): str,
             }
         )
 
@@ -180,10 +181,11 @@ class AppConfig:
             # that we get here only if all entries in the config file do have the 'home_assistant' section
             assert "home_assistant" in entry_dict
 
-            # the optional entry is the 'expire_after':
             if "expire_after" not in entry_dict["home_assistant"]:
                 entry_dict["home_assistant"]["expire_after"] = HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC
                 print(f"Expire-after for {entry_dict['name']} defaults to [{HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC}]")
+            if "icon" not in entry_dict["home_assistant"]:
+                entry_dict["home_assistant"]["icon"] = None
 
         return entry_dict
 

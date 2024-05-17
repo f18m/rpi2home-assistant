@@ -98,7 +98,7 @@ def test_config_file_using_defaults_succeeds(tmpdir):
     assert x.get_optoisolated_input_config(1) == {
         "active_low": True,
         "description": "opto_input_1",
-        "home_assistant": {"device_class": "tamper", "expire_after": 30},
+        "home_assistant": {"device_class": "tamper", "expire_after": 30, "icon": None},
         "input_num": 1,
         "mqtt": {"payload_off": "OFF", "payload_on": "ON", "topic": "home/opto_input_1"},
         "name": "opto_input_1",
@@ -121,7 +121,7 @@ def test_config_file_using_defaults_succeeds(tmpdir):
     assert x.get_output_config_by_mqtt_topic("home/ext_alarm_siren") == {
         "active_low": True,
         "description": "ext_alarm_siren",
-        "home_assistant": {"device_class": "switch", "expire_after": 30},
+        "home_assistant": {"device_class": "switch", "expire_after": 30, "icon": None},
         "gpio": 20,
         "mqtt": {
             "payload_off": "OFF",
@@ -159,6 +159,7 @@ i2c_optoisolated_inputs:
     home_assistant:
       device_class: tamper
       expire_after: 1000
+      icon: mdi:check-circle
 gpio_inputs:
   - name: radio_channel_a
     description: yet another test
@@ -180,6 +181,7 @@ outputs:
     home_assistant:
       device_class: switch
       expire_after: 1000
+      icon: mdi:alarm-bell
 """
 
 
@@ -211,7 +213,7 @@ def test_config_file_fully_specified_succeeds(tmpdir):
     assert x.get_optoisolated_input_config(1) == {
         "active_low": True,
         "description": "just a test",
-        "home_assistant": {"device_class": "tamper", "expire_after": 1000},
+        "home_assistant": {"device_class": "tamper", "expire_after": 1000, "icon": "mdi:check-circle"},
         "input_num": 1,
         "mqtt": {"payload_off": "BAR", "payload_on": "FOO", "topic": "test_topic_1"},
         "name": "opto_input_1",
@@ -234,7 +236,7 @@ def test_config_file_fully_specified_succeeds(tmpdir):
     assert x.get_output_config_by_mqtt_topic("test_topic_3") == {
         "active_low": True,
         "description": "yet another test",
-        "home_assistant": {"device_class": "switch", "expire_after": 1000},
+        "home_assistant": {"device_class": "switch", "expire_after": 1000, "icon": "mdi:alarm-bell"},
         "gpio": 20,
         "mqtt": {
             "payload_off": "BAR",
