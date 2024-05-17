@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import gpiozero, asyncio, json
+import gpiozero, asyncio, json, platform
 from raspy2mqtt.constants import *
 from raspy2mqtt.config import *
 
@@ -204,8 +204,9 @@ class GpioOutputsHandler:
                             "device": {
                                 "manufacturer": HOME_ASSISTANT_MANUFACTURER,
                                 "model": THIS_SCRIPT_PYPI_PACKAGE,
-                                "name": "raspberrypi-ha-alarm",
+                                "name": platform.node(),
                                 "sw_version": cfg.app_version,
+                                "identifiers": [platform.node()],
                             },
                         }
                         mqtt_payload = json.dumps(mqtt_payload_dict)
