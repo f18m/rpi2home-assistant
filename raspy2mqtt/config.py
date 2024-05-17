@@ -22,7 +22,10 @@ class AppConfig:
     """
     This class represents the configuration of this application.
     It contains helpers to read the YAML config file for this utility plus helpers to
-    receive configurations from CLI options.
+    receive configurations from CLI options and from environment variables.
+
+    This class is also in charge of filling all values that might be missing in the config file
+    with their defaults. All default constants are stored in constants.py
     """
 
     def __init__(self):
@@ -46,12 +49,12 @@ class AppConfig:
         self.mqtt_schema_for_edge_triggered_sensor = Schema(
             {
                 Optional("topic"): str,
-                "payload": str,
+                "payload": str,  # for edge-triggered sensors it's hard to propose a meaningful default payload...
             }
         )
         self.home_assistant_schema = Schema(
             {
-                "device_class": str,
+                "device_class": str,  # device_class is required because it's hard to guess...
                 Optional("expire_after"): int,
             }
         )
@@ -89,7 +92,7 @@ class AppConfig:
                 ],
                 Optional("outputs"): [
                     {
-                        "name": str,
+                        "name": Regex(r"^[a-z0-9_]+$"),
                         Optional("description"): str,
                         "gpio": int,
                         "active_low": bool,
@@ -138,9 +141,9 @@ class AppConfig:
 
             if has_payload_on_off:
                 if "payload_on" not in entry_dict["mqtt"]:
-                    entry_dict["mqtt"]["payload_on"] = "ON"
+                    entry_dict["mqtt"]["payload_on"] = MQTT_DEFAULT_PAYLOAD_ON
                 if "payload_off" not in entry_dict["mqtt"]:
-                    entry_dict["mqtt"]["payload_off"] = "OFF"
+                    entry_dict["mqtt"]["payload_off"] = MQTT_DEFAULT_PAYLOAD_OFF
 
         if populate_homeassistant:
             # the following assertion is justified because 'schema' library should garantuee
@@ -149,8 +152,8 @@ class AppConfig:
 
             # the optional entry is the 'expire_after':
             if "expire_after" not in entry_dict["home_assistant"]:
-                entry_dict["home_assistant"]["expire_after"] = 0
-                print(f"Expire-after for {entry_dict['name']} defaults to [0]")
+                entry_dict["home_assistant"]["expire_after"] = HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC
+                print(f"Expire-after for {entry_dict['name']} defaults to [{HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC}]")
 
         return entry_dict
 
@@ -333,9 +336,9 @@ class AppConfig:
     @property
     def mqtt_broker_port(self) -> int:
         if self.config is None:
-            return 1883  # the default MQTT broker port
+            return MQTT_DEFAULT_BROKER_PORT  # the default MQTT broker port
         if "port" not in self.config["mqtt_broker"]:
-            return 1883  # the default MQTT broker port
+            return MQTT_DEFAULT_BROKER_PORT  # the default MQTT broker port
         return self.config["mqtt_broker"]["port"]
 
     @mqtt_broker_port.setter
@@ -345,7 +348,7 @@ class AppConfig:
     @property
     def mqtt_reconnection_period_sec(self) -> float:
         if self.config is None:
-            return 1.0  # the default reconnection interval
+            return MQTT_DEFAULT_RECONNECTION_PERIOD_SEC  # the default reconnection interval
 
         try:
             # convert the user-defined timeout from msec to (floating) sec
@@ -353,18 +356,18 @@ class AppConfig:
             return cfg_value
         except:
             # in this case the key is completely missing or does contain an integer value
-            return 1.0  # default value
+            return MQTT_DEFAULT_RECONNECTION_PERIOD_SEC  # default value
 
     @property
     def mqtt_publish_period_sec(self) -> float:
         if self.config is None:
-            return 1.0  # default value
+            return MQTT_DEFAULT_PUBLISH_PERIOD_SEC  # default value
         try:
             cfg_value = float(self.config["mqtt_broker"]["publish_period_msec"]) / 1000.0
             return cfg_value
         except:
             # in this case the key is completely missing or does contain an integer value
-            return 1.0  # default value
+            return MQTT_DEFAULT_PUBLISH_PERIOD_SEC  # default value
 
     def create_aiomqtt_client(self, identifier_str: str):
         return aiomqtt.Client(
@@ -379,7 +382,7 @@ class AppConfig:
     @property
     def stats_log_period_sec(self) -> int:
         if self.config is None or "log_stats_every" not in self.config:
-            return 30  # default value
+            return STATS_DEFAULT_LOG_PERIOD_SEC  # default value
         return int(self.config["log_stats_every"])
 
     #
