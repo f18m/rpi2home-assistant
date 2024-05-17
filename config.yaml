@@ -8,17 +8,25 @@ mqtt_broker:
   # in case the connection with the broker drops, a reconnection will be attempted each X msec:
   reconnection_period_msec: 1500
 
+  # in case your broker has authentication turned on, please provide user/pw
+  # TODO: password is cleartext right now, which is insecure
+  #user: 
+  #password:
+
+homeassistant:
+  enable_discovery_messages: true
+
+  default_topic_prefix: home
+  discovery_prefix: homeassistant
+  node_id: ha-alarm-raspy2mqtt
+
   # how often should this software re-publish the status of all inputs / outputs inside MQTT?
   # note that this software will publish the status of an input/output even if it didn't change
   # since previous update; the reason is to reset the expire timer associated typically
   # inside HomeAssistant for each MQTT sensor (see the "expire_after" property).
   publish_period_msec: 3000
 
-  # in case your broker has authentication turned on, please provide user/pw
-  # TODO: password is cleartext right now, which is insecure
-  #user: 
-  #password:
-
+  discovery_message_period_sec: 10
 
 # stats printed on stdout each N secs:
 log_stats_every: 30
