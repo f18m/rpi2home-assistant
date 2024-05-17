@@ -26,16 +26,23 @@ home_assistant:
 
   # MQTT discovery messages feature
   discovery_messages:
+    # if you choose to disable discovery messages, then you need to provide a MQTT configuration
+    # to HomeAssistant inside its configuration.yaml, see https://www.home-assistant.io/integrations/mqtt/
+    # section "Configuration of MQTT components via YAML"
     enable: true
+
+    # this is the MQTT topic prefix for discovery messages; it needs to coincide with the MQTT discovery
+    # topic prefix used by your HomeAssistant, see https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery
     topic_prefix: homeassistant
 
     # the topic_node_id will be prefixed to each and every entity exposed into HomeAssistant,
-    # so this should be a short string; it defaults to the hostname of the system
+    # so this should be a short string; it defaults to the hostname of the system.
+    # see https://www.home-assistant.io/integrations/mqtt/#naming-of-mqtt-entities
     topic_node_id: ha-alarm-raspy2mqtt
 
     # discovery messages don't need to be published that often... but it's good to re-publish them every 
     # now and then in case HomeAssistant is restarted 
-    message_period_sec: 10
+    message_period_sec: 100
 
 # stats printed on stdout each N secs:
 log_stats_every: 30
