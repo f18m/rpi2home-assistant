@@ -160,7 +160,7 @@ class OptoIsolatedInputsHandler:
             async with cfg.create_aiomqtt_client("_optoisolated_discovery_publisher") as client:
                 while not OptoIsolatedInputsHandler.stop_requested:
                     print(f"Publishing DISCOVERY messages for OPTOISOLATED INPUTs")
-                    for entry in cfg.get_all_outputs():
+                    for entry in cfg.get_all_optoisolated_inputs():
                         mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/binary_sensor/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
 
                         # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"

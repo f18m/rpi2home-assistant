@@ -520,6 +520,14 @@ class AppConfig:
             return None  # no meaningful default value
         return self.optoisolated_inputs_map[index]
 
+    def get_all_optoisolated_inputs(self) -> list:
+        """
+        Returns a list of dictionaries with configurations
+        """
+        if "i2c_optoisolated_inputs" not in self.config:
+            return None  # no meaningful default value
+        return self.config["i2c_optoisolated_inputs"]
+
     #
     # GPIO INPUTS
     #
