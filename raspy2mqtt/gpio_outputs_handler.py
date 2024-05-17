@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import gpiozero, time, asyncio, queue
+import gpiozero, asyncio, json
 from raspy2mqtt.constants import *
 from raspy2mqtt.config import *
 
@@ -66,6 +66,7 @@ class GpioOutputsHandler:
             "num_mqtt_commands_processed": 0,
             "num_connections_publish": 0,
             "num_mqtt_states_published": 0,
+            "num_connections_discovery_publish": 0,
             "ERR_invalid_payload_received": 0,
         }
 
@@ -170,6 +171,46 @@ class GpioOutputsHandler:
                         output_status_map[mqtt_topic] = output_status
 
                 await asyncio.sleep(cfg.homeassistant_publish_period_sec)
+
+    async def homeassistant_discovery_message_publish(self, cfg: AppConfig):
+        """
+        Publishes over MQTT a so-called 'discovery' message that allows HomeAssistant to automatically
+        detect the binary_sensors associated with the GPIO inputs.
+        See https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery
+        """
+        print(
+            f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OUTPUT discovery messages"
+        )
+        self.stats["num_connections_discovery_publish"] += 1
+
+        async with cfg.create_aiomqtt_client("_outputs_discovery_publisher") as client:
+            for entry in cfg.get_all_gpio_inputs():
+
+                mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/switch/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
+
+                # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
+                mqtt_payload_dict = {
+                    "unique_id": entry['name'],
+                    "name": entry['description'],
+                    "command_topic": entry['mqtt']["topic"],
+                    "state_topic": entry['mqtt']["state_topic"],
+                    "payload_on": entry['mqtt']["payload_on"],
+                    "payload_off": entry['mqtt']["payload_off"],
+                    "device_class": entry['homeassistant']["device_class"],
+                    #"expire_after": entry['homeassistant']["expire_after"], -- not supported by MQTT switch :(
+                    "device": {
+                        "manufacturer": HOME_ASSISTANT_MANUFACTURER,
+                        "model": THIS_SCRIPT_PYPI_PACKAGE,
+                        "name": "raspberrypi-ha-alarm",
+                        "sw_version": AppConfig.app_version,
+                    }
+                }
+                mqtt_payload = json.dumps(mqtt_payload_dict)
+
+                await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+
+            await asyncio.sleep(cfg.home_assistant_discovery_message_period_sec)
+
 
     def print_stats(self):
         print(f">> OUTPUTS:")

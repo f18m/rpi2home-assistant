@@ -33,7 +33,6 @@ class GpioInputsHandler:
 
         self.stats = {
             "num_connections_publish": 0,
-            "num_connections_discovery_publish": 0,
             "num_gpio_notifications": 0,
             "num_mqtt_messages": 0,
             "ERROR_noconfig": 0,
@@ -123,32 +122,6 @@ class GpioInputsHandler:
                     self.stats["num_mqtt_messages"] += 1
 
                 self.gpio_queue.task_done()
-
-    async def homeassistant_discovery_message_publish(self, cfg: AppConfig):
-        """
-        Publishes over MQTT a so-called 'discovery' message that allows HomeAssistant to automatically
-        detect the binary_sensors associated with the GPIO inputs.
-        See https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery
-        """
-        print(
-            f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish GPIO INPUT states"
-        )
-        self.stats["num_connections_discovery_publish"] += 1
-
-        # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
-
-        async with cfg.create_aiomqtt_client("_gpio_discovery_publisher") as client:
-            for entry in cfg.get_all_gpio_inputs():
-
-                mqtt_discovery_topic = f"{cfg.home_assistant_discovery_topic_prefix}/{entry['name']}"
-                mqtt_payload_dict = {
-                    "unique_id": entry['name'],
-                }
-                mqtt_payload = json.dumps(mqtt_payload_dict)
-
-                await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
-
-            await asyncio.sleep(cfg.home_assistant_discovery_message_period_sec)
 
     def print_stats(self):
         print(f">> GPIO INPUTS:")

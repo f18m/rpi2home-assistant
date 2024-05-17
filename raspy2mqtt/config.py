@@ -13,6 +13,7 @@ from schema import Schema, And, Or, Use, Optional, SchemaError, Regex
 # License: Apache license
 #
 
+
 # =======================================================================================================
 # AppConfig
 # =======================================================================================================
@@ -36,15 +37,22 @@ class AppConfig:
         self.disable_hw = False  # can be get/set from the outside
         self.verbose = False
 
+        # technically speaking the version is not an "app config" but centralizing it here is handy
+        try:
+            from importlib.metadata import version
+        except:
+            from importlib_metadata import version
+        self.app_version = str(version(THIS_SCRIPT_PYPI_PACKAGE))
+
         # before launching MQTT connections, define a unique MQTT prefix identifier:
         self.mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
         self.mqtt_schema_for_sensor_on_and_off = Schema(
             {
                 Optional("topic"): str,
-                Optional(
-                    "state_topic"
-                ): str,  # the 'state_topic' makes sense only for OUTPUTs that have type=switch in HomeAssistant
+                # the 'state_topic' makes sense only for OUTPUTs that have type=switch in HomeAssistant and
+                # are required to publish a state topic
+                Optional("state_topic"): str,  
                 Optional("payload_on"): str,
                 Optional("payload_off"): str,
             }
@@ -52,12 +60,14 @@ class AppConfig:
         self.mqtt_schema_for_edge_triggered_sensor = Schema(
             {
                 Optional("topic"): str,
-                "payload": str,  # for edge-triggered sensors it's hard to propose a meaningful default payload...
+                 # for edge-triggered sensors it's hard to propose a meaningful default payload...so it's not optional
+                "payload": str, 
             }
         )
         self.home_assistant_schema = Schema(
             {
-                "device_class": str,  # device_class is required because it's hard to guess...
+                # device_class is required because it's hard to guess... 
+                "device_class": str,  
                 Optional("expire_after"): int,
             }
         )
@@ -70,7 +80,7 @@ class AppConfig:
                     Optional("user"): str,
                     Optional("password"): str,
                 },
-                Optional("homeassistant"): {
+                Optional("home_assistant"): {
                     Optional("default_topic_prefix"): str,
                     Optional("publish_period_msec"): int,
                     Optional("discovery_messages"): {
@@ -420,7 +430,7 @@ class AppConfig:
         if self.config is None:
             return HOME_ASSISTANT_DEFAULT_PUBLISH_PERIOD_SEC  # default value
         try:
-            cfg_value = float(self.config["homeassistant"]["publish_period_msec"]) / 1000.0
+            cfg_value = float(self.config["home_assistant"]["publish_period_msec"]) / 1000.0
             return cfg_value
         except:
             # in this case the key is completely missing or does contain an integer value
@@ -431,7 +441,7 @@ class AppConfig:
         if self.config is None:
             return HOME_ASSISTANT_DEFAULT_TOPIC_PREFIX  # default value
         try:
-            return self.config["homeassistant"]["default_topic_prefix"]
+            return self.config["home_assistant"]["default_topic_prefix"]
         except:
             # in this case the key is completely missing or does contain an integer value
             return HOME_ASSISTANT_DEFAULT_TOPIC_PREFIX  # default value
@@ -441,7 +451,7 @@ class AppConfig:
         if self.config is None:
             return True  # default value
         try:
-            return self.config["homeassistant"]["discovery_messages"]["enable"]
+            return self.config["home_assistant"]["discovery_messages"]["enable"]
         except:
             # in this case the key is completely missing or does contain an integer value
             return True  # default value
@@ -451,7 +461,7 @@ class AppConfig:
         if self.config is None:
             return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_PREFIX  # default value
         try:
-            return self.config["homeassistant"]["discovery_messages"]["topic_prefix"]
+            return self.config["home_assistant"]["discovery_messages"]["topic_prefix"]
         except:
             # in this case the key is completely missing or does contain an integer value
             return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_PREFIX  # default value
@@ -461,7 +471,7 @@ class AppConfig:
         if self.config is None:
             return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_NODE_ID  # default value
         try:
-            return self.config["homeassistant"]["discovery_messages"]["topic_node_id"]
+            return self.config["home_assistant"]["discovery_messages"]["topic_node_id"]
         except:
             # in this case the key is completely missing or does contain an integer value
             return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_NODE_ID  # default value
@@ -471,7 +481,7 @@ class AppConfig:
         if self.config is None:
             return HOME_ASSISTANT_DEFAULT_DISCOVERY_PUBLISH_PERIOD_SEC  # default value
         try:
-            return float(self.config["homeassistant"]["discovery_messages"]["message_period_sec"])
+            return float(self.config["home_assistant"]["discovery_messages"]["message_period_sec"])
         except:
             # in this case the key is completely missing or does contain an integer value
             return HOME_ASSISTANT_DEFAULT_DISCOVERY_PUBLISH_PERIOD_SEC  # default value
@@ -545,7 +555,7 @@ class AppConfig:
         return self.config["outputs"]
 
     #
-    # MQTT HLPERs
+    # MQTT HELPERs
     #
     def create_aiomqtt_client(self, identifier_str: str) -> aiomqtt.Client:
         """

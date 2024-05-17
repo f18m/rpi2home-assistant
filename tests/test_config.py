@@ -139,7 +139,7 @@ mqtt_broker:
   reconnection_period_msec: 1
   user: foo
   password: bar
-homeassistant:
+home_assistant:
   default_topic_prefix: justaprefix
   publish_period_msec: 2
   discovery_messages:

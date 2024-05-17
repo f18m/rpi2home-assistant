@@ -13,7 +13,7 @@ mqtt_broker:
   #user: 
   #password:
 
-homeassistant:
+home_assistant:
   # how often should this software re-publish the status of all inputs / outputs inside MQTT?
   # note that this software will publish the status of an input/output even if it didn't change
   # since previous update; the reason is to reset the expire timer associated typically
