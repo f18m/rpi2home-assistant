@@ -178,6 +178,7 @@ class AppConfig:
             print(f"Error parsing YAML config file '{cfg_yaml}': {e}")
             return False
 
+        # validate the config against its schema:
         try:
             self.config_file_schema.validate(self.config)
         except SchemaError as e:
@@ -198,6 +199,10 @@ class AppConfig:
                 if idx < 1 or idx > 16:
                     raise ValueError(
                         f"Invalid input_num {idx}. The legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs."
+                    )
+                if idx in self.optoisolated_inputs_map:
+                    raise ValueError(
+                        f"Invalid input_num {idx} for entry {input_item['name']}: such index for the Sequent Microsystem HAT input has already been used. Check again the configuration."
                     )
 
                 input_item = self.populate_defaults_in_list_entry(input_item, has_state_topic=False)
@@ -225,6 +230,11 @@ class AppConfig:
             for input_item in self.config["gpio_inputs"]:
                 idx = int(input_item["gpio"])
                 self.check_gpio(idx)
+                if idx in self.gpio_inputs_map:
+                    raise ValueError(
+                        f"Invalid gpio index {idx} for entry {input_item['name']}: such GPIO input has already been used. Check again the configuration."
+                    )
+
                 input_item = self.populate_defaults_in_list_entry(
                     input_item, populate_homeassistant=False, has_payload_on_off=False, has_state_topic=False
                 )
@@ -242,7 +252,7 @@ class AppConfig:
             return False
 
         try:
-            # convert the 'outputs' part in a dictionary indexed by the NAME:
+            # convert the 'outputs' part in a dictionary indexed by the MQTT TOPIC:
             self.outputs_map = {}
 
             if "outputs" not in self.config:
@@ -253,7 +263,14 @@ class AppConfig:
                 idx = int(output_item["gpio"])
                 self.check_gpio(idx)
                 output_item = self.populate_defaults_in_list_entry(output_item)
-                self.outputs_map[output_item["mqtt"]["topic"]] = output_item
+
+                mqtt_topic = output_item["mqtt"]["topic"]
+                if mqtt_topic in self.outputs_map:
+                    raise ValueError(
+                        f"Invalid MQTT topic {mqtt_topic} for entry {output_item['name']}: such MQTT topic has already been used. Check again the configuration."
+                    )
+
+                self.outputs_map[mqtt_topic] = output_item
                 # print(output_item)
             print(f"Loaded {len(self.outputs_map)} digital output configurations")
             if len(self.outputs_map) == 0:
@@ -265,6 +282,23 @@ class AppConfig:
         except KeyError as e:
             print(f"Error in YAML config file '{cfg_yaml}': {e} is missing")
             return False
+
+        # validate that there is no duplicated 'name' across all configuration entries
+        name_set = set()
+        merged_entries_list = []
+        if self.optoisolated_inputs_map is not None:
+            merged_entries_list = merged_entries_list + list(self.optoisolated_inputs_map.values())
+        if self.gpio_inputs_map is not None:
+            merged_entries_list = merged_entries_list + list(self.gpio_inputs_map.values())
+        if self.outputs_map is not None:
+            merged_entries_list = merged_entries_list + list(self.outputs_map.values())
+        for entry in merged_entries_list:
+            if entry["name"] in name_set:
+                print(
+                    f"Error in YAML config file '{cfg_yaml}': the name {entry['name']} is not unique across the configuration."
+                )
+            else:
+                name_set.add(entry["name"])
 
         print(f"Successfully loaded configuration")
         return True
