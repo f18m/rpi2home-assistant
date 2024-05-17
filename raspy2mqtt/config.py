@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import yaml, aiomqtt, datetime, os
+import yaml, aiomqtt, datetime, os, platform
 from datetime import datetime, timezone
 from raspy2mqtt.constants import *
 
@@ -39,10 +39,17 @@ class AppConfig:
 
         # technically speaking the version is not an "app config" but centralizing it here is handy
         try:
-            from importlib.metadata import version
+            try:
+                from importlib.metadata import version
+            except:
+                from importlib_metadata import version
+            self.app_version = str(version(THIS_SCRIPT_PYPI_PACKAGE))
         except:
-            from importlib_metadata import version
-        self.app_version = str(version(THIS_SCRIPT_PYPI_PACKAGE))
+            # this happens when e.g. running unit tests inside Github runners where the wheel
+            # package for this project is not installed:
+            self.app_version = "N/A"
+
+        self.current_hostname = platform.node()
 
         # before launching MQTT connections, define a unique MQTT prefix identifier:
         self.mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -574,3 +581,12 @@ class AppConfig:
             password=self.mqtt_broker_password,
             identifier=self.mqtt_identifier_prefix + identifier_str,
         )
+
+    def get_device_dict(self) -> dict:
+        return {
+            "manufacturer": HOME_ASSISTANT_MANUFACTURER,
+            "model": THIS_SCRIPT_PYPI_PACKAGE,
+            "name": self.current_hostname + "-sensors",
+            "sw_version": self.app_version,
+            "identifiers": [THIS_SCRIPT_PYPI_PACKAGE + self.current_hostname],
+        }
