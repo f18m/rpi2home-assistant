@@ -50,8 +50,9 @@ i2c_optoisolated_inputs:
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
-      device_class: tamper
+      device_class: motion
       expire_after: 30
+      icon: mdi:motion-sensor
   - name: opto_input_2
     description: Opto-isolated Input for Sensor BCD
     input_num: 2
@@ -63,6 +64,7 @@ i2c_optoisolated_inputs:
     home_assistant:
       device_class: tamper
       expire_after: 30
+      icon: mdi:check-circle
 
 # GPIO inputs are those sampled by Raspberry directly using its own GPIO pins (3.3V compatible)
 # NOTE1: a fundamental difference with 'i2c_optoisolated_inputs' is that the MQTT topics configured
@@ -98,6 +100,7 @@ outputs:
       payload_off: "OFF"
     home_assistant:
       device_class: switch # could be 'outlet'
+      icon: mdi:alarm-bell
   - name: int_alarm_siren
     description: Internal Alarm Siren
     gpio: 21
@@ -109,3 +112,4 @@ outputs:
       payload_off: "OFF"
     home_assistant:
       device_class: switch # could be 'outlet'
+      icon: mdi:alarm-bell

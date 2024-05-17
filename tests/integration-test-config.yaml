@@ -54,6 +54,7 @@ outputs:
     active_low: true
     home_assistant:
       device_class: switch
+      icon: mdi:alarm-bell
     mqtt:
       payload_on: "ON"
       payload_off: "OFF"
