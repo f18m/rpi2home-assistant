@@ -14,19 +14,22 @@ mqtt_broker:
   #password:
 
 homeassistant:
-  enable_discovery_messages: true
-
-  default_topic_prefix: home
-  discovery_prefix: homeassistant
-  node_id: ha-alarm-raspy2mqtt
-
   # how often should this software re-publish the status of all inputs / outputs inside MQTT?
   # note that this software will publish the status of an input/output even if it didn't change
   # since previous update; the reason is to reset the expire timer associated typically
   # inside HomeAssistant for each MQTT sensor (see the "expire_after" property).
   publish_period_msec: 3000
 
-  discovery_message_period_sec: 10
+  # this is the default topic prefix used for all entries listed below in the 'i2c_optoisolated_inputs',
+  # 'gpio_inputs' and 'outputs' sections
+  default_topic_prefix: home
+
+  # MQTT discovery messages feature
+  discovery_messages:
+    enable: true
+    topic_prefix: homeassistant
+    topic_node_id: ha-alarm-raspy2mqtt
+    message_period_sec: 10
 
 # stats printed on stdout each N secs:
 log_stats_every: 30

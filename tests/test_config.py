@@ -78,8 +78,20 @@ def test_config_file_using_defaults_succeeds(tmpdir):
 
     x = AppConfig()
     assert x.load(str(p)) == True
+
+    # MQTT BROKER
     assert x.mqtt_broker_host == "something"
+    assert x.mqtt_reconnection_period_sec == 1
     assert x.mqtt_broker_user is None
+    assert x.mqtt_broker_password is None
+
+    # HOME ASSISTANT section
+    assert x.homeassistant_default_topic_prefix == "home"
+    assert x.homeassistant_publish_period_sec == 1
+    assert x.homeassistant_discovery_messages_enable == True
+    assert x.homeassistant_discovery_topic_prefix == "homeassistant"
+    assert x.homeassistant_discovery_topic_node_id == "ha-alarm-raspy2mqtt"
+    assert x.homeassistant_discovery_message_period_sec == 1
 
     # OPTO-ISOLATED INPUTS
     # check that all attributes have been populated with the defaults:
@@ -125,9 +137,16 @@ CFG_FULLY_SPECIFIED = """
 mqtt_broker:
   host: something
   reconnection_period_msec: 1
-  publish_period_msec: 2
   user: foo
   password: bar
+homeassistant:
+  default_topic_prefix: justaprefix
+  publish_period_msec: 2
+  discovery_messages:
+    enable: false
+    topic_prefix: anotherprefix
+    topic_node_id: some_unique_device_id
+    message_period_sec: 1000
 i2c_optoisolated_inputs:
   - name: opto_input_1
     description: just a test
@@ -176,9 +195,16 @@ def test_config_file_fully_specified_succeeds(tmpdir):
     # MQTT BROKER section
     assert x.mqtt_broker_host == "something"
     assert x.mqtt_reconnection_period_sec == 0.001
-    assert x.mqtt_publish_period_sec == 0.002
     assert x.mqtt_broker_user == "foo"
     assert x.mqtt_broker_password == "bar"
+
+    # HOME ASSISTANT section
+    assert x.homeassistant_default_topic_prefix == "justaprefix"
+    assert x.homeassistant_publish_period_sec == 0.002
+    assert x.homeassistant_discovery_messages_enable == False
+    assert x.homeassistant_discovery_topic_prefix == "anotherprefix"
+    assert x.homeassistant_discovery_topic_node_id == "some_unique_device_id"
+    assert x.homeassistant_discovery_message_period_sec == 1000
 
     # OPTO-ISOLATED INPUTS
     # check that all attributes have been populated with the defaults:

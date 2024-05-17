@@ -169,7 +169,7 @@ class GpioOutputsHandler:
                         # when there is no state change:
                         output_status_map[mqtt_topic] = output_status
 
-                await asyncio.sleep(cfg.mqtt_publish_period_sec)
+                await asyncio.sleep(cfg.homeassistant_publish_period_sec)
 
     def print_stats(self):
         print(f">> OUTPUTS:")

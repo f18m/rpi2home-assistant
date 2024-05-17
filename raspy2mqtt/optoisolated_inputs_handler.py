@@ -130,7 +130,7 @@ class OptoIsolatedInputsHandler:
                 # print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
 
                 # Now sleep a little bit before repeating
-                actual_sleep_time_sec = cfg.mqtt_publish_period_sec
+                actual_sleep_time_sec = cfg.homeassistant_publish_period_sec
                 if actual_sleep_time_sec > update_loop_duration_sec:
                     # adjust for the time it took to update on MQTT broker all topics
                     actual_sleep_time_sec -= update_loop_duration_sec

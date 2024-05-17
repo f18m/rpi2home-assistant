@@ -99,7 +99,7 @@ class GpioInputsHandler:
                     # if there's no notification (typical case), then do not block the event loop
                     # and keep processing other tasks... to ensure low-latency in processing the
                     # GPIO inputs the sleep time is set equal to the MQTT publish freq
-                    await asyncio.sleep(cfg.mqtt_publish_period_sec)
+                    await asyncio.sleep(cfg.homeassistant_publish_period_sec)
                     continue
 
                 # there is a GPIO notification to process:
