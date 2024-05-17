@@ -204,9 +204,9 @@ class GpioOutputsHandler:
                             "device": {
                                 "manufacturer": HOME_ASSISTANT_MANUFACTURER,
                                 "model": THIS_SCRIPT_PYPI_PACKAGE,
-                                "name": platform.node(),
+                                "name": platform.node() + "-sensors",
                                 "sw_version": cfg.app_version,
-                                "identifiers": [platform.node()],
+                                "identifiers": [THIS_SCRIPT_PYPI_PACKAGE + platform.node()],
                             },
                         }
                         mqtt_payload = json.dumps(mqtt_payload_dict)
