@@ -16,9 +16,13 @@ i2c_optoisolated_inputs:
   - name: opto_input_1
     input_num: 1
     active_low: true
+    home_assistant:
+      device_class: contact
   - name: opto_input_2
     input_num: 2
     active_low: true
+    home_assistant:
+      device_class: contact
 
 gpio_inputs:
   - name: gpio_input_1
@@ -38,6 +42,16 @@ outputs:
   - name: output_1
     gpio: 20
     active_low: true
+    home_assistant:
+      device_class: switch
+    mqtt:
+      payload_on: "ON"
+      payload_off: "OFF"
   - name: output_2
     gpio: 21
     active_low: true
+    home_assistant:
+      device_class: switch
+    mqtt:
+      payload_on: "ON"
+      payload_off: "OFF"

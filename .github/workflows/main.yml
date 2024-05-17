@@ -37,7 +37,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: install pypi-packaged dependencies for unit and integration tests
-      run: sudo pip3 install pytest testcontainers paho-mqtt aiomqtt
+      run: sudo pip3 install pytest testcontainers paho-mqtt aiomqtt schema
 
     # FIXME: we should have all dependencies centralized in the TOML file and install them as:
     # - name: Install dependencies

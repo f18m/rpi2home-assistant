@@ -7,8 +7,18 @@
 #
 
 THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
+
+# MQTT constants
 MQTT_TOPIC_PREFIX = "home"
 MQTT_QOS_AT_LEAST_ONCE = 1
+MQTT_DEFAULT_PAYLOAD_ON = "ON"
+MQTT_DEFAULT_PAYLOAD_OFF = "OFF"
+MQTT_DEFAULT_BROKER_PORT = 1883
+MQTT_DEFAULT_RECONNECTION_PERIOD_SEC = 1
+MQTT_DEFAULT_PUBLISH_PERIOD_SEC = 1
+
+# HomeAssistant constants
+HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC = 30
 
 # SequentMicrosystem-specific constants
 SEQMICRO_INPUTHAT_STACK_LEVEL = 0  # 0 means the first "stacked" board (this code supports only 1!)
@@ -20,6 +30,9 @@ SEQMICRO_INPUTHAT_INTERRUPT_GPIO = (
 SEQMICRO_INPUTHAT_I2C_SDA = 2  # reserved for I2C communication between Raspberry CPU and the input HAT
 SEQMICRO_INPUTHAT_I2C_SCL = 3  # reserved for I2C communication between Raspberry CPU and the input HAT
 
-# file paths
+# File paths constants
 DEFAULT_CONFIG_FILE = "/etc/ha-alarm-raspy2mqtt.yaml"
 INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
+
+# Misc constants
+STATS_DEFAULT_LOG_PERIOD_SEC = 30

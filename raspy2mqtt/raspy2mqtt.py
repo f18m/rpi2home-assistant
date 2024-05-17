@@ -91,8 +91,8 @@ def instance_already_running(label="default"):
 
     try:
         lock_file_pointer = os.open(f"/tmp/instance_{label}.lock", os.O_WRONLY | os.O_CREAT)
-    except PermissionError:
-        print("Not enough permissions to write files under /tmp. Run this application as root.")
+    except PermissionError as e:
+        print(f"Not enough permissions to write files under /tmp. Run this application as root: {e}")
         sys.exit(4)
 
     try:
@@ -159,22 +159,8 @@ async def main_loop():
     if not cfg.load(args.config):
         return 1  # invalid config file... abort with failure exit code
 
-    # merge CLI options into the configuration object:
-    cfg.disable_hw = args.disable_hw
-    cfg.verbose = args.verbose
-
-    # merge env vars into the configuration object:
-    if os.environ.get("DISABLE_HW", None) != None:
-        cfg.disable_hw = True
-    if os.environ.get("VERBOSE", None) != None:
-        cfg.verbose = True
-    if os.environ.get("MQTT_BROKER_HOST", None) != None:
-        # this particular env var can override the value coming from the config file:
-        cfg.mqtt_broker_host = os.environ.get("MQTT_BROKER_HOST")
-    if os.environ.get("MQTT_BROKER_PORT", None) != None:
-        # this particular env var can override the value coming from the config file:
-        cfg.mqtt_broker_port = os.environ.get("MQTT_BROKER_PORT")
-
+    cfg.merge_options_from_cli(args)
+    cfg.merge_options_from_env_vars()
     cfg.print_config_summary()
 
     # install signal handler

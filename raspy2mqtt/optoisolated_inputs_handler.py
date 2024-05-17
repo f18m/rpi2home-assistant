@@ -25,9 +25,6 @@ class OptoIsolatedInputsHandler:
     # the stop-request is not related to a particular instance of this class... it applies to any instance
     stop_requested = False
 
-    payload_on = "ON"
-    payload_off = "OFF"
-
     def __init__(self):
         # last reading of the 16 digital opto-isolated inputs
         self.optoisolated_inputs_sampled_values = 0
@@ -116,8 +113,6 @@ class OptoIsolatedInputsHandler:
                     # convert from zero-based index 'i' to 1-based index, as used in the config file
                     input_cfg = cfg.get_optoisolated_input_config(1 + i)
                     if input_cfg is not None:
-                        # Choose the TOPIC and message PAYLOAD
-                        topic = f"{MQTT_TOPIC_PREFIX}/{input_cfg['name']}"
                         if input_cfg["active_low"]:
                             logical_value = not bit_value
                             input_type = "active low"
@@ -125,14 +120,10 @@ class OptoIsolatedInputsHandler:
                             logical_value = bit_value
                             input_type = "active high"
 
-                        payload = (
-                            OptoIsolatedInputsHandler.payload_on
-                            if logical_value
-                            else OptoIsolatedInputsHandler.payload_off
-                        )
+                        payload = input_cfg["mqtt"]["payload_on"] if logical_value else input_cfg["mqtt"]["payload_off"]
                         # print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
 
-                        await client.publish(topic, payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                        await client.publish(input_cfg["mqtt"]["topic"], payload, qos=MQTT_QOS_AT_LEAST_ONCE)
                         self.stats["num_mqtt_messages"] += 1
 
                 update_loop_duration_sec = time.perf_counter() - update_loop_start_sec
