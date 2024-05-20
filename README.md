@@ -128,6 +128,6 @@ Very similar project, more flexible and much bigger, targeting specific sensor b
 
 # TODO
 
-- Add support for HomeAssistant DISCOVERY, see https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery 
+- Improve HomeAssistant DISCOVERY by publishing them only after HomeAssistant restarts
 - Eventually get rid of GPIOZERO + PIGPIOD which consume CPU and also force use of e.g. the queue.Queue due to
   the multithreading issues
