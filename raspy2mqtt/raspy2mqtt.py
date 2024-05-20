@@ -28,14 +28,6 @@ g_stop_requested = False
 # =======================================================================================================
 
 
-def get_my_version():
-    try:
-        from importlib.metadata import version
-    except:
-        from importlib_metadata import version
-    return version(THIS_SCRIPT_PYPI_PACKAGE)
-
-
 def parse_command_line():
     """Parses the command line and returns the configuration as dictionary object."""
     parser = argparse.ArgumentParser(
@@ -71,7 +63,8 @@ def parse_command_line():
     args = parser.parse_args()
 
     if args.version:
-        print(f"Version: {get_my_version()}")
+        cfg = AppConfig()
+        print(f"Version: {cfg.app_version}")
         sys.exit(0)
 
     return args
@@ -154,8 +147,11 @@ async def signal_handler(sig: signal.Signals) -> None:
 async def main_loop():
     global g_stop_requested
 
-    args = parse_command_line()
     cfg = AppConfig()
+    print(f"{THIS_SCRIPT_PYPI_PACKAGE} version {cfg.app_version} starting")
+
+    args = parse_command_line()
+
     if not cfg.load(args.config):
         return 1  # invalid config file... abort with failure exit code
 
@@ -213,6 +209,12 @@ async def main_loop():
                     loop.create_task(gpio_outputs_handler.publish_outputs_state(cfg)),
                 ]
 
+                if cfg.homeassistant_discovery_messages_enable:
+                    tasks += [
+                        loop.create_task(opto_inputs_handler.homeassistant_discovery_message_publish(cfg)),
+                        loop.create_task(gpio_outputs_handler.homeassistant_discovery_message_publish(cfg)),
+                    ]
+
                 # this main coroutine will simply wait till a SIGTERM arrives and
                 # we get g_stop_requested=True:
                 while not g_stop_requested:
@@ -263,13 +265,12 @@ async def main_loop():
 
 
 def main():
-    if instance_already_running("ha-alarm-raspy2mqtt"):
+    if instance_already_running(THIS_SCRIPT_PYPI_PACKAGE):
         print(
             f"Sorry, detected another instance of this daemon is already running. Using the same I2C bus from 2 sofware programs is not recommended. Aborting."
         )
         sys.exit(3)
 
-    print(f"{THIS_SCRIPT_PYPI_PACKAGE} version {get_my_version()} starting")
     try:
         sys.exit(asyncio.run(main_loop()))
     except KeyboardInterrupt:

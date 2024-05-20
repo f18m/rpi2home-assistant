@@ -8,17 +8,45 @@ mqtt_broker:
   # in case the connection with the broker drops, a reconnection will be attempted each X msec:
   reconnection_period_msec: 1500
 
+  # in case your broker has authentication turned on, please provide user/pw
+  # TODO: password is cleartext right now, which is insecure
+  #user: 
+  #password:
+
+home_assistant:
   # how often should this software re-publish the status of all inputs / outputs inside MQTT?
   # note that this software will publish the status of an input/output even if it didn't change
   # since previous update; the reason is to reset the expire timer associated typically
   # inside HomeAssistant for each MQTT sensor (see the "expire_after" property).
   publish_period_msec: 3000
 
-  # in case your broker has authentication turned on, please provide user/pw
-  # TODO: password is cleartext right now, which is insecure
-  #user: 
-  #password:
+  # this is the default topic prefix used for all entries listed below in the 'i2c_optoisolated_inputs',
+  # 'gpio_inputs' and 'outputs' sections
+  default_topic_prefix: home
 
+  # MQTT discovery messages feature
+  discovery_messages:
+    # if you choose to disable discovery messages, then you need to provide a MQTT configuration
+    # to HomeAssistant inside its configuration.yaml, see https://www.home-assistant.io/integrations/mqtt/
+    # section "Configuration of MQTT components via YAML"
+    enable: true
+
+    # this is the MQTT topic prefix for discovery messages; it needs to coincide with the MQTT discovery
+    # topic prefix used by your HomeAssistant, see https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery
+    topic_prefix: homeassistant
+
+    # the node_id must be a unique identifier of this specific instance of this software; it will be
+    # prefixed to each and every entity exposed into HomeAssistant, so this should be a short string.
+    # It defaults to the hostname of the system.
+    # See https://www.home-assistant.io/integrations/mqtt/#naming-of-mqtt-entities for more info.
+    node_id: ha-alarm-raspy2mqtt
+
+    # discovery messages don't need to be published that often... but it's good to re-publish them every 
+    # now and then in case HomeAssistant is restarted.
+    # TODO: an alternative and better approach would be to listen on the HomeAssistant 'status' topic and publish
+    # the discovery messages only when an HomeAssistant restart is detected; see
+    # https://www.home-assistant.io/integrations/mqtt/#use-the-birth-and-will-messages-to-trigger-discovery
+    message_period_sec: 100
 
 # stats printed on stdout each N secs:
 log_stats_every: 30
@@ -39,8 +67,9 @@ i2c_optoisolated_inputs:
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
-      device_class: tamper
+      device_class: motion
       expire_after: 30
+      icon: mdi:motion-sensor
   - name: opto_input_2
     description: Opto-isolated Input for Sensor BCD
     input_num: 2
@@ -52,6 +81,7 @@ i2c_optoisolated_inputs:
     home_assistant:
       device_class: tamper
       expire_after: 30
+      icon: mdi:check-circle
 
 # GPIO inputs are those sampled by Raspberry directly using its own GPIO pins (3.3V compatible)
 # NOTE1: a fundamental difference with 'i2c_optoisolated_inputs' is that the MQTT topics configured
@@ -87,6 +117,7 @@ outputs:
       payload_off: "OFF"
     home_assistant:
       device_class: switch # could be 'outlet'
+      icon: mdi:alarm-bell
   - name: int_alarm_siren
     description: Internal Alarm Siren
     gpio: 21
@@ -98,3 +129,4 @@ outputs:
       payload_off: "OFF"
     home_assistant:
       device_class: switch # could be 'outlet'
+      icon: mdi:alarm-bell

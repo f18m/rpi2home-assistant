@@ -1,4 +1,4 @@
-import pytest
+import pytest, platform
 from raspy2mqtt.config import AppConfig
 
 
@@ -78,15 +78,27 @@ def test_config_file_using_defaults_succeeds(tmpdir):
 
     x = AppConfig()
     assert x.load(str(p)) == True
+
+    # MQTT BROKER
     assert x.mqtt_broker_host == "something"
+    assert x.mqtt_reconnection_period_sec == 1
     assert x.mqtt_broker_user is None
+    assert x.mqtt_broker_password is None
+
+    # HOME ASSISTANT section
+    assert x.homeassistant_default_topic_prefix == "home"
+    assert x.homeassistant_publish_period_sec == 1
+    assert x.homeassistant_discovery_messages_enable == True
+    assert x.homeassistant_discovery_topic_prefix == "homeassistant"
+    assert x.homeassistant_discovery_topic_node_id == platform.node()
+    assert x.homeassistant_discovery_message_period_sec == 100
 
     # OPTO-ISOLATED INPUTS
     # check that all attributes have been populated with the defaults:
     assert x.get_optoisolated_input_config(1) == {
         "active_low": True,
         "description": "opto_input_1",
-        "home_assistant": {"device_class": "tamper", "expire_after": 30},
+        "home_assistant": {"device_class": "tamper", "expire_after": 30, "icon": None},
         "input_num": 1,
         "mqtt": {"payload_off": "OFF", "payload_on": "ON", "topic": "home/opto_input_1"},
         "name": "opto_input_1",
@@ -109,7 +121,7 @@ def test_config_file_using_defaults_succeeds(tmpdir):
     assert x.get_output_config_by_mqtt_topic("home/ext_alarm_siren") == {
         "active_low": True,
         "description": "ext_alarm_siren",
-        "home_assistant": {"device_class": "switch", "expire_after": 30},
+        "home_assistant": {"device_class": "switch", "expire_after": 30, "icon": None},
         "gpio": 20,
         "mqtt": {
             "payload_off": "OFF",
@@ -125,9 +137,16 @@ CFG_FULLY_SPECIFIED = """
 mqtt_broker:
   host: something
   reconnection_period_msec: 1
-  publish_period_msec: 2
   user: foo
   password: bar
+home_assistant:
+  default_topic_prefix: justaprefix
+  publish_period_msec: 2
+  discovery_messages:
+    enable: false
+    topic_prefix: anotherprefix
+    topic_node_id: some_unique_device_id
+    message_period_sec: 1000
 i2c_optoisolated_inputs:
   - name: opto_input_1
     description: just a test
@@ -140,6 +159,7 @@ i2c_optoisolated_inputs:
     home_assistant:
       device_class: tamper
       expire_after: 1000
+      icon: mdi:check-circle
 gpio_inputs:
   - name: radio_channel_a
     description: yet another test
@@ -161,6 +181,7 @@ outputs:
     home_assistant:
       device_class: switch
       expire_after: 1000
+      icon: mdi:alarm-bell
 """
 
 
@@ -176,16 +197,23 @@ def test_config_file_fully_specified_succeeds(tmpdir):
     # MQTT BROKER section
     assert x.mqtt_broker_host == "something"
     assert x.mqtt_reconnection_period_sec == 0.001
-    assert x.mqtt_publish_period_sec == 0.002
     assert x.mqtt_broker_user == "foo"
     assert x.mqtt_broker_password == "bar"
+
+    # HOME ASSISTANT section
+    assert x.homeassistant_default_topic_prefix == "justaprefix"
+    assert x.homeassistant_publish_period_sec == 0.002
+    assert x.homeassistant_discovery_messages_enable == False
+    assert x.homeassistant_discovery_topic_prefix == "anotherprefix"
+    assert x.homeassistant_discovery_topic_node_id == "some_unique_device_id"
+    assert x.homeassistant_discovery_message_period_sec == 1000
 
     # OPTO-ISOLATED INPUTS
     # check that all attributes have been populated with the defaults:
     assert x.get_optoisolated_input_config(1) == {
         "active_low": True,
         "description": "just a test",
-        "home_assistant": {"device_class": "tamper", "expire_after": 1000},
+        "home_assistant": {"device_class": "tamper", "expire_after": 1000, "icon": "mdi:check-circle"},
         "input_num": 1,
         "mqtt": {"payload_off": "BAR", "payload_on": "FOO", "topic": "test_topic_1"},
         "name": "opto_input_1",
@@ -208,7 +236,7 @@ def test_config_file_fully_specified_succeeds(tmpdir):
     assert x.get_output_config_by_mqtt_topic("test_topic_3") == {
         "active_low": True,
         "description": "yet another test",
-        "home_assistant": {"device_class": "switch", "expire_after": 1000},
+        "home_assistant": {"device_class": "switch", "expire_after": 1000, "icon": "mdi:alarm-bell"},
         "gpio": 20,
         "mqtt": {
             "payload_off": "BAR",

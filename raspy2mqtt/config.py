@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import yaml, aiomqtt, datetime, os
+import yaml, aiomqtt, datetime, os, platform
 from datetime import datetime, timezone
 from raspy2mqtt.constants import *
 
@@ -12,6 +12,7 @@ from schema import Schema, And, Or, Use, Optional, SchemaError, Regex
 # Created: Apr 2024
 # License: Apache license
 #
+
 
 # =======================================================================================================
 # AppConfig
@@ -36,15 +37,29 @@ class AppConfig:
         self.disable_hw = False  # can be get/set from the outside
         self.verbose = False
 
+        # technically speaking the version is not an "app config" but centralizing it here is handy
+        try:
+            try:
+                from importlib.metadata import version
+            except:
+                from importlib_metadata import version
+            self.app_version = str(version(THIS_SCRIPT_PYPI_PACKAGE))
+        except:
+            # this happens when e.g. running unit tests inside Github runners where the wheel
+            # package for this project is not installed:
+            self.app_version = "N/A"
+
+        self.current_hostname = platform.node()
+
         # before launching MQTT connections, define a unique MQTT prefix identifier:
         self.mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
         self.mqtt_schema_for_sensor_on_and_off = Schema(
             {
                 Optional("topic"): str,
-                Optional(
-                    "state_topic"
-                ): str,  # the 'state_topic' makes sense only for OUTPUTs that have type=switch in HomeAssistant
+                # the 'state_topic' makes sense only for OUTPUTs that have type=switch in HomeAssistant and
+                # are required to publish a state topic
+                Optional("state_topic"): str,
                 Optional("payload_on"): str,
                 Optional("payload_off"): str,
             }
@@ -52,13 +67,16 @@ class AppConfig:
         self.mqtt_schema_for_edge_triggered_sensor = Schema(
             {
                 Optional("topic"): str,
-                "payload": str,  # for edge-triggered sensors it's hard to propose a meaningful default payload...
+                # for edge-triggered sensors it's hard to propose a meaningful default payload...so it's not optional
+                "payload": str,
             }
         )
         self.home_assistant_schema = Schema(
             {
-                "device_class": str,  # device_class is required because it's hard to guess...
+                # device_class is required because it's hard to guess...
+                "device_class": str,
                 Optional("expire_after"): int,
+                Optional("icon"): str,
             }
         )
 
@@ -67,9 +85,18 @@ class AppConfig:
                 "mqtt_broker": {
                     "host": str,
                     Optional("reconnection_period_msec"): int,
-                    Optional("publish_period_msec"): int,
                     Optional("user"): str,
                     Optional("password"): str,
+                },
+                Optional("home_assistant"): {
+                    Optional("default_topic_prefix"): str,
+                    Optional("publish_period_msec"): int,
+                    Optional("discovery_messages"): {
+                        Optional("enable"): bool,
+                        Optional("topic_prefix"): str,
+                        Optional("topic_node_id"): str,
+                        Optional("message_period_sec"): int,
+                    },
                 },
                 Optional("log_stats_every"): int,
                 Optional("i2c_optoisolated_inputs"): [
@@ -140,12 +167,14 @@ class AppConfig:
 
             # an optional entry is the 'topic':
             if "topic" not in entry_dict["mqtt"]:
-                entry_dict["mqtt"]["topic"] = f"{MQTT_TOPIC_PREFIX}/{entry_dict['name']}"
+                entry_dict["mqtt"]["topic"] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}"
                 print(f"Topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['topic']}]")
 
             if has_state_topic:
                 if "state_topic" not in entry_dict["mqtt"]:
-                    entry_dict["mqtt"]["state_topic"] = f"{MQTT_TOPIC_PREFIX}/{entry_dict['name']}/state"
+                    entry_dict["mqtt"][
+                        "state_topic"
+                    ] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}/state"
                     print(f"State topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['state_topic']}]")
 
             if has_payload_on_off:
@@ -159,10 +188,11 @@ class AppConfig:
             # that we get here only if all entries in the config file do have the 'home_assistant' section
             assert "home_assistant" in entry_dict
 
-            # the optional entry is the 'expire_after':
             if "expire_after" not in entry_dict["home_assistant"]:
                 entry_dict["home_assistant"]["expire_after"] = HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC
                 print(f"Expire-after for {entry_dict['name']} defaults to [{HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC}]")
+            if "icon" not in entry_dict["home_assistant"]:
+                entry_dict["home_assistant"]["icon"] = None
 
         return entry_dict
 
@@ -330,7 +360,7 @@ class AppConfig:
         else:
             print(f"   MQTT broker authentication: OFF")
         print(f"   MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
-        print(f"   MQTT publish period: {self.mqtt_publish_period_sec}s")
+        print(f"   MQTT publish period: {self.homeassistant_publish_period_sec}s")
         print("** I2C isolated inputs:")
         if self.optoisolated_inputs_map is not None:
             for k, v in self.optoisolated_inputs_map.items():
@@ -401,26 +431,74 @@ class AppConfig:
             # in this case the key is completely missing or does contain an integer value
             return MQTT_DEFAULT_RECONNECTION_PERIOD_SEC  # default value
 
+    #
+    # HOME-ASSISTANT
+    #
+
     @property
-    def mqtt_publish_period_sec(self) -> float:
+    def homeassistant_publish_period_sec(self) -> float:
         if self.config is None:
-            return MQTT_DEFAULT_PUBLISH_PERIOD_SEC  # default value
+            return HOME_ASSISTANT_DEFAULT_PUBLISH_PERIOD_SEC  # default value
         try:
-            cfg_value = float(self.config["mqtt_broker"]["publish_period_msec"]) / 1000.0
+            cfg_value = float(self.config["home_assistant"]["publish_period_msec"]) / 1000.0
             return cfg_value
         except:
             # in this case the key is completely missing or does contain an integer value
-            return MQTT_DEFAULT_PUBLISH_PERIOD_SEC  # default value
+            return HOME_ASSISTANT_DEFAULT_PUBLISH_PERIOD_SEC  # default value
 
-    def create_aiomqtt_client(self, identifier_str: str):
-        return aiomqtt.Client(
-            hostname=self.mqtt_broker_host,
-            port=self.mqtt_broker_port,
-            timeout=self.mqtt_reconnection_period_sec,
-            username=self.mqtt_broker_user,
-            password=self.mqtt_broker_password,
-            identifier=self.mqtt_identifier_prefix + identifier_str,
-        )
+    @property
+    def homeassistant_default_topic_prefix(self) -> str:
+        if self.config is None:
+            return HOME_ASSISTANT_DEFAULT_TOPIC_PREFIX  # default value
+        try:
+            return self.config["home_assistant"]["default_topic_prefix"]
+        except:
+            # in this case the key is completely missing or does contain an integer value
+            return HOME_ASSISTANT_DEFAULT_TOPIC_PREFIX  # default value
+
+    @property
+    def homeassistant_discovery_messages_enable(self) -> bool:
+        if self.config is None:
+            return True  # default value
+        try:
+            return self.config["home_assistant"]["discovery_messages"]["enable"]
+        except:
+            # in this case the key is completely missing or does contain an integer value
+            return True  # default value
+
+    @property
+    def homeassistant_discovery_topic_prefix(self) -> str:
+        if self.config is None:
+            return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_PREFIX  # default value
+        try:
+            return self.config["home_assistant"]["discovery_messages"]["topic_prefix"]
+        except:
+            # in this case the key is completely missing or does contain an integer value
+            return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_PREFIX  # default value
+
+    @property
+    def homeassistant_discovery_topic_node_id(self) -> str:
+        if self.config is None:
+            return self.current_hostname  # default value
+        try:
+            return self.config["home_assistant"]["discovery_messages"]["topic_node_id"]
+        except:
+            # in this case the key is completely missing or does contain an integer value
+            return self.current_hostname  # default value
+
+    @property
+    def homeassistant_discovery_message_period_sec(self) -> float:
+        if self.config is None:
+            return HOME_ASSISTANT_DEFAULT_DISCOVERY_PUBLISH_PERIOD_SEC  # default value
+        try:
+            return float(self.config["home_assistant"]["discovery_messages"]["message_period_sec"])
+        except:
+            # in this case the key is completely missing or does contain an integer value
+            return HOME_ASSISTANT_DEFAULT_DISCOVERY_PUBLISH_PERIOD_SEC  # default value
+
+    #
+    # MISC
+    #
 
     @property
     def stats_log_period_sec(self) -> int:
@@ -441,6 +519,14 @@ class AppConfig:
         if self.optoisolated_inputs_map is None or index not in self.optoisolated_inputs_map:
             return None  # no meaningful default value
         return self.optoisolated_inputs_map[index]
+
+    def get_all_optoisolated_inputs(self) -> list:
+        """
+        Returns a list of dictionaries with configurations
+        """
+        if "i2c_optoisolated_inputs" not in self.config:
+            return None  # no meaningful default value
+        return self.config["i2c_optoisolated_inputs"]
 
     #
     # GPIO INPUTS
@@ -485,3 +571,34 @@ class AppConfig:
         if "outputs" not in self.config:
             return None  # no meaningful default value
         return self.config["outputs"]
+
+    #
+    # MQTT HELPERs
+    #
+    def create_aiomqtt_client(self, identifier_str: str) -> aiomqtt.Client:
+        """
+        Creates an aiomqtt client based on the configuration information provided to this app.
+        The 'identifier_str' can be used to uniquely name the client connection.
+        Such unique name appears in MQTT broker logs and is useful for debug.
+        """
+        return aiomqtt.Client(
+            hostname=self.mqtt_broker_host,
+            port=self.mqtt_broker_port,
+            timeout=self.mqtt_reconnection_period_sec,
+            username=self.mqtt_broker_user,
+            password=self.mqtt_broker_password,
+            identifier=self.mqtt_identifier_prefix + identifier_str,
+        )
+
+    def get_device_dict(self) -> dict:
+        return {
+            "manufacturer": HOME_ASSISTANT_MANUFACTURER,
+            "model": THIS_SCRIPT_PYPI_PACKAGE,
+            # rationale for having "device name == MQTT node_id":
+            # a) in the unlikely event that you have more than 1 raspberry running this software
+            #    you likely have different hostnames on them and node_id defaults to the hostname
+            # b) node_id is configurable via config file
+            "name": self.homeassistant_discovery_topic_node_id,
+            "sw_version": self.app_version,
+            "identifiers": [THIS_SCRIPT_PYPI_PACKAGE + self.current_hostname],
+        }

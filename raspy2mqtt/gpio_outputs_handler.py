@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import gpiozero, time, asyncio, queue
+import gpiozero, asyncio, json, platform, sys
 from raspy2mqtt.constants import *
 from raspy2mqtt.config import *
 
@@ -66,6 +66,8 @@ class GpioOutputsHandler:
             "num_mqtt_commands_processed": 0,
             "num_connections_publish": 0,
             "num_mqtt_states_published": 0,
+            "num_connections_discovery_publish": 0,
+            "num_mqtt_discovery_messages_published": 0,
             "ERR_invalid_payload_received": 0,
         }
 
@@ -145,31 +147,79 @@ class GpioOutputsHandler:
         )
         self.stats["num_connections_publish"] += 1
         output_status_map = {}
-        async with cfg.create_aiomqtt_client("_outputs_state_publisher") as client:
-            while not GpioOutputsHandler.stop_requested:
-                for output_ch in cfg.get_all_outputs():
-                    mqtt_topic = output_ch["mqtt"]["topic"]
-                    mqtt_state_topic = output_ch["mqtt"]["state_topic"]
-                    assert mqtt_topic in self.output_channels  # this should be garantueed due to initial setup
-                    output_status = self.output_channels[mqtt_topic].is_lit
+        try:
+            async with cfg.create_aiomqtt_client("_outputs_state_publisher") as client:
+                while not GpioOutputsHandler.stop_requested:
+                    for output_ch in cfg.get_all_outputs():
+                        mqtt_topic = output_ch["mqtt"]["topic"]
+                        mqtt_state_topic = output_ch["mqtt"]["state_topic"]
+                        assert mqtt_topic in self.output_channels  # this should be garantueed due to initial setup
+                        output_status = self.output_channels[mqtt_topic].is_lit
 
-                    if mqtt_topic not in output_status_map or output_status_map[mqtt_topic] != output_status:
-                        # need to publish an update over MQTT... the state has changed
-                        mqtt_payload = (
-                            output_ch["mqtt"]["payload_on"] if output_status else output_ch["mqtt"]["payload_off"]
-                        )
+                        if mqtt_topic not in output_status_map or output_status_map[mqtt_topic] != output_status:
+                            # need to publish an update over MQTT... the state has changed
+                            mqtt_payload = (
+                                output_ch["mqtt"]["payload_on"] if output_status else output_ch["mqtt"]["payload_off"]
+                            )
 
-                        # publish with RETAIN flag so that Home Assistant will always find an updated status on
-                        # the broker about each switch
-                        print(f"Publishing to topic {mqtt_state_topic} the payload {mqtt_payload}")
-                        await client.publish(mqtt_state_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True)
-                        self.stats["num_mqtt_states_published"] += 1
+                            # publish with RETAIN flag so that Home Assistant will always find an updated status on
+                            # the broker about each switch
+                            print(f"Publishing to topic {mqtt_state_topic} the payload {mqtt_payload}")
+                            await client.publish(
+                                mqtt_state_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True
+                            )
+                            self.stats["num_mqtt_states_published"] += 1
 
-                        # remember the status we just published in order to later skip meaningless updates
-                        # when there is no state change:
-                        output_status_map[mqtt_topic] = output_status
+                            # remember the status we just published in order to later skip meaningless updates
+                            # when there is no state change:
+                            output_status_map[mqtt_topic] = output_status
 
-                await asyncio.sleep(cfg.mqtt_publish_period_sec)
+                    await asyncio.sleep(cfg.homeassistant_publish_period_sec)
+        except Exception as e:
+            print(f"EXCEPTION: {e}")
+            sys.exit(99)
+
+    async def homeassistant_discovery_message_publish(self, cfg: AppConfig):
+        """
+        Publishes over MQTT a so-called 'discovery' message that allows HomeAssistant to automatically
+        detect the binary_sensors associated with the GPIO inputs.
+        See https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery
+        """
+        print(
+            f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish OUTPUT discovery messages"
+        )
+        self.stats["num_connections_discovery_publish"] += 1
+
+        try:
+            async with cfg.create_aiomqtt_client("_outputs_discovery_publisher") as client:
+                while not GpioOutputsHandler.stop_requested:
+                    print(f"Publishing DISCOVERY messages for GPIO OUTPUTs")
+                    for entry in cfg.get_all_outputs():
+                        mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/switch/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
+
+                        # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
+                        mqtt_payload_dict = {
+                            "unique_id": entry["name"],
+                            "name": entry["description"],
+                            "command_topic": entry["mqtt"]["topic"],
+                            "state_topic": entry["mqtt"]["state_topic"],
+                            "payload_on": entry["mqtt"]["payload_on"],
+                            "payload_off": entry["mqtt"]["payload_off"],
+                            "device_class": entry["home_assistant"]["device_class"],
+                            # "expire_after": entry['home_assistant']["expire_after"], -- not supported by MQTT switch :(
+                            "device": cfg.get_device_dict(),
+                        }
+                        if entry["home_assistant"]["icon"] is not None:
+                            # add icon to the config of the entry:
+                            mqtt_payload_dict["icon"] = entry["home_assistant"]["icon"]
+                        mqtt_payload = json.dumps(mqtt_payload_dict)
+                        await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                        self.stats["num_mqtt_discovery_messages_published"] += 1
+
+                    await asyncio.sleep(cfg.homeassistant_discovery_message_period_sec)
+        except Exception as e:
+            print(f"EXCEPTION: {e}")
+            sys.exit(99)
 
     def print_stats(self):
         print(f">> OUTPUTS:")
@@ -186,3 +236,8 @@ class GpioOutputsHandler:
         print(
             f">>   Num states for output channels published on the MQTT broker: {self.stats['num_mqtt_states_published']}"
         )
+        print(f"  >> OUTPUTs DISCOVERY messages:")
+        print(
+            f">>     Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_discovery_publish']}"
+        )
+        print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")

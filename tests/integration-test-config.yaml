@@ -2,6 +2,8 @@
 
 mqtt_broker:
   host: overridden_via_env_variable
+
+home_assistant:
   # NOTE: the publish-period is checked by integration tests: 500msec -> 2Hz publish frequency
   publish_period_msec: 500
 
@@ -52,6 +54,7 @@ outputs:
     active_low: true
     home_assistant:
       device_class: switch
+      icon: mdi:alarm-bell
     mqtt:
       payload_on: "ON"
       payload_off: "OFF"
