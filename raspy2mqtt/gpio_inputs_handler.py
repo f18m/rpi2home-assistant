@@ -89,39 +89,43 @@ class GpioInputsHandler:
             f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish GPIO INPUT states"
         )
         self.stats["num_connections_publish"] += 1
-        async with cfg.create_aiomqtt_client("_gpio_publisher") as client:
-            while not GpioInputsHandler.stop_requested:
-                # get next notification coming from the gpiozero secondary thread:
-                try:
-                    gpio_number = self.gpio_queue.get_nowait()
-                except queue.Empty:
-                    # if there's no notification (typical case), then do not block the event loop
-                    # and keep processing other tasks... to ensure low-latency in processing the
-                    # GPIO inputs the sleep time is set equal to the MQTT publish freq
-                    await asyncio.sleep(cfg.homeassistant_publish_period_sec)
-                    continue
+        try:
+            async with cfg.create_aiomqtt_client("_gpio_publisher") as client:
+                while not GpioInputsHandler.stop_requested:
+                    # get next notification coming from the gpiozero secondary thread:
+                    try:
+                        gpio_number = self.gpio_queue.get_nowait()
+                    except queue.Empty:
+                        # if there's no notification (typical case), then do not block the event loop
+                        # and keep processing other tasks... to ensure low-latency in processing the
+                        # GPIO inputs the sleep time is set equal to the MQTT publish freq
+                        await asyncio.sleep(cfg.homeassistant_publish_period_sec)
+                        continue
 
-                # there is a GPIO notification to process:
-                gpio_config = cfg.get_gpio_input_config(gpio_number)
-                self.stats["num_gpio_notifications"] += 1
-                if gpio_config is None or "mqtt" not in gpio_config:
-                    print(
-                        f"Main thread got notification of GPIO#{gpio_number} being activated but there is NO CONFIGURATION for that pin. Ignoring."
-                    )
-                    self.stats["ERROR_noconfig"] += 1
-                else:
-                    # extract MQTT config
-                    mqtt_topic = gpio_config["mqtt"]["topic"]
-                    mqtt_payload = gpio_config["mqtt"]["payload"]
-                    print(
-                        f"Main thread got notification of GPIO#{gpio_number} being activated; a valid MQTT configuration is attached: topic={mqtt_topic}, payload={mqtt_payload}"
-                    )
+                    # there is a GPIO notification to process:
+                    gpio_config = cfg.get_gpio_input_config(gpio_number)
+                    self.stats["num_gpio_notifications"] += 1
+                    if gpio_config is None or "mqtt" not in gpio_config:
+                        print(
+                            f"Main thread got notification of GPIO#{gpio_number} being activated but there is NO CONFIGURATION for that pin. Ignoring."
+                        )
+                        self.stats["ERROR_noconfig"] += 1
+                    else:
+                        # extract MQTT config
+                        mqtt_topic = gpio_config["mqtt"]["topic"]
+                        mqtt_payload = gpio_config["mqtt"]["payload"]
+                        print(
+                            f"Main thread got notification of GPIO#{gpio_number} being activated; a valid MQTT configuration is attached: topic={mqtt_topic}, payload={mqtt_payload}"
+                        )
 
-                    # send to broker
-                    await client.publish(mqtt_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
-                    self.stats["num_mqtt_messages"] += 1
+                        # send to broker
+                        await client.publish(mqtt_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                        self.stats["num_mqtt_messages"] += 1
 
-                self.gpio_queue.task_done()
+                    self.gpio_queue.task_done()
+        except Exception as e:
+            print(f"EXCEPTION: {e}")
+            sys.exit(99)
 
     def print_stats(self):
         print(f">> GPIO INPUTS:")

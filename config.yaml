@@ -35,13 +35,17 @@ home_assistant:
     # topic prefix used by your HomeAssistant, see https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery
     topic_prefix: homeassistant
 
-    # the topic_node_id will be prefixed to each and every entity exposed into HomeAssistant,
-    # so this should be a short string; it defaults to the hostname of the system.
-    # see https://www.home-assistant.io/integrations/mqtt/#naming-of-mqtt-entities
-    topic_node_id: ha-alarm-raspy2mqtt
+    # the node_id must be a unique identifier of this specific instance of this software; it will be
+    # prefixed to each and every entity exposed into HomeAssistant, so this should be a short string.
+    # It defaults to the hostname of the system.
+    # See https://www.home-assistant.io/integrations/mqtt/#naming-of-mqtt-entities for more info.
+    node_id: ha-alarm-raspy2mqtt
 
     # discovery messages don't need to be published that often... but it's good to re-publish them every 
-    # now and then in case HomeAssistant is restarted 
+    # now and then in case HomeAssistant is restarted.
+    # TODO: an alternative and better approach would be to listen on the HomeAssistant 'status' topic and publish
+    # the discovery messages only when an HomeAssistant restart is detected; see
+    # https://www.home-assistant.io/integrations/mqtt/#use-the-birth-and-will-messages-to-trigger-discovery
     message_period_sec: 100
 
 # stats printed on stdout each N secs:
