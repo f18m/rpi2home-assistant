@@ -594,7 +594,7 @@ class AppConfig:
         return {
             "manufacturer": HOME_ASSISTANT_MANUFACTURER,
             "model": THIS_SCRIPT_PYPI_PACKAGE,
-            # rationale for having "device name == MQTT node_id": 
+            # rationale for having "device name == MQTT node_id":
             # a) in the unlikely event that you have more than 1 raspberry running this software
             #    you likely have different hostnames on them and node_id defaults to the hostname
             # b) node_id is configurable via config file

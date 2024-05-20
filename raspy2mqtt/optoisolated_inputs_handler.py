@@ -191,3 +191,8 @@ class OptoIsolatedInputsHandler:
         print(f">>   Num (re)connections to the MQTT broker [publish channel]: {self.stats['num_connections_publish']}")
         print(f">>   Num MQTT messages published to the broker: {self.stats['num_mqtt_messages']}")
         print(f">>   Num actual readings of optoisolated inputs: {self.stats['num_readings']}")
+        print(f"  >> OPTO-ISOLATED DISCOVERY messages:")
+        print(
+            f">>     Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_discovery_publish']}"
+        )
+        print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")
