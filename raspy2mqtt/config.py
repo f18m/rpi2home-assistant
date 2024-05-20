@@ -360,7 +360,11 @@ class AppConfig:
         else:
             print(f"   MQTT broker authentication: OFF")
         print(f"   MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
+        print("** HomeAssistant")
         print(f"   MQTT publish period: {self.homeassistant_publish_period_sec}s")
+        print(f"   Discovery messages: {self.homeassistant_discovery_messages_enable}")
+        print(f"   Node ID: {self.homeassistant_discovery_topic_node_id}s")
+        print(f"   MQTT discovery message period: {self.homeassistant_discovery_message_period_sec}s")
         print("** I2C isolated inputs:")
         if self.optoisolated_inputs_map is not None:
             for k, v in self.optoisolated_inputs_map.items():
