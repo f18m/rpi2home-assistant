@@ -149,9 +149,7 @@ class OptoIsolatedInputsHandler:
 
                         await asyncio.sleep(actual_sleep_time_sec)
             except aiomqtt.MqttError as err:
-                print(
-                    f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
-                )
+                print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
             except Exception as err:
@@ -199,9 +197,7 @@ class OptoIsolatedInputsHandler:
 
                         await asyncio.sleep(cfg.homeassistant_discovery_message_period_sec)
             except aiomqtt.MqttError as err:
-                print(
-                    f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
-                )
+                print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
             except Exception as err:
@@ -213,9 +209,7 @@ class OptoIsolatedInputsHandler:
         print(f">>   Num (re)connections to the MQTT broker [publish channel]: {self.stats['num_connections_publish']}")
         print(f">>   Num MQTT messages published to the broker: {self.stats['num_mqtt_messages']}")
         print(f">>   Num actual readings of optoisolated inputs: {self.stats['num_readings']}")
-        print(f"  >> OPTO-ISOLATED DISCOVERY messages:")
-        print(
-            f">>     Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_discovery_publish']}"
-        )
+        print(f">>   OPTO-ISOLATED DISCOVERY messages:")
         print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")
+        print(f">>     Num (re)connections to the MQTT broker: {self.stats['num_connections_discovery_publish']}")
         print(f">>   ERROR: MQTT connections lost: {self.stats['ERROR_num_connections_lost']}")

@@ -25,7 +25,7 @@ def test_mqtt_reconnection():
             container.print_logs()
             assert False
 
-        for attempt in range(1,3):
+        for attempt in range(1, 3):
             # BAM! stop the broker to simulate either a maintainance window or a power fault in the system where MQTT broker runs
             print(f"Attempt {attempt}-th: Simulating BROKER failure stopping the broker container...")
             broker.stop()
@@ -66,7 +66,7 @@ def test_mqtt_reconnection():
                     assert False
 
             # now verify that there is also traffic on the topics:
-            #time.sleep(4)
+            # time.sleep(4)
             msg_rate = broker.get_message_rate_in_watched_topic(topics_under_test[0])
             assert msg_rate > 0
 

@@ -113,7 +113,8 @@ class MosquittoContainer(DockerContainer):
 
     def stop(self, force=True, delete_volume=True) -> None:
         self.client.disconnect()
-        self.client = None # force recreation of the client object at next start()
+        self.client = None  # force recreation of the client object at next start()
+        self.watched_topics = {}  # clean all watched topics as well
         super().stop(force, delete_volume)
 
     class WatchedTopicInfo:

@@ -25,10 +25,6 @@ class StatsCollector:
     stop_requested = False
 
     def __init__(self, objs_with_stats: list):
-        self.stats = {
-            "num_connections_lost": 0,
-        }
-
         self.start_time = time.time()
         self.counter = 1
         self.objs_with_stats = objs_with_stats
@@ -54,7 +50,6 @@ class StatsCollector:
         m = int(m)
         s = int(s)
         print(f">> Uptime: {h}:{m:02}:{s:02}")
-        print(f">> Num times the MQTT broker connection was lost: {self.stats['num_connections_lost']}")
 
         for x in self.objs_with_stats:
             x.print_stats()
