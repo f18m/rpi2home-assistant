@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import lib16inpind, time, asyncio, gpiozero
+import time
+import asyncio
 from raspy2mqtt.constants import *
 from raspy2mqtt.config import *
 

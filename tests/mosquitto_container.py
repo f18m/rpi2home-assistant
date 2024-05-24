@@ -1,6 +1,6 @@
-import pytest, os, time, signal
+import os
+import time
 from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
 from testcontainers.core.waiting_utils import wait_container_is_ready
 from typing_extensions import Self
 

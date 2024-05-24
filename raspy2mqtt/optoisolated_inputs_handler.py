@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 
-import lib16inpind, time, asyncio, gpiozero, json, sys
+import lib16inpind
+import time
+import asyncio
+import gpiozero
+import json
+import sys
 from raspy2mqtt.constants import *
 from raspy2mqtt.config import *
 
@@ -61,7 +66,7 @@ class OptoIsolatedInputsHandler:
                 print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
                 return 2
 
-            print(f"Initializing SequentMicrosystem GPIO interrupt line")
+            print("Initializing SequentMicrosystem GPIO interrupt line")
             b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pull_up=True)
             b.when_held = self.sample_optoisolated_inputs
             buttons.append(b)
@@ -173,7 +178,7 @@ class OptoIsolatedInputsHandler:
                     OptoIsolatedInputsHandler.client_identifier_discovery_pub
                 ) as client:
                     while not OptoIsolatedInputsHandler.stop_requested:
-                        print(f"Publishing DISCOVERY messages for OPTOISOLATED INPUTs")
+                        print("Publishing DISCOVERY messages for OPTOISOLATED INPUTs")
                         for entry in cfg.get_all_optoisolated_inputs():
                             mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/binary_sensor/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
 
@@ -205,11 +210,11 @@ class OptoIsolatedInputsHandler:
                 sys.exit(99)
 
     def print_stats(self):
-        print(f">> OPTO-ISOLATED INPUTS:")
+        print(">> OPTO-ISOLATED INPUTS:")
         print(f">>   Num (re)connections to the MQTT broker [publish channel]: {self.stats['num_connections_publish']}")
         print(f">>   Num MQTT messages published to the broker: {self.stats['num_mqtt_messages']}")
         print(f">>   Num actual readings of optoisolated inputs: {self.stats['num_readings']}")
-        print(f">>   OPTO-ISOLATED DISCOVERY messages:")
+        print(">>   OPTO-ISOLATED DISCOVERY messages:")
         print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")
         print(f">>     Num (re)connections to the MQTT broker: {self.stats['num_connections_discovery_publish']}")
         print(f">>   ERROR: MQTT connections lost: {self.stats['ERROR_num_connections_lost']}")

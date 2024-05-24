@@ -7,7 +7,14 @@
 #
 # TODO: add HomeAssistant discovery messages
 
-import argparse, os, fcntl, sys, asyncio, aiomqtt, gpiozero, subprocess, signal
+import argparse
+import os
+import fcntl
+import sys
+import asyncio
+import gpiozero
+import subprocess
+import signal
 from raspy2mqtt.stats import *
 from raspy2mqtt.config import *
 from raspy2mqtt.constants import *
@@ -100,7 +107,7 @@ def instance_already_running(label="default"):
 
 
 def shutdown():
-    print(f"!! Detected long-press on the Sequent Microsystem button. Triggering clean shutdown of the Raspberry PI !!")
+    print("!! Detected long-press on the Sequent Microsystem button. Triggering clean shutdown of the Raspberry PI !!")
     subprocess.call(["sudo", "shutdown", "-h", "now"])
 
 
@@ -115,7 +122,7 @@ def init_hardware(cfg: AppConfig):
         print(f"GPIO factory backend is: {os.environ['GPIOZERO_PIN_FACTORY']}")
     else:
         print(
-            f"GPIO factory backend is the default one. This might fail on newer Raspbian versions with Linux kernel >= 6.6.20"
+            "GPIO factory backend is the default one. This might fail on newer Raspbian versions with Linux kernel >= 6.6.20"
         )
 
     try:
@@ -125,7 +132,7 @@ def init_hardware(cfg: AppConfig):
         print("Alternatively you can run this software for basic testing exporting the env variable DISABLE_HW.")
 
     buttons = []
-    print(f"Initializing SequentMicrosystem GPIO shutdown button")
+    print("Initializing SequentMicrosystem GPIO shutdown button")
     b = gpiozero.Button(SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, hold_time=5)
     b.when_held = shutdown
     buttons.append(b)
@@ -177,7 +184,7 @@ async def main_loop():
 
     # wrap with error-handling code the main loop
     exit_code = 0
-    print(f"Starting main loop")
+    print("Starting main loop")
     while not g_stop_requested:
         # the double-nested 'try' is the only way I found in Python 3.11.2 to catch properly
         # both exception groups (using the 'except*' syntax) and also have a default catch-all
@@ -239,14 +246,14 @@ async def main_loop():
 def main():
     if instance_already_running(THIS_SCRIPT_PYPI_PACKAGE):
         print(
-            f"Sorry, detected another instance of this daemon is already running. Using the same I2C bus from 2 sofware programs is not recommended. Aborting."
+            "Sorry, detected another instance of this daemon is already running. Using the same I2C bus from 2 sofware programs is not recommended. Aborting."
         )
         sys.exit(3)
 
     try:
         sys.exit(asyncio.run(main_loop()))
     except KeyboardInterrupt:
-        print(f"Stopping due to CTRL+C")
+        print("Stopping due to CTRL+C")
 
 
 # =======================================================================================================

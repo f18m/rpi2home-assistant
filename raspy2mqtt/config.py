@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 
-import yaml, aiomqtt, datetime, os, platform
+import yaml
+import aiomqtt
+import datetime
+import os
+import platform
 from datetime import datetime, timezone
 from raspy2mqtt.constants import *
 
-from schema import Schema, And, Or, Use, Optional, SchemaError, Regex
+from schema import Schema, Optional, SchemaError, Regex
 
 
 #
@@ -331,7 +335,7 @@ class AppConfig:
             else:
                 name_set.add(entry["name"])
 
-        print(f"Successfully loaded configuration")
+        print("Successfully loaded configuration")
         return True
 
     def merge_options_from_cli(self, args: dict):
@@ -357,9 +361,9 @@ class AppConfig:
         print("** MQTT")
         print(f"   MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
         if self.mqtt_broker_user != None:
-            print(f"   MQTT broker authentication: ON")
+            print("   MQTT broker authentication: ON")
         else:
-            print(f"   MQTT broker authentication: OFF")
+            print("   MQTT broker authentication: OFF")
         print(f"   MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
         print("** HomeAssistant")
         print(f"   MQTT publish period: {self.homeassistant_publish_period_sec}s")

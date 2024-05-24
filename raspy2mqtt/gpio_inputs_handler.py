@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
-import gpiozero, signal, asyncio, queue, sys
+import gpiozero
+import signal
+import asyncio
+import queue
+import sys
 from raspy2mqtt.constants import *
 from raspy2mqtt.config import *
 
@@ -72,7 +76,7 @@ class GpioInputsHandler:
         else:
 
             # setup GPIO pins for the INPUTs
-            print(f"Initializing GPIO input pins")
+            print("Initializing GPIO input pins")
             for input_ch in cfg.get_all_gpio_inputs():
                 # the short hold-time is to ensure that the digital input is served ASAP (i.e. on_gpio_input gets
                 # invoked almost immediately)
@@ -138,7 +142,7 @@ class GpioInputsHandler:
                 sys.exit(99)
 
     def print_stats(self):
-        print(f">> GPIO INPUTS:")
+        print(">> GPIO INPUTS:")
         print(f">>   Num (re)connections to the MQTT broker [publish channel]: {self.stats['num_connections_publish']}")
         print(f">>   Num GPIO activations detected: {self.stats['num_gpio_notifications']}")
         print(f">>   Num MQTT messages published to the broker: {self.stats['num_mqtt_messages']}")
