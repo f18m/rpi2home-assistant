@@ -65,7 +65,6 @@ def test_mqtt_reconnection():
         broker.watch_topics(topics_under_test)
         time.sleep(4)
         msg_rate = broker.get_message_rate_in_watched_topic(topics_under_test[0])
-        time.sleep(1000)
         assert msg_rate > 0
 
     broker.stop()

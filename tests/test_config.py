@@ -145,7 +145,7 @@ home_assistant:
   discovery_messages:
     enable: false
     topic_prefix: anotherprefix
-    topic_node_id: some_unique_device_id
+    node_id: some_unique_device_id
     message_period_sec: 1000
 i2c_optoisolated_inputs:
   - name: opto_input_1
