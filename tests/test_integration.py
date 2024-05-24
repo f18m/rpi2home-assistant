@@ -283,6 +283,7 @@ def setup(request):
 
 # TESTS
 
+
 @pytest.mark.integration
 def test_mqtt_reconnection():
 
@@ -303,20 +304,24 @@ def test_mqtt_reconnection():
             assert False
 
         # NOTE: MQTT_DEFAULT_RECONNECTION_PERIOD_SEC is equal 1sec
-        for idx in range(1,3):
+        for idx in range(1, 3):
             time.sleep(1.5)
             if not container.is_running():
-                print(f"Container under test has stopped running probably after retrying the connection to the broker... test failed.")
+                print(
+                    f"Container under test has stopped running probably after retrying the connection to the broker... test failed."
+                )
                 container.print_logs()
                 assert False
 
         # ok seems the container is still up -- that's good -- now let's see if it can reconnect
         print("About to restart the broker...")
         broker.start()
-        for idx in range(1,3):
+        for idx in range(1, 3):
             time.sleep(1.5)
             if not container.is_running():
-                print(f"Container under test has stopped running probably after retrying the connection to the broker... test failed.")
+                print(
+                    f"Container under test has stopped running probably after retrying the connection to the broker... test failed."
+                )
                 container.print_logs()
                 assert False
 

@@ -24,6 +24,9 @@ class GpioInputsHandler:
     # the stop-request is not related to a particular instance of this class... it applies to any instance
     stop_requested = False
 
+    # the MQTT client identifier
+    client_identifier = "_gpio_publisher"
+
     def __init__(self):
         # thread-safe queue to communicate from GPIOzero secondary threads to main thread
         self.gpio_queue = queue.Queue()
@@ -83,17 +86,17 @@ class GpioInputsHandler:
     async def process_gpio_inputs_queue_and_publish(self, cfg: AppConfig):
         """
         Publishes over MQTT a message each time a GPIO input changes status.
-        This function can be gracefully stopped by setting the 
+        This function can be gracefully stopped by setting the
          GpioInputsHandler.stop_requested
         class variable to true.
         """
         print(
-            f"Connecting to MQTT broker at address {cfg.mqtt_broker_host}:{cfg.mqtt_broker_port} to publish GPIO INPUT states"
+            f"Connecting to MQTT broker with identifier {GpioInputsHandler.client_identifier} to publish GPIO INPUT states"
         )
         self.stats["num_connections_publish"] += 1
         while True:
             try:
-                async with cfg.create_aiomqtt_client("_gpio_publisher") as client:
+                async with cfg.create_aiomqtt_client(GpioInputsHandler.client_identifier) as client:
                     while not GpioInputsHandler.stop_requested:
                         # get next notification coming from the gpiozero secondary thread:
                         try:
