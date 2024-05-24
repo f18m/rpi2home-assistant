@@ -1,4 +1,5 @@
-import pytest, platform
+import pytest
+import platform
 from raspy2mqtt.config import AppConfig
 
 

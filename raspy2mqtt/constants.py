@@ -6,37 +6,46 @@
 # License: Apache license
 #
 
-THIS_SCRIPT_PYPI_PACKAGE = "ha-alarm-raspy2mqtt"
 
 # MQTT constants
-MQTT_QOS_AT_LEAST_ONCE = 1
-MQTT_DEFAULT_PAYLOAD_ON = "ON"
-MQTT_DEFAULT_PAYLOAD_OFF = "OFF"
-MQTT_DEFAULT_BROKER_PORT = 1883
-MQTT_DEFAULT_RECONNECTION_PERIOD_SEC = 1
+class MqttQOS:
+    AT_LEAST_ONCE = 1
 
 
-# HomeAssistant constants
-HOME_ASSISTANT_DEFAULT_TOPIC_PREFIX = "home"
-HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_PREFIX = "homeassistant"
-HOME_ASSISTANT_DEFAULT_PUBLISH_PERIOD_SEC = 1
-HOME_ASSISTANT_DEFAULT_DISCOVERY_PUBLISH_PERIOD_SEC = 100
-HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC = 30
-HOME_ASSISTANT_MANUFACTURER = "github.com/f18m"
+class MqttDefaults:
+    PAYLOAD_ON = "ON"
+    PAYLOAD_OFF = "OFF"
+    BROKER_PORT = 1883
+    RECONNECTION_PERIOD_SEC = 1
+
+
+# HomeAssistant constants/defaults
+class HomeAssistantDefaults:
+    TOPIC_PREFIX = "home"
+    DISCOVERY_TOPIC_PREFIX = "homeassistant"
+    PUBLISH_PERIOD_SEC = 1
+    DISCOVERY_PUBLISH_PERIOD_SEC = 100
+    EXPIRE_AFTER_SEC = 30
+    MANUFACTURER = "github.com/f18m"
+
 
 # SequentMicrosystem-specific constants
-SEQMICRO_INPUTHAT_STACK_LEVEL = 0  # 0 means the first "stacked" board (this code supports only 1!)
-SEQMICRO_INPUTHAT_MAX_CHANNELS = 16
-SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO = 26  # GPIO pin connected to the push button
-SEQMICRO_INPUTHAT_INTERRUPT_GPIO = (
-    11  # GPIO pin connected to the interrupt line of the I/O expander (need pullup resistor)
-)
-SEQMICRO_INPUTHAT_I2C_SDA = 2  # reserved for I2C communication between Raspberry CPU and the input HAT
-SEQMICRO_INPUTHAT_I2C_SCL = 3  # reserved for I2C communication between Raspberry CPU and the input HAT
+class SeqMicroHatConstants:
+    STACK_LEVEL = 0  # 0 means the first "stacked" board (this code supports only 1!)
+    MAX_CHANNELS = 16
+    SHUTDOWN_BUTTON_GPIO = 26  # GPIO pin connected to the push button
+    INTERRUPT_GPIO = 11  # GPIO pin connected to the interrupt line of the I/O expander (need pullup resistor)
+    I2C_SDA = 2  # reserved for I2C communication between Raspberry CPU and the input HAT
+    I2C_SCL = 3  # reserved for I2C communication between Raspberry CPU and the input HAT
 
-# File paths constants
-DEFAULT_CONFIG_FILE = "/etc/ha-alarm-raspy2mqtt.yaml"
-INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
 
-# Misc constants
-STATS_DEFAULT_LOG_PERIOD_SEC = 30
+# Generic app constants/defaults
+class MiscAppDefaults:
+    THIS_APP_NAME = "ha-alarm-raspy2mqtt"
+
+    # File paths constants
+    CONFIG_FILE = "/etc/ha-alarm-raspy2mqtt.yaml"
+    INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
+
+    # Misc constants
+    STATS_LOG_PERIOD_SEC = 30

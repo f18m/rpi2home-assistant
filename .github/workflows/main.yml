@@ -20,16 +20,18 @@ jobs:
       run: |
         python3 -m build
 
-  lint:
+  formatter_and_lint:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
     - name: install pypi-packaged dependencies
-      run: sudo pip3 install black
-    - name: lint the code
-      run: black .
-
+      run: sudo pip3 install black ruff
+    - name: run formatter
+      run: black . --check
+    - name: run linter
+      run: ruff check raspy2mqtt/
+    
   tests:
     runs-on: ubuntu-latest
 

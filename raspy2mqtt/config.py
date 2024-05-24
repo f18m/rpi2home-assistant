@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
-import yaml, aiomqtt, datetime, os, platform
+import yaml
+import aiomqtt
+import os
+import platform
 from datetime import datetime, timezone
-from raspy2mqtt.constants import *
+from raspy2mqtt.constants import MqttDefaults, HomeAssistantDefaults, SeqMicroHatConstants, MiscAppDefaults
 
-from schema import Schema, And, Or, Use, Optional, SchemaError, Regex
-
+from schema import Schema, Optional, SchemaError, Regex
+from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError
 
 #
 # Author: fmontorsi
@@ -30,8 +34,8 @@ class AppConfig:
     """
 
     def __init__(self):
-        self.config: Optional[Dict[str, Any]] = None
-        self.optoisolated_inputs_map: Optional[Dict[int, Any]] = None  # None means "not loaded at all"
+        self.config = None
+        self.optoisolated_inputs_map = None  # None means "not loaded at all"
 
         # config options related to CLI options:
         self.disable_hw = False  # can be get/set from the outside
@@ -39,12 +43,8 @@ class AppConfig:
 
         # technically speaking the version is not an "app config" but centralizing it here is handy
         try:
-            try:
-                from importlib.metadata import version
-            except:
-                from importlib_metadata import version
-            self.app_version = str(version(THIS_SCRIPT_PYPI_PACKAGE))
-        except:
+            self.app_version = str(version(MiscAppDefaults.THIS_APP_NAME))
+        except PackageNotFoundError:
             # this happens when e.g. running unit tests inside Github runners where the wheel
             # package for this project is not installed:
             self.app_version = "N/A"
@@ -136,10 +136,10 @@ class AppConfig:
 
     def check_gpio(self, idx: int):
         reserved_gpios = [
-            SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO,
-            SEQMICRO_INPUTHAT_INTERRUPT_GPIO,
-            SEQMICRO_INPUTHAT_I2C_SDA,
-            SEQMICRO_INPUTHAT_I2C_SCL,
+            SeqMicroHatConstants.SHUTDOWN_BUTTON_GPIO,
+            SeqMicroHatConstants.INTERRUPT_GPIO,
+            SeqMicroHatConstants.I2C_SDA,
+            SeqMicroHatConstants.I2C_SCL,
         ]
         if idx < 1 or idx > 40:
             raise ValueError(
@@ -180,9 +180,9 @@ class AppConfig:
 
             if has_payload_on_off:
                 if "payload_on" not in entry_dict["mqtt"]:
-                    entry_dict["mqtt"]["payload_on"] = MQTT_DEFAULT_PAYLOAD_ON
+                    entry_dict["mqtt"]["payload_on"] = MqttDefaults.PAYLOAD_ON
                 if "payload_off" not in entry_dict["mqtt"]:
-                    entry_dict["mqtt"]["payload_off"] = MQTT_DEFAULT_PAYLOAD_OFF
+                    entry_dict["mqtt"]["payload_off"] = MqttDefaults.PAYLOAD_OFF
 
         if populate_homeassistant:
             # the following assertion is justified because 'schema' library should garantuee
@@ -190,8 +190,8 @@ class AppConfig:
             assert "home_assistant" in entry_dict
 
             if "expire_after" not in entry_dict["home_assistant"]:
-                entry_dict["home_assistant"]["expire_after"] = HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC
-                print(f"Expire-after for {entry_dict['name']} defaults to [{HOME_ASSISTANT_DEFAULT_EXPIRE_AFTER_SEC}]")
+                entry_dict["home_assistant"]["expire_after"] = HomeAssistantDefaults.EXPIRE_AFTER_SEC
+                print(f"Expire-after for {entry_dict['name']} defaults to [{HomeAssistantDefaults.EXPIRE_AFTER_SEC}]")
             if "icon" not in entry_dict["home_assistant"]:
                 entry_dict["home_assistant"]["icon"] = None
 
@@ -331,7 +331,7 @@ class AppConfig:
             else:
                 name_set.add(entry["name"])
 
-        print(f"Successfully loaded configuration")
+        print("Successfully loaded configuration")
         return True
 
     def merge_options_from_cli(self, args: dict):
@@ -341,14 +341,14 @@ class AppConfig:
 
     def merge_options_from_env_vars(self):
         # merge env vars into the configuration object:
-        if os.environ.get("DISABLE_HW", None) != None:
+        if os.environ.get("DISABLE_HW", None) is not None:
             self.disable_hw = True
-        if os.environ.get("VERBOSE", None) != None:
+        if os.environ.get("VERBOSE", None) is not None:
             self.verbose = True
-        if os.environ.get("MQTT_BROKER_HOST", None) != None:
+        if os.environ.get("MQTT_BROKER_HOST", None) is not None:
             # this particular env var can override the value coming from the config file:
             self.mqtt_broker_host = os.environ.get("MQTT_BROKER_HOST")
-        if os.environ.get("MQTT_BROKER_PORT", None) != None:
+        if os.environ.get("MQTT_BROKER_PORT", None) is not None:
             # this particular env var can override the value coming from the config file:
             self.mqtt_broker_port = os.environ.get("MQTT_BROKER_PORT")
 
@@ -356,10 +356,10 @@ class AppConfig:
         print("Config summary:")
         print("** MQTT")
         print(f"   MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
-        if self.mqtt_broker_user != None:
-            print(f"   MQTT broker authentication: ON")
+        if self.mqtt_broker_user is not None:
+            print("   MQTT broker authentication: ON")
         else:
-            print(f"   MQTT broker authentication: OFF")
+            print("   MQTT broker authentication: OFF")
         print(f"   MQTT reconnection period: {self.mqtt_reconnection_period_sec}s")
         print("** HomeAssistant")
         print(f"   MQTT publish period: {self.homeassistant_publish_period_sec}s")
@@ -414,9 +414,9 @@ class AppConfig:
     @property
     def mqtt_broker_port(self) -> int:
         if self.config is None:
-            return MQTT_DEFAULT_BROKER_PORT  # the default MQTT broker port
+            return MqttDefaults.BROKER_PORT  # the default MQTT broker port
         if "port" not in self.config["mqtt_broker"]:
-            return MQTT_DEFAULT_BROKER_PORT  # the default MQTT broker port
+            return MqttDefaults.BROKER_PORT  # the default MQTT broker port
         return self.config["mqtt_broker"]["port"]
 
     @mqtt_broker_port.setter
@@ -426,15 +426,15 @@ class AppConfig:
     @property
     def mqtt_reconnection_period_sec(self) -> float:
         if self.config is None:
-            return MQTT_DEFAULT_RECONNECTION_PERIOD_SEC  # the default reconnection interval
+            return MqttDefaults.RECONNECTION_PERIOD_SEC  # the default reconnection interval
 
         try:
             # convert the user-defined timeout from msec to (floating) sec
             cfg_value = float(self.config["mqtt_broker"]["reconnection_period_msec"]) / 1000.0
             return cfg_value
-        except:
+        except (KeyError, ValueError):
             # in this case the key is completely missing or does contain an integer value
-            return MQTT_DEFAULT_RECONNECTION_PERIOD_SEC  # default value
+            return MqttDefaults.RECONNECTION_PERIOD_SEC  # default value
 
     #
     # HOME-ASSISTANT
@@ -443,23 +443,23 @@ class AppConfig:
     @property
     def homeassistant_publish_period_sec(self) -> float:
         if self.config is None:
-            return HOME_ASSISTANT_DEFAULT_PUBLISH_PERIOD_SEC  # default value
+            return HomeAssistantDefaults.PUBLISH_PERIOD_SEC  # default value
         try:
             cfg_value = float(self.config["home_assistant"]["publish_period_msec"]) / 1000.0
             return cfg_value
-        except:
+        except (KeyError, ValueError):
             # in this case the key is completely missing or does contain an integer value
-            return HOME_ASSISTANT_DEFAULT_PUBLISH_PERIOD_SEC  # default value
+            return HomeAssistantDefaults.PUBLISH_PERIOD_SEC  # default value
 
     @property
     def homeassistant_default_topic_prefix(self) -> str:
         if self.config is None:
-            return HOME_ASSISTANT_DEFAULT_TOPIC_PREFIX  # default value
+            return HomeAssistantDefaults.TOPIC_PREFIX  # default value
         try:
             return self.config["home_assistant"]["default_topic_prefix"]
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
-            return HOME_ASSISTANT_DEFAULT_TOPIC_PREFIX  # default value
+            return HomeAssistantDefaults.TOPIC_PREFIX  # default value
 
     @property
     def homeassistant_discovery_messages_enable(self) -> bool:
@@ -467,19 +467,19 @@ class AppConfig:
             return True  # default value
         try:
             return self.config["home_assistant"]["discovery_messages"]["enable"]
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
             return True  # default value
 
     @property
     def homeassistant_discovery_topic_prefix(self) -> str:
         if self.config is None:
-            return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_PREFIX  # default value
+            return HomeAssistantDefaults.DISCOVERY_TOPIC_PREFIX  # default value
         try:
             return self.config["home_assistant"]["discovery_messages"]["topic_prefix"]
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
-            return HOME_ASSISTANT_DEFAULT_DISCOVERY_TOPIC_PREFIX  # default value
+            return HomeAssistantDefaults.DISCOVERY_TOPIC_PREFIX  # default value
 
     @property
     def homeassistant_discovery_topic_node_id(self) -> str:
@@ -487,19 +487,19 @@ class AppConfig:
             return self.current_hostname  # default value
         try:
             return self.config["home_assistant"]["discovery_messages"]["node_id"]
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
             return self.current_hostname  # default value
 
     @property
     def homeassistant_discovery_message_period_sec(self) -> float:
         if self.config is None:
-            return HOME_ASSISTANT_DEFAULT_DISCOVERY_PUBLISH_PERIOD_SEC  # default value
+            return HomeAssistantDefaults.DISCOVERY_PUBLISH_PERIOD_SEC  # default value
         try:
             return float(self.config["home_assistant"]["discovery_messages"]["message_period_sec"])
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
-            return HOME_ASSISTANT_DEFAULT_DISCOVERY_PUBLISH_PERIOD_SEC  # default value
+            return HomeAssistantDefaults.DISCOVERY_PUBLISH_PERIOD_SEC  # default value
 
     #
     # MISC
@@ -508,7 +508,7 @@ class AppConfig:
     @property
     def stats_log_period_sec(self) -> int:
         if self.config is None or "log_stats_every" not in self.config:
-            return STATS_DEFAULT_LOG_PERIOD_SEC  # default value
+            return MiscAppDefaults.STATS_LOG_PERIOD_SEC  # default value
         return int(self.config["log_stats_every"])
 
     #
@@ -597,13 +597,13 @@ class AppConfig:
 
     def get_device_dict(self) -> dict:
         return {
-            "manufacturer": HOME_ASSISTANT_MANUFACTURER,
-            "model": THIS_SCRIPT_PYPI_PACKAGE,
+            "manufacturer": HomeAssistantDefaults.MANUFACTURER,
+            "model": MiscAppDefaults.THIS_APP_NAME,
             # rationale for having "device name == MQTT node_id":
             # a) in the unlikely event that you have more than 1 raspberry running this software
             #    you likely have different hostnames on them and node_id defaults to the hostname
             # b) node_id is configurable via config file
             "name": self.homeassistant_discovery_topic_node_id,
             "sw_version": self.app_version,
-            "identifiers": [THIS_SCRIPT_PYPI_PACKAGE + self.current_hostname],
+            "identifiers": [MiscAppDefaults.THIS_APP_NAME + self.current_hostname],
         }

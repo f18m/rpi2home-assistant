@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 
-import gpiozero, signal, asyncio, queue, sys
-from raspy2mqtt.constants import *
-from raspy2mqtt.config import *
+import gpiozero
+import signal
+import asyncio
+import queue
+import sys
+import aiomqtt
+from raspy2mqtt.constants import MqttQOS
+from raspy2mqtt.config import AppConfig
 
 #
 # Author: fmontorsi
@@ -72,7 +77,7 @@ class GpioInputsHandler:
         else:
 
             # setup GPIO pins for the INPUTs
-            print(f"Initializing GPIO input pins")
+            print("Initializing GPIO input pins")
             for input_ch in cfg.get_all_gpio_inputs():
                 # the short hold-time is to ensure that the digital input is served ASAP (i.e. on_gpio_input gets
                 # invoked almost immediately)
@@ -125,7 +130,7 @@ class GpioInputsHandler:
                             )
 
                             # send to broker
-                            await client.publish(mqtt_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                            await client.publish(mqtt_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                             self.stats["num_mqtt_messages"] += 1
 
                         self.gpio_queue.task_done()
@@ -138,7 +143,7 @@ class GpioInputsHandler:
                 sys.exit(99)
 
     def print_stats(self):
-        print(f">> GPIO INPUTS:")
+        print(">> GPIO INPUTS:")
         print(f">>   Num (re)connections to the MQTT broker [publish channel]: {self.stats['num_connections_publish']}")
         print(f">>   Num GPIO activations detected: {self.stats['num_gpio_notifications']}")
         print(f">>   Num MQTT messages published to the broker: {self.stats['num_mqtt_messages']}")

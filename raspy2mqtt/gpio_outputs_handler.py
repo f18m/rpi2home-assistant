@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
-import gpiozero, asyncio, json, platform, sys
-from raspy2mqtt.constants import *
-from raspy2mqtt.config import *
+import gpiozero
+import asyncio
+import json
+import sys
+import aiomqtt
+from raspy2mqtt.constants import MqttQOS, MiscAppDefaults
+from raspy2mqtt.config import AppConfig
 
 #
 # Author: fmontorsi
@@ -27,18 +31,18 @@ class DummyOutputCh:
 
     def on(self):
         print(
-            f"INTEGRATION-TEST-HELPER: DummyOutputCh: ON method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
+            f"INTEGRATION-TEST-HELPER: DummyOutputCh: ON method invoked... writing into {MiscAppDefaults.INTEGRATION_TESTS_OUTPUT_FILE}"
         )
         self.is_lit = True
-        with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
+        with open(MiscAppDefaults.INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
             opened_file.write(f"{self.gpio}: ON")
 
     def off(self):
         print(
-            f"INTEGRATION-TEST-HELPER: DummyOutputCh: OFF method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
+            f"INTEGRATION-TEST-HELPER: DummyOutputCh: OFF method invoked... writing into {MiscAppDefaults.INTEGRATION_TESTS_OUTPUT_FILE}"
         )
         self.is_lit = False
-        with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
+        with open(MiscAppDefaults.INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
             opened_file.write(f"{self.gpio}: OFF")
 
 
@@ -86,7 +90,7 @@ class GpioOutputsHandler:
                 self.output_channels[topic_name] = DummyOutputCh(output_ch["gpio"])
         else:
             # setup GPIO pins for the OUTPUTs
-            print(f"Initializing GPIO output pins")
+            print("Initializing GPIO output pins")
             for output_ch in cfg.get_all_outputs():
                 topic_name = output_ch["mqtt"]["topic"]
                 active_high = not bool(output_ch["active_low"])
@@ -184,7 +188,7 @@ class GpioOutputsHandler:
                                 # the broker about each switch
                                 print(f"Publishing to topic {mqtt_state_topic} the payload {mqtt_payload}")
                                 await client.publish(
-                                    mqtt_state_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True
+                                    mqtt_state_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE, retain=True
                                 )
                                 self.stats["num_mqtt_states_published"] += 1
 
@@ -216,7 +220,7 @@ class GpioOutputsHandler:
             try:
                 async with cfg.create_aiomqtt_client(GpioOutputsHandler.client_identifier_discovery_pub) as client:
                     while not GpioOutputsHandler.stop_requested:
-                        print(f"Publishing DISCOVERY messages for GPIO OUTPUTs")
+                        print("Publishing DISCOVERY messages for GPIO OUTPUTs")
                         for entry in cfg.get_all_outputs():
                             mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/switch/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
 
@@ -236,7 +240,7 @@ class GpioOutputsHandler:
                                 # add icon to the config of the entry:
                                 mqtt_payload_dict["icon"] = entry["home_assistant"]["icon"]
                             mqtt_payload = json.dumps(mqtt_payload_dict)
-                            await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                            await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                             self.stats["num_mqtt_discovery_messages_published"] += 1
 
                         await asyncio.sleep(cfg.homeassistant_discovery_message_period_sec)
@@ -249,7 +253,7 @@ class GpioOutputsHandler:
                 sys.exit(99)
 
     def print_stats(self):
-        print(f">> OUTPUTS:")
+        print(">> OUTPUTS:")
         print(
             f">>   Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_subscribe']}"
         )
@@ -260,7 +264,7 @@ class GpioOutputsHandler:
         print(
             f">>   Num states for output channels published on the MQTT broker: {self.stats['num_mqtt_states_published']}"
         )
-        print(f">>   OUTPUTs DISCOVERY messages:")
+        print(">>   OUTPUTs DISCOVERY messages:")
         print(f">>     Num (re)connections to the MQTT broker: {self.stats['num_connections_discovery_publish']}")
         print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")
         print(

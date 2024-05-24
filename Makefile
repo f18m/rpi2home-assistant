@@ -82,3 +82,9 @@ unit-test:
 
 integration-test:
 	pytest -vvvv --log-level=INFO -s -m integration
+
+format:
+	black .
+
+lint:
+	ruff check raspy2mqtt/

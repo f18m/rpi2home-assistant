@@ -1,13 +1,7 @@
-import pytest, os, time, signal
+import os
 from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
-from testcontainers.core.waiting_utils import wait_container_is_ready
 
 # from testcontainers.core.utils import raise_for_deprecated_parameter
-from paho.mqtt import client as mqtt_client
-import paho.mqtt.enums
-from queue import Queue
-from typing import Optional
 
 from tests.mosquitto_container import MosquittoContainer
 

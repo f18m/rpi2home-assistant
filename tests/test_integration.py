@@ -1,13 +1,8 @@
-import pytest, os, time, signal
-from testcontainers.core.container import DockerContainer
-from testcontainers.core.waiting_utils import wait_for_logs
-from testcontainers.core.waiting_utils import wait_container_is_ready
+import pytest
+import time
+import signal
 
 # from testcontainers.core.utils import raise_for_deprecated_parameter
-from paho.mqtt import client as mqtt_client
-import paho.mqtt.enums
-from queue import Queue
-from typing import Optional
 
 from tests.mosquitto_container import MosquittoContainer
 from tests.raspy2mqtt_container import Raspy2MQTTContainer
@@ -47,7 +42,7 @@ def test_publish_for_optoisolated_inputs():
     with Raspy2MQTTContainer(broker=broker) as container:
         time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
         if not container.is_running():
-            print(f"Container under test has stopped running... test failed.")
+            print("Container under test has stopped running... test failed.")
             container.print_logs()
             assert False
 
@@ -87,7 +82,7 @@ def test_publish_for_gpio_inputs():
     with Raspy2MQTTContainer(broker=broker) as container:
         time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
         if not container.is_running():
-            print(f"Container under test has stopped running... test failed.")
+            print("Container under test has stopped running... test failed.")
             container.print_logs()
             assert False
 
@@ -132,7 +127,7 @@ def test_publish_subscribe_for_outputs():
     with Raspy2MQTTContainer(broker=broker) as container:
         time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
         if not container.is_running():
-            print(f"Container under test has stopped running... test failed.")
+            print("Container under test has stopped running... test failed.")
             container.print_logs()
             assert False
 
