@@ -8,7 +8,8 @@ from datetime import datetime, timezone
 from raspy2mqtt.constants import MqttDefaults, HomeAssistantDefaults, SeqMicroHatConstants, MiscAppDefaults
 
 from schema import Schema, Optional, SchemaError, Regex
-
+from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError
 
 #
 # Author: fmontorsi
@@ -42,12 +43,8 @@ class AppConfig:
 
         # technically speaking the version is not an "app config" but centralizing it here is handy
         try:
-            try:
-                from importlib.metadata import version
-            except ModuleNotFoundError:
-                from importlib_metadata import version
             self.app_version = str(version(MiscAppDefaults.THIS_APP_NAME))
-        except KeyError:
+        except PackageNotFoundError:
             # this happens when e.g. running unit tests inside Github runners where the wheel
             # package for this project is not installed:
             self.app_version = "N/A"
