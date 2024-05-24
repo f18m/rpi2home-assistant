@@ -130,7 +130,7 @@ class GpioInputsHandler:
                             )
 
                             # send to broker
-                            await client.publish(mqtt_topic, mqtt_payload, qos=MqttQOS.MqttQOS.AT_LEAST_ONCE)
+                            await client.publish(mqtt_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                             self.stats["num_mqtt_messages"] += 1
 
                         self.gpio_queue.task_done()
