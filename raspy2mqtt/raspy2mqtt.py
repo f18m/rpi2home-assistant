@@ -227,6 +227,9 @@ async def main_loop():
             await asyncio.sleep(1)
 
         print("Main coroutine is now cancelling all sub-tasks (coroutines)")
+        GpioInputsHandler.stop_requested = True
+        GpioOutputsHandler.stop_requested = True
+        OptoIsolatedInputsHandler.stop_requested = True
         for t in tasks:
             t.cancel()
 

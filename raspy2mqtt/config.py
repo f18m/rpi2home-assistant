@@ -2,7 +2,6 @@
 
 import yaml
 import aiomqtt
-import datetime
 import os
 import platform
 from datetime import datetime, timezone
@@ -34,8 +33,8 @@ class AppConfig:
     """
 
     def __init__(self):
-        self.config: Optional[Dict[str, Any]] = None
-        self.optoisolated_inputs_map: Optional[Dict[int, Any]] = None  # None means "not loaded at all"
+        self.config = None
+        self.optoisolated_inputs_map = None  # None means "not loaded at all"
 
         # config options related to CLI options:
         self.disable_hw = False  # can be get/set from the outside
