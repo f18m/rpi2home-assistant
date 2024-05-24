@@ -65,6 +65,16 @@ raspbian_update_dependencies:
 docker:
 	docker build -t ha-alarm-raspy2mqtt:latest .
 
+run-docker:
+	docker run --rm -ti --env DISABLE_HW=1 --network=host \
+		-v $$(pwd)/mytest.yaml:/etc/ha-alarm-raspy2mqtt.yaml \
+		ha-alarm-raspy2mqtt:latest
+
+run-mosquitto:
+	docker run -d --publish 1883:1883 \
+		--volume $$(pwd)/tests/integration-test-mosquitto.conf:/mosquitto/config/mosquitto.conf \
+		eclipse-mosquitto:latest
+
 test: unit-test integration-test
 
 unit-test:
