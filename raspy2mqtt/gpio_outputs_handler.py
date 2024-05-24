@@ -4,8 +4,9 @@ import gpiozero
 import asyncio
 import json
 import sys
-from raspy2mqtt.constants import *
-from raspy2mqtt.config import *
+import aiomqtt
+from raspy2mqtt.constants import MqttQOS, MiscAppDefaults
+from raspy2mqtt.config import AppConfig
 
 #
 # Author: fmontorsi
@@ -30,18 +31,18 @@ class DummyOutputCh:
 
     def on(self):
         print(
-            f"INTEGRATION-TEST-HELPER: DummyOutputCh: ON method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
+            f"INTEGRATION-TEST-HELPER: DummyOutputCh: ON method invoked... writing into {MiscAppDefaults.INTEGRATION_TESTS_OUTPUT_FILE}"
         )
         self.is_lit = True
-        with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
+        with open(MiscAppDefaults.INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
             opened_file.write(f"{self.gpio}: ON")
 
     def off(self):
         print(
-            f"INTEGRATION-TEST-HELPER: DummyOutputCh: OFF method invoked... writing into {INTEGRATION_TESTS_OUTPUT_FILE}"
+            f"INTEGRATION-TEST-HELPER: DummyOutputCh: OFF method invoked... writing into {MiscAppDefaults.INTEGRATION_TESTS_OUTPUT_FILE}"
         )
         self.is_lit = False
-        with open(INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
+        with open(MiscAppDefaults.INTEGRATION_TESTS_OUTPUT_FILE, "w") as opened_file:
             opened_file.write(f"{self.gpio}: OFF")
 
 
@@ -187,7 +188,7 @@ class GpioOutputsHandler:
                                 # the broker about each switch
                                 print(f"Publishing to topic {mqtt_state_topic} the payload {mqtt_payload}")
                                 await client.publish(
-                                    mqtt_state_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE, retain=True
+                                    mqtt_state_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE, retain=True
                                 )
                                 self.stats["num_mqtt_states_published"] += 1
 
@@ -239,7 +240,7 @@ class GpioOutputsHandler:
                                 # add icon to the config of the entry:
                                 mqtt_payload_dict["icon"] = entry["home_assistant"]["icon"]
                             mqtt_payload = json.dumps(mqtt_payload_dict)
-                            await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                            await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                             self.stats["num_mqtt_discovery_messages_published"] += 1
 
                         await asyncio.sleep(cfg.homeassistant_discovery_message_period_sec)

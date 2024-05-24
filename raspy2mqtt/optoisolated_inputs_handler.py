@@ -6,8 +6,10 @@ import asyncio
 import gpiozero
 import json
 import sys
-from raspy2mqtt.constants import *
-from raspy2mqtt.config import *
+import aiomqtt
+from raspy2mqtt.constants import MqttQOS, SeqMicroHatConstants
+from raspy2mqtt.config import AppConfig
+
 
 #
 # Author: fmontorsi
@@ -55,7 +57,7 @@ class OptoIsolatedInputsHandler:
         else:
             # check if the opto-isolated input board from Sequent Microsystem is indeed present:
             try:
-                _ = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
+                _ = lib16inpind.readAll(SeqMicroHatConstants.STACK_LEVEL)
             except FileNotFoundError as e:
                 print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
                 return 2
@@ -67,7 +69,7 @@ class OptoIsolatedInputsHandler:
                 return 2
 
             print("Initializing SequentMicrosystem GPIO interrupt line")
-            b = gpiozero.Button(SEQMICRO_INPUTHAT_INTERRUPT_GPIO, pull_up=True)
+            b = gpiozero.Button(SeqMicroHatConstants.INTERRUPT_GPIO, pull_up=True)
             b.when_held = self.sample_optoisolated_inputs
             buttons.append(b)
 
@@ -87,7 +89,7 @@ class OptoIsolatedInputsHandler:
         #        variable. In practice since it's a simple integer variable, I don't think the mutex is needed.
         # NOTE1: this is a blocking call that will block until the 16 inputs are sampled
         # NOTE2: this might raise a TimeoutError exception in case the I2C bus transaction fails
-        self.optoisolated_inputs_sampled_values = lib16inpind.readAll(SEQMICRO_INPUTHAT_STACK_LEVEL)
+        self.optoisolated_inputs_sampled_values = lib16inpind.readAll(SeqMicroHatConstants.STACK_LEVEL)
         self.stats["num_readings"] += 1
 
         # FIXME: right now, it's hard to force-wake the coroutine
@@ -115,7 +117,7 @@ class OptoIsolatedInputsHandler:
                     while not OptoIsolatedInputsHandler.stop_requested:
                         # Publish each sampled value as a separate MQTT topic
                         update_loop_start_sec = time.perf_counter()
-                        for i in range(SEQMICRO_INPUTHAT_MAX_CHANNELS):
+                        for i in range(SeqMicroHatConstants.MAX_CHANNELS):
 
                             # IMPORTANT: this function expects something else to update the 'optoisolated_inputs_sampled_values'
                             #            integer, whenever it is necessary to update it
@@ -128,10 +130,10 @@ class OptoIsolatedInputsHandler:
                             if input_cfg is not None:
                                 if input_cfg["active_low"]:
                                     logical_value = not bit_value
-                                    input_type = "active low"
+                                    #input_type = "active low"
                                 else:
                                     logical_value = bit_value
-                                    input_type = "active high"
+                                    #input_type = "active high"
 
                                 payload = (
                                     input_cfg["mqtt"]["payload_on"]
@@ -140,7 +142,7 @@ class OptoIsolatedInputsHandler:
                                 )
                                 # print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
 
-                                await client.publish(input_cfg["mqtt"]["topic"], payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                                await client.publish(input_cfg["mqtt"]["topic"], payload, qos=MqttQOS.AT_LEAST_ONCE)
                                 self.stats["num_mqtt_messages"] += 1
 
                         update_loop_duration_sec = time.perf_counter() - update_loop_start_sec
@@ -197,7 +199,7 @@ class OptoIsolatedInputsHandler:
                                 # add icon to the config of the entry:
                                 mqtt_payload_dict["icon"] = entry["home_assistant"]["icon"]
                             mqtt_payload = json.dumps(mqtt_payload_dict)
-                            await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                            await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                             self.stats["num_mqtt_discovery_messages_published"] += 1
 
                         await asyncio.sleep(cfg.homeassistant_discovery_message_period_sec)

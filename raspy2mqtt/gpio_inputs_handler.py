@@ -5,8 +5,9 @@ import signal
 import asyncio
 import queue
 import sys
-from raspy2mqtt.constants import *
-from raspy2mqtt.config import *
+import aiomqtt
+from raspy2mqtt.constants import MqttQOS
+from raspy2mqtt.config import AppConfig
 
 #
 # Author: fmontorsi
@@ -129,7 +130,7 @@ class GpioInputsHandler:
                             )
 
                             # send to broker
-                            await client.publish(mqtt_topic, mqtt_payload, qos=MQTT_QOS_AT_LEAST_ONCE)
+                            await client.publish(mqtt_topic, mqtt_payload, qos=MqttQOS.MqttQOS.AT_LEAST_ONCE)
                             self.stats["num_mqtt_messages"] += 1
 
                         self.gpio_queue.task_done()

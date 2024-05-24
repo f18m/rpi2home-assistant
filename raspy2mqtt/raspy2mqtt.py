@@ -15,12 +15,12 @@ import asyncio
 import gpiozero
 import subprocess
 import signal
-from raspy2mqtt.stats import *
-from raspy2mqtt.config import *
-from raspy2mqtt.constants import *
-from raspy2mqtt.optoisolated_inputs_handler import *
-from raspy2mqtt.gpio_inputs_handler import *
-from raspy2mqtt.gpio_outputs_handler import *
+from raspy2mqtt.stats import StatsCollector
+from raspy2mqtt.constants import SeqMicroHatConstants, MiscAppDefaults
+from raspy2mqtt.config import AppConfig
+from raspy2mqtt.optoisolated_inputs_handler import OptoIsolatedInputsHandler
+from raspy2mqtt.gpio_inputs_handler import GpioInputsHandler
+from raspy2mqtt.gpio_outputs_handler import GpioOutputsHandler
 
 # =======================================================================================================
 # GLOBALs
@@ -38,7 +38,7 @@ g_stop_requested = False
 def parse_command_line():
     """Parses the command line and returns the configuration as dictionary object."""
     parser = argparse.ArgumentParser(
-        description=f"Utility to expose the {SEQMICRO_INPUTHAT_MAX_CHANNELS} digital inputs read by Raspberry over MQTT, to ease their integration as (binary) sensors in Home Assistant."
+        description=f"Utility to expose the {SeqMicroHatConstants.MAX_CHANNELS} digital inputs read by Raspberry over MQTT, to ease their integration as (binary) sensors in Home Assistant."
     )
 
     # Optional arguments
@@ -46,8 +46,8 @@ def parse_command_line():
     parser.add_argument(
         "-c",
         "--config",
-        help=f"YAML file specifying the software configuration. Defaults to '{DEFAULT_CONFIG_FILE}'",
-        default=DEFAULT_CONFIG_FILE,
+        help=f"YAML file specifying the software configuration. Defaults to '{MiscAppDefaults.CONFIG_FILE}'",
+        default=MiscAppDefaults.CONFIG_FILE,
     )
     parser.add_argument(
         "-d",
@@ -133,7 +133,7 @@ def init_hardware(cfg: AppConfig):
 
     buttons = []
     print("Initializing SequentMicrosystem GPIO shutdown button")
-    b = gpiozero.Button(SEQMICRO_INPUTHAT_SHUTDOWN_BUTTON_GPIO, hold_time=5)
+    b = gpiozero.Button(SeqMicroHatConstants.SHUTDOWN_BUTTON_GPIO, hold_time=5)
     b.when_held = shutdown
     buttons.append(b)
 
@@ -155,7 +155,7 @@ async def main_loop():
     global g_stop_requested
 
     cfg = AppConfig()
-    print(f"{THIS_SCRIPT_PYPI_PACKAGE} version {cfg.app_version} starting")
+    print(f"{MiscAppDefaults.THIS_APP_NAME} version {cfg.app_version} starting")
 
     args = parse_command_line()
 
@@ -241,13 +241,15 @@ async def main_loop():
             except asyncio.CancelledError:
                 pass
 
-    print(f"Exiting gracefully with exit code {exit_code}... printing stats for the last time:")
+    print("Printing stats for the last time:")
     stats_collector.print_stats()
+
+    print(f"Exiting gracefully with exit code {exit_code}...")
     return exit_code
 
 
 def main():
-    if instance_already_running(THIS_SCRIPT_PYPI_PACKAGE):
+    if instance_already_running(MiscAppDefaults.THIS_APP_NAME):
         print(
             "Sorry, detected another instance of this daemon is already running. Using the same I2C bus from 2 sofware programs is not recommended. Aborting."
         )
