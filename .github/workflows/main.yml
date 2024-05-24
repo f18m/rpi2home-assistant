@@ -28,7 +28,7 @@ jobs:
     - name: install pypi-packaged dependencies
       run: sudo pip3 install black ruff
     - name: run formatter
-      run: black .
+      run: black . --check
     - name: run linter
       run: ruff check raspy2mqtt/
     

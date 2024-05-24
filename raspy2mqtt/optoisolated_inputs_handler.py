@@ -130,10 +130,10 @@ class OptoIsolatedInputsHandler:
                             if input_cfg is not None:
                                 if input_cfg["active_low"]:
                                     logical_value = not bit_value
-                                    #input_type = "active low"
+                                    # input_type = "active low"
                                 else:
                                     logical_value = bit_value
-                                    #input_type = "active high"
+                                    # input_type = "active high"
 
                                 payload = (
                                     input_cfg["mqtt"]["payload_on"]
