@@ -182,82 +182,54 @@ async def main_loop():
         # the double-nested 'try' is the only way I found in Python 3.11.2 to catch properly
         # both exception groups (using the 'except*' syntax) and also have a default catch-all
         # label using regular 'except' syntax.
-        try:
+
+        # NOTE: unfortunately we cannot use a taskgroup: the problem is the function
+        # subscribe_and_activate_outputs() which uses the aiomqtt.Client.messages generator
+        # which does not allow to easily stop the 'waiting for next message' operation.
+        # This means we need to create each task manually with asyncio.EventLoop.create_task()
+        # and cancel() them whenever a SIGTERM is received.
+        #
+        # async with asyncio.TaskGroup() as tg:
+        #     tg.create_task(print_stats_periodically(cfg))
+        #     # inputs:
+        #     tg.create_task(publish_optoisolated_inputs(cfg))
+        #     tg.create_task(process_gpio_inputs_queue_and_publish(cfg))
+        #     # outputs:
+        #     tg.create_task(subscribe_and_activate_outputs(cfg))
+        #     tg.create_task(publish_outputs_state(cfg))
+
+        # launch all coroutines:
+        loop = asyncio.get_running_loop()
+        tasks = [
+            loop.create_task(stats_collector.print_stats_periodically(cfg)),
+            loop.create_task(opto_inputs_handler.publish_optoisolated_inputs(cfg)),
+            loop.create_task(gpio_inputs_handler.process_gpio_inputs_queue_and_publish(cfg)),
+            loop.create_task(gpio_outputs_handler.subscribe_and_activate_outputs(cfg)),
+            loop.create_task(gpio_outputs_handler.publish_outputs_state(cfg)),
+        ]
+
+        if cfg.homeassistant_discovery_messages_enable:
+            tasks += [
+                loop.create_task(opto_inputs_handler.homeassistant_discovery_message_publish(cfg)),
+                loop.create_task(gpio_outputs_handler.homeassistant_discovery_message_publish(cfg)),
+            ]
+
+        # this main coroutine will simply wait till a SIGTERM arrives and
+        # we get g_stop_requested=True:
+        while not g_stop_requested:
+            await asyncio.sleep(1)
+
+        print("Main coroutine is now cancelling all sub-tasks (coroutines)")
+        for t in tasks:
+            t.cancel()
+
+        print("Waiting cancellation of all tasks")
+        for t in tasks:
+            # Wait for the task to be cancelled
             try:
-                # NOTE: unfortunately we cannot use a taskgroup: the problem is the function
-                # subscribe_and_activate_outputs() which uses the aiomqtt.Client.messages generator
-                # which does not allow to easily stop the 'waiting for next message' operation.
-                # This means we need to create each task manually with asyncio.EventLoop.create_task()
-                # and cancel() them whenever a SIGTERM is received.
-                #
-                # async with asyncio.TaskGroup() as tg:
-                #     tg.create_task(print_stats_periodically(cfg))
-                #     # inputs:
-                #     tg.create_task(publish_optoisolated_inputs(cfg))
-                #     tg.create_task(process_gpio_inputs_queue_and_publish(cfg))
-                #     # outputs:
-                #     tg.create_task(subscribe_and_activate_outputs(cfg))
-                #     tg.create_task(publish_outputs_state(cfg))
-
-                # launch all coroutines:
-                loop = asyncio.get_running_loop()
-                tasks = [
-                    loop.create_task(stats_collector.print_stats_periodically(cfg)),
-                    loop.create_task(opto_inputs_handler.publish_optoisolated_inputs(cfg)),
-                    loop.create_task(gpio_inputs_handler.process_gpio_inputs_queue_and_publish(cfg)),
-                    loop.create_task(gpio_outputs_handler.subscribe_and_activate_outputs(cfg)),
-                    loop.create_task(gpio_outputs_handler.publish_outputs_state(cfg)),
-                ]
-
-                if cfg.homeassistant_discovery_messages_enable:
-                    tasks += [
-                        loop.create_task(opto_inputs_handler.homeassistant_discovery_message_publish(cfg)),
-                        loop.create_task(gpio_outputs_handler.homeassistant_discovery_message_publish(cfg)),
-                    ]
-
-                # this main coroutine will simply wait till a SIGTERM arrives and
-                # we get g_stop_requested=True:
-                while not g_stop_requested:
-                    await asyncio.sleep(1)
-
-                print("Main coroutine is now cancelling all sub-tasks (coroutines)")
-                for t in tasks:
-                    t.cancel()
-
-                print("Waiting cancellation of all tasks")
-                for t in tasks:
-                    # Wait for the task to be cancelled
-                    try:
-                        await t
-                    except asyncio.CancelledError:
-                        pass
-
-            except* aiomqtt.MqttError as err:
-                print(
-                    f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
-                )
-                stats_collector.stats["num_connections_lost"] += 1
-                await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
-            except* KeyboardInterrupt:
-                stats_collector.print_stats()
-                print("Stopped by CTRL+C... aborting")
-                g_stop_requested = True
-                exit_code = 1
-        except ExceptionGroup as e:
-            # this is very important... it's the 'default' case entered whenever an exception does
-            # not match any of the more specific 'except' clauses above
-            # IMPORTANT: this seems to work correctly/as-expected only in Python >=3.11.4 (including 3.12)
-            # see this note: https://docs.python.org/3/whatsnew/3.12.html, which contains something that might be related:
-            #  'When a try-except* construct handles the entire ExceptionGroup and raises one other exception,
-            #   that exception is no longer wrapped in an ExceptionGroup.
-            #   Also changed in version 3.11.4. (Contributed by Irit Katriel in gh-103590.)'
-            print(f"Got exception of type [{e}], which is unhandled.")
-            g_stop_requested = True
-            exit_code = 2
-        except Exception as e:
-            print(f"Got exception of type [{e}], which is unhandled.")
-            g_stop_requested = True
-            exit_code = 2
+                await t
+            except asyncio.CancelledError:
+                pass
 
     print(f"Exiting gracefully with exit code {exit_code}... printing stats for the last time:")
     stats_collector.print_stats()

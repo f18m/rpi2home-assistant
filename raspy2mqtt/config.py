@@ -84,6 +84,7 @@ class AppConfig:
             {
                 "mqtt_broker": {
                     "host": str,
+                    Optional("port"): int,
                     Optional("reconnection_period_msec"): int,
                     Optional("user"): str,
                     Optional("password"): str,
@@ -94,7 +95,7 @@ class AppConfig:
                     Optional("discovery_messages"): {
                         Optional("enable"): bool,
                         Optional("topic_prefix"): str,
-                        Optional("topic_node_id"): str,
+                        Optional("node_id"): str,
                         Optional("message_period_sec"): int,
                     },
                 },
@@ -485,7 +486,7 @@ class AppConfig:
         if self.config is None:
             return self.current_hostname  # default value
         try:
-            return self.config["home_assistant"]["discovery_messages"]["topic_node_id"]
+            return self.config["home_assistant"]["discovery_messages"]["node_id"]
         except:
             # in this case the key is completely missing or does contain an integer value
             return self.current_hostname  # default value

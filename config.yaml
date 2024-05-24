@@ -4,6 +4,7 @@
 mqtt_broker:
   # the IP or FQDN of the server hosting the MQTT broker:
   host: 192.168.1.5
+  #port
 
   # in case the connection with the broker drops, a reconnection will be attempted each X msec:
   reconnection_period_msec: 1500
