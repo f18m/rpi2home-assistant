@@ -44,10 +44,10 @@ class AppConfig:
         try:
             try:
                 from importlib.metadata import version
-            except:
+            except ModuleNotFoundError:
                 from importlib_metadata import version
             self.app_version = str(version(MiscAppDefaults.THIS_APP_NAME))
-        except:
+        except KeyError:
             # this happens when e.g. running unit tests inside Github runners where the wheel
             # package for this project is not installed:
             self.app_version = "N/A"
@@ -344,14 +344,14 @@ class AppConfig:
 
     def merge_options_from_env_vars(self):
         # merge env vars into the configuration object:
-        if os.environ.get("DISABLE_HW", None) != None:
+        if os.environ.get("DISABLE_HW", None) is not None:
             self.disable_hw = True
-        if os.environ.get("VERBOSE", None) != None:
+        if os.environ.get("VERBOSE", None) is not None:
             self.verbose = True
-        if os.environ.get("MQTT_BROKER_HOST", None) != None:
+        if os.environ.get("MQTT_BROKER_HOST", None) is not None:
             # this particular env var can override the value coming from the config file:
             self.mqtt_broker_host = os.environ.get("MQTT_BROKER_HOST")
-        if os.environ.get("MQTT_BROKER_PORT", None) != None:
+        if os.environ.get("MQTT_BROKER_PORT", None) is not None:
             # this particular env var can override the value coming from the config file:
             self.mqtt_broker_port = os.environ.get("MQTT_BROKER_PORT")
 
@@ -359,7 +359,7 @@ class AppConfig:
         print("Config summary:")
         print("** MQTT")
         print(f"   MQTT broker host:port: {self.mqtt_broker_host}:{self.mqtt_broker_port}")
-        if self.mqtt_broker_user != None:
+        if self.mqtt_broker_user is not None:
             print("   MQTT broker authentication: ON")
         else:
             print("   MQTT broker authentication: OFF")
@@ -435,7 +435,7 @@ class AppConfig:
             # convert the user-defined timeout from msec to (floating) sec
             cfg_value = float(self.config["mqtt_broker"]["reconnection_period_msec"]) / 1000.0
             return cfg_value
-        except:
+        except (KeyError, ValueError):
             # in this case the key is completely missing or does contain an integer value
             return MqttDefaults.RECONNECTION_PERIOD_SEC  # default value
 
@@ -450,7 +450,7 @@ class AppConfig:
         try:
             cfg_value = float(self.config["home_assistant"]["publish_period_msec"]) / 1000.0
             return cfg_value
-        except:
+        except (KeyError, ValueError):
             # in this case the key is completely missing or does contain an integer value
             return HomeAssistantDefaults.PUBLISH_PERIOD_SEC  # default value
 
@@ -460,7 +460,7 @@ class AppConfig:
             return HomeAssistantDefaults.TOPIC_PREFIX  # default value
         try:
             return self.config["home_assistant"]["default_topic_prefix"]
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
             return HomeAssistantDefaults.TOPIC_PREFIX  # default value
 
@@ -470,7 +470,7 @@ class AppConfig:
             return True  # default value
         try:
             return self.config["home_assistant"]["discovery_messages"]["enable"]
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
             return True  # default value
 
@@ -480,7 +480,7 @@ class AppConfig:
             return HomeAssistantDefaults.DISCOVERY_TOPIC_PREFIX  # default value
         try:
             return self.config["home_assistant"]["discovery_messages"]["topic_prefix"]
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
             return HomeAssistantDefaults.DISCOVERY_TOPIC_PREFIX  # default value
 
@@ -490,7 +490,7 @@ class AppConfig:
             return self.current_hostname  # default value
         try:
             return self.config["home_assistant"]["discovery_messages"]["node_id"]
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
             return self.current_hostname  # default value
 
@@ -500,7 +500,7 @@ class AppConfig:
             return HomeAssistantDefaults.DISCOVERY_PUBLISH_PERIOD_SEC  # default value
         try:
             return float(self.config["home_assistant"]["discovery_messages"]["message_period_sec"])
-        except:
+        except KeyError:
             # in this case the key is completely missing or does contain an integer value
             return HomeAssistantDefaults.DISCOVERY_PUBLISH_PERIOD_SEC  # default value
 
