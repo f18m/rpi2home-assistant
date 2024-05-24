@@ -131,7 +131,7 @@ class GpioInputsHandler:
                         self.gpio_queue.task_done()
             except aiomqtt.MqttError as err:
                 print(
-                    f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
+                    f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
                 )
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
@@ -145,3 +145,4 @@ class GpioInputsHandler:
         print(f">>   Num GPIO activations detected: {self.stats['num_gpio_notifications']}")
         print(f">>   Num MQTT messages published to the broker: {self.stats['num_mqtt_messages']}")
         print(f">>   ERROR: GPIO inputs detected but missing configuration: {self.stats['ERROR_noconfig']}")
+        print(f">>   ERROR: MQTT connections lost: {self.stats['ERROR_num_connections_lost']}")

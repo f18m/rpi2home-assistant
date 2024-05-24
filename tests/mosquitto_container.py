@@ -2,6 +2,7 @@ import pytest, os, time, signal
 from testcontainers.core.container import DockerContainer
 from testcontainers.core.waiting_utils import wait_for_logs
 from testcontainers.core.waiting_utils import wait_container_is_ready
+from typing_extensions import Self
 
 # from testcontainers.core.utils import raise_for_deprecated_parameter
 from paho.mqtt import client as mqtt_client
@@ -10,6 +11,7 @@ from queue import Queue
 from typing import Optional
 
 # MosquittoContainer
+
 
 class MosquittoContainer(DockerContainer):
     """
@@ -95,6 +97,7 @@ class MosquittoContainer(DockerContainer):
                 userdata=self,
                 **kwargs,
             )
+            self.client._connect_timeout = 1.0
 
             # connect() is a blocking call:
             err = self.client.connect(self.get_container_host_ip(), int(self.get_exposed_port(self.port)))
@@ -103,10 +106,15 @@ class MosquittoContainer(DockerContainer):
 
         return self.client, err
 
-    def start(self) -> "MosquittoContainer":
+    def start(self) -> Self:
         super().start()
         self._connect()
         return self
+
+    def stop(self, force=True, delete_volume=True) -> None:
+        self.client.disconnect()
+        self.client = None # force recreation of the client object at next start()
+        super().stop(force, delete_volume)
 
     class WatchedTopicInfo:
         def __init__(self):
@@ -216,4 +224,3 @@ class MosquittoContainer(DockerContainer):
         print(self.get_logs()[0].decode())
         print("** BROKER LOGS [STDERR]:")
         print(self.get_logs()[1].decode())
-

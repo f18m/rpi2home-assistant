@@ -140,7 +140,7 @@ class GpioOutputsHandler:
                         self.stats["num_mqtt_commands_processed"] += 1
             except aiomqtt.MqttError as err:
                 print(
-                    f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
+                    f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
                 )
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
@@ -197,7 +197,7 @@ class GpioOutputsHandler:
                         await asyncio.sleep(cfg.homeassistant_publish_period_sec)
             except aiomqtt.MqttError as err:
                 print(
-                    f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
+                    f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
                 )
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
@@ -246,7 +246,7 @@ class GpioOutputsHandler:
                         await asyncio.sleep(cfg.homeassistant_discovery_message_period_sec)
             except aiomqtt.MqttError as err:
                 print(
-                    f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
+                    f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
                 )
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
@@ -260,9 +260,6 @@ class GpioOutputsHandler:
             f">>   Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_subscribe']}"
         )
         print(
-            f">>   ERROR: invalid payloads received [subscribe channel]: {self.stats['ERROR_invalid_payload_received']}"
-        )
-        print(
             f">>   Num commands for output channels processed from MQTT broker: {self.stats['num_mqtt_commands_processed']}"
         )
         print(f">>   Num (re)connections to the MQTT broker [publish channel]: {self.stats['num_connections_publish']}")
@@ -274,3 +271,7 @@ class GpioOutputsHandler:
             f">>     Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_discovery_publish']}"
         )
         print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")
+        print(
+            f">>   ERROR: invalid payloads received [subscribe channel]: {self.stats['ERROR_invalid_payload_received']}"
+        )
+        print(f">>   ERROR: MQTT connections lost: {self.stats['ERROR_num_connections_lost']}")

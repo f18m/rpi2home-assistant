@@ -17,7 +17,8 @@ from raspy2mqtt.config import *
 
 class OptoIsolatedInputsHandler:
     """
-    This class handles sampling inputs from the [Sequent Microsystem 16 opto-insulated inputs HAT](https://sequentmicrosystems.com/collections/all-io-cards/products/16-universal-inputs-card-for-raspberry-pi)
+    This class handles sampling inputs from the
+    [Sequent Microsystem 16 opto-insulated inputs HAT](https://sequentmicrosystems.com/collections/all-io-cards/products/16-universal-inputs-card-for-raspberry-pi)
     and publishing the results to MQTT.
     It exposes a coroutine that can be 'await'ed, which handles publishing.
     """
@@ -149,7 +150,7 @@ class OptoIsolatedInputsHandler:
                         await asyncio.sleep(actual_sleep_time_sec)
             except aiomqtt.MqttError as err:
                 print(
-                    f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
+                    f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
                 )
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
@@ -170,7 +171,9 @@ class OptoIsolatedInputsHandler:
 
         while True:
             try:
-                async with cfg.create_aiomqtt_client(OptoIsolatedInputsHandler.client_identifier_discovery_pub) as client:
+                async with cfg.create_aiomqtt_client(
+                    OptoIsolatedInputsHandler.client_identifier_discovery_pub
+                ) as client:
                     while not OptoIsolatedInputsHandler.stop_requested:
                         print(f"Publishing DISCOVERY messages for OPTOISOLATED INPUTs")
                         for entry in cfg.get_all_optoisolated_inputs():
@@ -197,14 +200,13 @@ class OptoIsolatedInputsHandler:
                         await asyncio.sleep(cfg.homeassistant_discovery_message_period_sec)
             except aiomqtt.MqttError as err:
                 print(
-                    f"Connection lost: {err.exceptions}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
+                    f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ..."
                 )
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
             except Exception as err:
                 print(f"EXCEPTION: {err}")
                 sys.exit(99)
-
 
     def print_stats(self):
         print(f">> OPTO-ISOLATED INPUTS:")
@@ -216,3 +218,4 @@ class OptoIsolatedInputsHandler:
             f">>     Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_discovery_publish']}"
         )
         print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")
+        print(f">>   ERROR: MQTT connections lost: {self.stats['ERROR_num_connections_lost']}")

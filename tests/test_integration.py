@@ -19,6 +19,7 @@ broker = MosquittoContainer()
 
 # HELPERS
 
+
 @pytest.fixture(scope="module", autouse=True)
 def setup(request):
     """

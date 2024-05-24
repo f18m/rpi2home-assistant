@@ -11,6 +11,7 @@ from typing import Optional
 
 from tests.mosquitto_container import MosquittoContainer
 
+
 class Raspy2MQTTContainer(DockerContainer):
     """
     Specialization of DockerContainer to test this same repository artifact.
@@ -50,4 +51,3 @@ class Raspy2MQTTContainer(DockerContainer):
         print(self.get_logs()[0].decode())
         print("** Raspy2MQTTContainer LOGS [STDERR]:")
         print(self.get_logs()[1].decode())
-
