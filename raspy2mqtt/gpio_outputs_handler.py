@@ -96,8 +96,6 @@ class GpioOutputsHandler:
         """
         Subscribes to MQTT topics that will receive commands to activate/turn-off GPIO outputs
         and takes care of interfacing with gpiozero to actually drive the GPIO output pin high or low.
-
-        This function may throw an aiomqtt.MqttError exception indicating a connection issue!
         """
         print(
             f"Connecting to MQTT broker with identifier {GpioOutputsHandler.client_identifier_sub} to subscribe to OUTPUT commands"
