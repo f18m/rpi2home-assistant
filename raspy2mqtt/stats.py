@@ -32,7 +32,8 @@ class StatsCollector:
         self.objs_with_stats = objs_with_stats
 
     async def print_stats_periodically(self, cfg: AppConfig):
-        # loop = asyncio.get_running_loop()
+        if cfg.stats_log_period_sec == 0:
+            return  # the user requested to NOT print periodically the stats
         next_stat_time = time.time() + cfg.stats_log_period_sec
         while not StatsCollector.stop_requested:
             # Print out stats to help debugging
