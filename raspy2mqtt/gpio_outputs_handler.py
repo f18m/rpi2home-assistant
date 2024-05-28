@@ -185,7 +185,7 @@ class GpioOutputsHandler:
                                 )
 
                                 # publish with RETAIN flag so that Home Assistant will always find an updated status on
-                                # the broker about each switch
+                                # the broker about each switch/button
                                 print(f"Publishing to topic {mqtt_state_topic} the payload {mqtt_payload}")
                                 await client.publish(
                                     mqtt_state_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE, retain=True
@@ -222,7 +222,13 @@ class GpioOutputsHandler:
                     while not GpioOutputsHandler.stop_requested:
                         print("Publishing DISCOVERY messages for GPIO OUTPUTs")
                         for entry in cfg.get_all_outputs():
-                            mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/switch/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
+
+                            mqtt_prefix = cfg.homeassistant_discovery_topic_prefix
+                            mqtt_platform = entry["home_assistant"]["platform"]
+                            mqtt_node_id = cfg.homeassistant_discovery_topic_node_id
+                            mqtt_discovery_topic = (
+                                f"{mqtt_prefix}/{mqtt_platform}/{mqtt_node_id}/{entry['name']}/config"
+                            )
 
                             # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
                             mqtt_payload_dict = {

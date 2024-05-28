@@ -182,7 +182,14 @@ class OptoIsolatedInputsHandler:
                     while not OptoIsolatedInputsHandler.stop_requested:
                         print("Publishing DISCOVERY messages for OPTOISOLATED INPUTs")
                         for entry in cfg.get_all_optoisolated_inputs():
-                            mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/binary_sensor/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
+
+                            mqtt_prefix = cfg.homeassistant_discovery_topic_prefix
+                            mqtt_platform = entry["home_assistant"]["platform"]
+                            assert mqtt_platform == "binary_sensor"  # the only supported value for now
+                            mqtt_node_id = cfg.homeassistant_discovery_topic_node_id
+                            mqtt_discovery_topic = (
+                                f"{mqtt_prefix}/{mqtt_platform}/{mqtt_node_id}/{entry['name']}/config"
+                            )
 
                             # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
                             mqtt_payload_dict = {
