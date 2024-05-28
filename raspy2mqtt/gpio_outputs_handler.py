@@ -236,8 +236,6 @@ class GpioOutputsHandler:
                                 "name": entry["description"],
                                 "command_topic": entry["mqtt"]["topic"],
                                 "state_topic": entry["mqtt"]["state_topic"],
-                                "payload_on": entry["mqtt"]["payload_on"],
-                                "payload_off": entry["mqtt"]["payload_off"],
                                 "device_class": entry["home_assistant"]["device_class"],
                                 # "expire_after": entry['home_assistant']["expire_after"], -- not supported by MQTT switch :(
                                 "device": cfg.get_device_dict(),
@@ -245,6 +243,13 @@ class GpioOutputsHandler:
                             if entry["home_assistant"]["icon"] is not None:
                                 # add icon to the config of the entry:
                                 mqtt_payload_dict["icon"] = entry["home_assistant"]["icon"]
+
+                            if mqtt_platform == "switch":
+                                mqtt_payload_dict["payload_on"] = entry["mqtt"]["payload_on"]
+                                mqtt_payload_dict["payload_off"] = entry["mqtt"]["payload_off"]
+                            elif mqtt_platform == "button":
+                                mqtt_payload_dict["payload_press"] = entry["mqtt"]["payload_on"]
+
                             mqtt_payload = json.dumps(mqtt_payload_dict)
                             await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                             self.stats["num_mqtt_discovery_messages_published"] += 1
