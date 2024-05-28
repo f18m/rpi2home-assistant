@@ -27,6 +27,7 @@ class HomeAssistantDefaults:
     DISCOVERY_PUBLISH_PERIOD_SEC = 100
     EXPIRE_AFTER_SEC = 30
     MANUFACTURER = "github.com/f18m"
+    BUTTON_MOMENTARY_PRESS_SEC = 0.5
 
 
 # SequentMicrosystem-specific constants

@@ -5,7 +5,7 @@ import asyncio
 import json
 import sys
 import aiomqtt
-from raspy2mqtt.constants import MqttQOS, MiscAppDefaults
+from raspy2mqtt.constants import MqttQOS, MiscAppDefaults, HomeAssistantDefaults
 from raspy2mqtt.config import AppConfig
 
 #
@@ -126,13 +126,23 @@ class GpioOutputsHandler:
 
                         output_name = output_ch["name"]
                         if mqtt_payload == output_ch["mqtt"]["payload_on"]:
-                            print(
-                                f"Received message for digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
-                            )
-                            self.output_channels[mqtt_topic].on()
+
+                            if output_ch["home_assistant"]["platform"] == "switch":
+                                print(
+                                    f"Received message for SWITCH digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
+                                )
+                                self.output_channels[mqtt_topic].on()
+                            elif output_ch["home_assistant"]["platform"] == "button":
+                                print(
+                                    f"Received message for BUTTON digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state for {HomeAssistantDefaults.BUTTON_MOMENTARY_PRESS_SEC}sec"
+                                )
+                                self.output_channels[mqtt_topic].on()
+                                await asyncio.sleep(HomeAssistantDefaults.BUTTON_MOMENTARY_PRESS_SEC)
+                                self.output_channels[mqtt_topic].off()
+
                         elif mqtt_payload == output_ch["mqtt"]["payload_off"]:
                             print(
-                                f"Received message for digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
+                                f"Received message for SWITCH digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
                             )
                             self.output_channels[mqtt_topic].off()
                         else:
