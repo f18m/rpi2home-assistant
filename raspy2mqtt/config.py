@@ -289,15 +289,6 @@ class AppConfig:
                         f"Invalid gpio index {idx} for entry {input_item['name']}: such GPIO input has already been used. Check again the configuration."
                     )
 
-                # check HomeAssistant section
-                if (
-                    input_item["home_assistant"]["platform"] != "switch"
-                    and input_item["home_assistant"]["platform"] != "button"
-                ):
-                    raise ValueError(
-                        f"Invalid Home Assistant platform value {input_item['home_assistant']['platform']} for entry {input_item['name']}: only the 'switch' or 'button' platforms are supported for now."
-                    )
-
                 # store as valid entry
                 self.gpio_inputs_map[idx] = input_item
                 # print(input_item)
@@ -331,6 +322,15 @@ class AppConfig:
                 if mqtt_topic in self.outputs_map:
                     raise ValueError(
                         f"Invalid MQTT topic {mqtt_topic} for entry {output_item['name']}: such MQTT topic has already been used. Check again the configuration."
+                    )
+
+                # check HomeAssistant section
+                if (
+                    output_item["home_assistant"]["platform"] != "switch"
+                    and output_item["home_assistant"]["platform"] != "button"
+                ):
+                    raise ValueError(
+                        f"Invalid Home Assistant platform value {output_item['home_assistant']['platform']} for entry {output_item['name']}: only the 'switch' or 'button' platforms are supported for now."
                     )
 
                 # store as valid entry
