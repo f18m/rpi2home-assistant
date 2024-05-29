@@ -128,7 +128,9 @@ gpio_inputs:
 # - the MQTT topic "<default_topic_prefix>/<output name>/state" is automatically updated after confirming that the output 
 #   GPIO pin has successfully changed status
 # - Home Assistant MQTT discovery messages are automatically published if 'home_assistant.discovery_messages.enable=true'
-# - The Home Assistant platform can be either 'switch' (the default) or 'button'
+# - The Home Assistant platform can be either 'switch' (the default) or 'button'; in case 'button' is chosen and
+#   the 'PRESS' notification is received over MQTT, then the GPIO output is turned ON (respecting 'active_low' property)
+#   and 500msec later it is turned OFF (momentary press)
 outputs:
   - name: alarm_siren
     description: Alarm Siren
