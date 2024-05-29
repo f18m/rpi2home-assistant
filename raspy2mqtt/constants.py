@@ -21,7 +21,7 @@ class MqttDefaults:
 
 # HomeAssistant constants/defaults
 class HomeAssistantDefaults:
-    TOPIC_PREFIX = "home"
+    TOPIC_PREFIX = "rpi2home-assistant"
     DISCOVERY_TOPIC_PREFIX = "homeassistant"
     PUBLISH_PERIOD_SEC = 1
     DISCOVERY_PUBLISH_PERIOD_SEC = 100

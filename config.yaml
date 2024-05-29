@@ -23,7 +23,7 @@ home_assistant:
 
   # this is the default topic prefix used for all entries listed below in the 'i2c_optoisolated_inputs',
   # 'gpio_inputs' and 'outputs' sections
-  default_topic_prefix: home
+  default_topic_prefix: rpi2home-assistant
 
   # MQTT discovery messages feature
   discovery_messages:
