@@ -9,6 +9,11 @@ In particular this software allows to:
 All these features are implemented in an [Home Assistant](https://www.home-assistant.io/)-friendly fashion.
 For example, this utility requires no configuration on Home Assistant-side thanks to MQTT discovery messages that are automatically published and let Home Assistant automatically discover the devices. In other words you will just need to prepare 1 configuration file (the rpi2home-assistant config file) and that's it.
 
+An example of a panel of sensors/actuators created using rpi2home-assistant in Home Assistant 2024.5 (sensors names have been blurred for privacy reason; sensor/actuators status are shown in Italian language):
+
+![Home Assistant screenshot](/docs/screenshot1.png?raw=true "Home Assistant screenshot")
+
+
 # Prerequisites
 
 This software is meant to run on a Raspberry PI and is explicitly referring to GPIO pins available
