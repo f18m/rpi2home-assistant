@@ -87,7 +87,7 @@ def test_config_file_using_defaults_succeeds(tmpdir):
     assert x.mqtt_broker_password is None
 
     # HOME ASSISTANT section
-    assert x.homeassistant_default_topic_prefix == "home"
+    assert x.homeassistant_default_topic_prefix == "rpi2home-assistant"
     assert x.homeassistant_publish_period_sec == 1
     assert x.homeassistant_discovery_messages_enable == True
     assert x.homeassistant_discovery_topic_prefix == "homeassistant"
@@ -101,7 +101,7 @@ def test_config_file_using_defaults_succeeds(tmpdir):
         "description": "opto_input_1",
         "home_assistant": {"device_class": "tamper", "expire_after": 30, "icon": None, "platform": "binary_sensor"},
         "input_num": 1,
-        "mqtt": {"payload_off": "OFF", "payload_on": "ON", "topic": "home/opto_input_1"},
+        "mqtt": {"payload_off": "OFF", "payload_on": "ON", "topic": "rpi2home-assistant/opto_input_1"},
         "name": "opto_input_1",
     }
 
@@ -119,7 +119,7 @@ def test_config_file_using_defaults_succeeds(tmpdir):
     # GPIO OUTPUTs
     assert len(x.get_all_outputs()) == 1
     assert x.get_output_config_by_mqtt_topic("non-existing") == None
-    assert x.get_output_config_by_mqtt_topic("home/ext_alarm_siren") == {
+    assert x.get_output_config_by_mqtt_topic("rpi2home-assistant/ext_alarm_siren") == {
         "active_low": True,
         "description": "ext_alarm_siren",
         "home_assistant": {"device_class": "switch", "expire_after": 30, "icon": None, "platform": "switch"},
@@ -127,8 +127,8 @@ def test_config_file_using_defaults_succeeds(tmpdir):
         "mqtt": {
             "payload_off": "OFF",
             "payload_on": "ON",
-            "topic": "home/ext_alarm_siren",
-            "state_topic": "home/ext_alarm_siren/state",
+            "topic": "rpi2home-assistant/ext_alarm_siren",
+            "state_topic": "rpi2home-assistant/ext_alarm_siren/state",
         },
         "name": "ext_alarm_siren",
     }

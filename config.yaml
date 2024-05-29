@@ -1,4 +1,4 @@
-# Sample config file for the ha-alarm-raspy2mqtt utility
+# Sample config file for the rpi2home-assistant utility
 # Written by Francesco Montorsi, Feb 2024.
 
 mqtt_broker:
@@ -23,7 +23,7 @@ home_assistant:
 
   # this is the default topic prefix used for all entries listed below in the 'i2c_optoisolated_inputs',
   # 'gpio_inputs' and 'outputs' sections
-  default_topic_prefix: home
+  default_topic_prefix: rpi2home-assistant
 
   # MQTT discovery messages feature
   discovery_messages:
@@ -40,7 +40,7 @@ home_assistant:
     # prefixed to each and every entity exposed into HomeAssistant, so this should be a short string.
     # It defaults to the hostname of the system.
     # See https://www.home-assistant.io/integrations/mqtt/#naming-of-mqtt-entities for more info.
-    node_id: ha-alarm-raspy2mqtt
+    node_id: rpi2home-assistant
 
     # discovery messages don't need to be published that often... but it's good to re-publish them every 
     # now and then in case HomeAssistant is restarted.
@@ -142,7 +142,7 @@ outputs:
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
-      platform: binary_sensor # only 'binary_sensor' and 'button' are supported
+      platform: switch # only 'switch' and 'button' are supported
       device_class: switch # could be 'outlet'
       icon: mdi:alarm-bell
   - name: int_alarm_siren
@@ -155,6 +155,6 @@ outputs:
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
-      platform: binary_sensor # only 'binary_sensor' and 'button' are supported
+      platform: switch # only 'switch' and 'button' are supported
       device_class: switch # could be 'outlet'
       icon: mdi:alarm-bell

@@ -21,7 +21,7 @@ class MqttDefaults:
 
 # HomeAssistant constants/defaults
 class HomeAssistantDefaults:
-    TOPIC_PREFIX = "home"
+    TOPIC_PREFIX = "rpi2home-assistant"
     DISCOVERY_TOPIC_PREFIX = "homeassistant"
     PUBLISH_PERIOD_SEC = 1
     DISCOVERY_PUBLISH_PERIOD_SEC = 100
@@ -79,10 +79,10 @@ class SeqMicroHatConstants:
 
 # Generic app constants/defaults
 class MiscAppDefaults:
-    THIS_APP_NAME = "ha-alarm-raspy2mqtt"
+    THIS_APP_NAME = "rpi2home-assistant"
 
     # File paths constants
-    CONFIG_FILE = "/etc/ha-alarm-raspy2mqtt.yaml"
+    CONFIG_FILE = "/etc/rpi2home-assistant.yaml"
     INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
 
     # Misc constants

@@ -47,7 +47,7 @@ def test_mqtt_reconnection():
                 print(e)
                 assert False
 
-            topics_under_test = ["home/opto_input_1"]
+            topics_under_test = ["rpi2home-assistant/opto_input_1"]
             broker.watch_topics(topics_under_test)
 
             for idx in range(1, 3):
