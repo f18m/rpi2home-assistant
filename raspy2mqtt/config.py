@@ -237,24 +237,24 @@ class AppConfig:
                 idx = int(input_item["input_num"])
                 if idx < 1 or idx > 16:
                     raise ValueError(
-                        f"Invalid input_num {idx}. The legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs."
+                        f"Invalid input_num {idx} for entry [{input_item['name']}]: the legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs."
                     )
                 if idx in self.optoisolated_inputs_map:
                     raise ValueError(
-                        f"Invalid input_num {idx} for entry {input_item['name']}: such index for the Sequent Microsystem HAT input has already been used. Check again the configuration."
+                        f"Invalid input_num {idx} for entry [{input_item['name']}]: such index for the Sequent Microsystem HAT input has already been used. Check again the configuration."
                     )
 
                 # check HomeAssistant section
                 if input_item["home_assistant"]["platform"] != "binary_sensor":
                     raise ValueError(
-                        f"Invalid Home Assistant platform value {input_item['home_assistant']['platform']} for entry {input_item['name']}: only the 'binary_sensor' platform is supported for now."
+                        f"Invalid Home Assistant platform value [{input_item['home_assistant']['platform']}] for entry [{input_item['name']}]: only the 'binary_sensor' platform is supported for now."
                     )
                 if (
                     input_item["home_assistant"]["device_class"]
                     not in HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES["binary_sensor"]
                 ):
                     raise ValueError(
-                        f"Invalid Home Assistant device_class value {input_item['home_assistant']['device_class']} for entry {input_item['name']}: the allowed values are: {HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES['binary_sensor']}."
+                        f"Invalid Home Assistant device_class value [{input_item['home_assistant']['device_class']}] for entry [{input_item['name']}]: the allowed values are: {HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES['binary_sensor']}."
                     )
 
                 # store as valid entry
@@ -293,7 +293,7 @@ class AppConfig:
                 self.check_gpio(idx)
                 if idx in self.gpio_inputs_map:
                     raise ValueError(
-                        f"Invalid gpio index {idx} for entry {input_item['name']}: such GPIO input has already been used. Check again the configuration."
+                        f"Invalid gpio index {idx} for entry [{input_item['name']}]: such GPIO input has already been used. Check again the configuration."
                     )
 
                 # store as valid entry
@@ -328,13 +328,13 @@ class AppConfig:
                 mqtt_topic = output_item["mqtt"]["topic"]
                 if mqtt_topic in self.outputs_map:
                     raise ValueError(
-                        f"Invalid MQTT topic {mqtt_topic} for entry {output_item['name']}: such MQTT topic has already been used. Check again the configuration."
+                        f"Invalid MQTT topic [{mqtt_topic}] for entry [{output_item['name']}]: such MQTT topic has already been used. Check again the configuration."
                     )
 
                 # check HomeAssistant section
                 if output_item["home_assistant"]["platform"] not in ["switch", "button"]:
                     raise ValueError(
-                        f"Invalid Home Assistant platform value {output_item['home_assistant']['platform']} for entry {output_item['name']}: only the 'switch' or 'button' platforms are supported for now."
+                        f"Invalid Home Assistant platform value [{output_item['home_assistant']['platform']}] for entry [{output_item['name']}]: only the 'switch' or 'button' platforms are supported for now."
                     )
 
                 allowed_dev_classes = HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES[
@@ -342,7 +342,7 @@ class AppConfig:
                 ]
                 if output_item["home_assistant"]["device_class"] not in allowed_dev_classes:
                     raise ValueError(
-                        f"Invalid Home Assistant device_class value {output_item['home_assistant']['device_class']} for entry {output_item['name']}: the allowed values are: {allowed_dev_classes}."
+                        f"Invalid Home Assistant device_class value [{output_item['home_assistant']['device_class']}] for entry [{output_item['name']}]: the allowed values are: {allowed_dev_classes}."
                     )
 
                 # store as valid entry

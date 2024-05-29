@@ -273,10 +273,35 @@ outputs: []
 
 
 @pytest.mark.unit
-def test_wrong_config_file_fails(tmpdir):
+def test_wrong_config_file_fails_1(tmpdir):
     # create config file to test:
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
     p.write(INVALID_INPUTNUM_CFG)
+
+    x = AppConfig()
+    assert x.load(str(p)) == False
+
+
+INVALID_HA_PLATFORM_CFG = """
+mqtt_broker:
+  host: something
+i2c_optoisolated_inputs:
+  - name: test
+    input_num: 10
+    active_low: false
+    home_assistant:
+      platform: light    # light is not supported
+      device_class: light
+gpio_inputs: []
+outputs: []
+"""
+
+
+@pytest.mark.unit
+def test_wrong_config_file_fails_2(tmpdir):
+    # create config file to test:
+    p = tmpdir.mkdir("cfg").join("testconfig.yaml")
+    p.write(INVALID_HA_PLATFORM_CFG)
 
     x = AppConfig()
     assert x.load(str(p)) == False
