@@ -249,6 +249,13 @@ class AppConfig:
                     raise ValueError(
                         f"Invalid Home Assistant platform value {input_item['home_assistant']['platform']} for entry {input_item['name']}: only the 'binary_sensor' platform is supported for now."
                     )
+                if (
+                    input_item["home_assistant"]["device_class"]
+                    not in HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES["binary_sensor"]
+                ):
+                    raise ValueError(
+                        f"Invalid Home Assistant device_class value {input_item['home_assistant']['device_class']} for entry {input_item['name']}: the allowed values are: {HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES['binary_sensor']}."
+                    )
 
                 # store as valid entry
                 self.optoisolated_inputs_map[idx] = input_item
@@ -325,12 +332,17 @@ class AppConfig:
                     )
 
                 # check HomeAssistant section
-                if (
-                    output_item["home_assistant"]["platform"] != "switch"
-                    and output_item["home_assistant"]["platform"] != "button"
-                ):
+                if output_item["home_assistant"]["platform"] not in ["switch", "button"]:
                     raise ValueError(
                         f"Invalid Home Assistant platform value {output_item['home_assistant']['platform']} for entry {output_item['name']}: only the 'switch' or 'button' platforms are supported for now."
+                    )
+
+                allowed_dev_classes = HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES[
+                    output_item["home_assistant"]["platform"]
+                ]
+                if output_item["home_assistant"]["device_class"] not in allowed_dev_classes:
+                    raise ValueError(
+                        f"Invalid Home Assistant device_class value {output_item['home_assistant']['device_class']} for entry {output_item['name']}: the allowed values are: {allowed_dev_classes}."
                     )
 
                 # store as valid entry

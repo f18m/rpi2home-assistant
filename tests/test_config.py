@@ -171,7 +171,7 @@ gpio_inputs:
       topic: test_topic_2
       payload: JUST_ONE_PAYLOAD_FOR_GPIO_INPUTS
 outputs:
-  - name: ext_alarm_siren
+  - name: a_button
     description: yet another test
     gpio: 20
     active_low: true
@@ -182,7 +182,7 @@ outputs:
       state_topic: test_state_topic_3
     home_assistant:
       platform: button
-      device_class: switch
+      device_class: restart
       expire_after: 1000
       icon: mdi:alarm-bell
 """
@@ -245,7 +245,7 @@ def test_config_file_fully_specified_succeeds(tmpdir):
         "active_low": True,
         "description": "yet another test",
         "home_assistant": {
-            "device_class": "switch",
+            "device_class": "restart",
             "expire_after": 1000,
             "icon": "mdi:alarm-bell",
             "platform": "button",
@@ -257,7 +257,7 @@ def test_config_file_fully_specified_succeeds(tmpdir):
             "topic": "test_topic_3",
             "state_topic": "test_state_topic_3",
         },
-        "name": "ext_alarm_siren",
+        "name": "a_button",
     }
 
 
