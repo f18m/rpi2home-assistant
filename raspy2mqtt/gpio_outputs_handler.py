@@ -286,8 +286,8 @@ class GpioOutputsHandler:
             f">>   Num states for output channels published on the MQTT broker: {self.stats['num_mqtt_states_published']}"
         )
         print(">>   OUTPUTs DISCOVERY messages:")
-        print(f">>     Num (re)connections to the MQTT broker: {self.stats['num_connections_discovery_publish']}")
         print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")
+        print(f">>     Num (re)connections to the MQTT broker: {self.stats['num_connections_discovery_publish']}")
         print(
             f">>   ERROR: invalid payloads received [subscribe channel]: {self.stats['ERROR_invalid_payload_received']}"
         )
