@@ -1,13 +1,13 @@
 # rpi2home-assistant
 
-Small Python daemon to transform a Raspberry into a bridge from GPIO pins and MQTT, for HomeAssistant usage.
+This project provides a Python daemon to transform a Raspberry into a bridge between GPIO inputs/outputs and HomeAssistant, through MQTT.
 In particular this software allows to:
 * sample a wide range of electrical signals (voltages) from 3V-48V AC or DC, using a dedicated Raspberry HAT, and publish them on MQTT
 * sample 3.3V inputs from Raspberry GPIO pins directly (with no isolation/protection/HAT), and publish them on MQTT
-* listen to MQTT topics and use Raspberry GPIO pins in output mode to activate relays, using a dedicated Raspberry HAT / relay board
+* listen to MQTT topics and use Raspberry GPIO pins in output mode to activate relays, using a dedicated Raspberry HAT / relay board or just use Raspberry GPIO pins in output mode directly to drive low-voltage electrical devices
 
 All these features are implemented in an [Home Assistant](https://www.home-assistant.io/)-friendly fashion.
-For example, this small utility also subscribes to MQTT to apply "switch" configurations to drive loads.
+For example, this utility requires no configuration on Home Assistant-side thanks to MQTT discovery messages that are automatically published and let Home Assistant automatically discover the devices. In other words you will just need to prepare 1 configuration file (the rpi2home-assistant config file) and that's it.
 
 # Prerequisites
 

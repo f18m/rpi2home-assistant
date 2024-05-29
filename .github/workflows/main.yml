@@ -20,7 +20,7 @@ jobs:
       run: |
         python3 -m build
 
-  formatter_and_lint:
+  formatter_and_linter:
     runs-on: ubuntu-latest
 
     steps:

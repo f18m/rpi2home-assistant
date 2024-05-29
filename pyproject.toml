@@ -1,21 +1,6 @@
 # 
-# FIXME: the 'project' metadata section is commented out because PEP621 is still not supported by Poetry as of Apr 2024, see https://github.com/python-poetry/poetry/issues/3332
-# 
-#[project]
-#name = "rpi2home-assistant"
-#version = "1.1.1"
-#authors = [
-#  { name="Francesco Montorsi", email="francesco.montorsi@gmail.com" },
-#]
-#description = "HomeAssistant Alarm bridge for wired sensors/actuators"
-#readme = "README.md"
-# some features like asyncio TaskGroups and Exception groups are available only since Python 3.11:
-#requires-python = ">=3.11"
-#classifiers = [
-#    "Programming Language :: Python :: 3",
-#    "License :: OSI Approved :: MIT License",
-#    "Operating System :: OS Independent",
-#]
+# NOTE: the 'project' metadata section is not present because PEP621 is still not supported
+#       by Poetry as of Apr 2024, see https://github.com/python-poetry/poetry/issues/3332
 
 [project.urls]
 "Homepage" = "https://github.com/f18m/rpi2home-assistant"
@@ -30,7 +15,7 @@ line-length = 120
 [tool.poetry]
 name = "rpi2home-assistant"
 version = "2.1.0"
-description = "HomeAssistant Alarm bridge for wired sensors/actuators"
+description = "Raspberry PI to Home Assistant bridge through MQTT for wired sensors/actuators"
 authors = ["Francesco Montorsi <francesco.montorsi@gmail.com>"]
 readme = "README.md"
 packages = [{include = "raspy2mqtt"}]
