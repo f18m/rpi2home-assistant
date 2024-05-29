@@ -69,6 +69,12 @@ raspbian_show_logs:
 raspbian_update_dependencies:
 	$(BINDEST)/rpi2home-assistant-venv/bin/pip3 install --upgrade .
 
+raspbian_uninstall:
+	@rm -fv $(SYSTEMDUNITDEST)/rpi2home-assistant.service
+	systemctl daemon-reload
+	@echo "Considering deleting also:"
+	@echo " $(CFGDEST)/rpi2home-assistant.yaml/*"
+	@echo " $(BINDEST)/rpi2home-assistant-venv"
 
 #
 # TARGETS FOR DEVELOPMENT

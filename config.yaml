@@ -142,7 +142,7 @@ outputs:
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
-      platform: binary_sensor # only 'binary_sensor' and 'button' are supported
+      platform: switch # only 'switch' and 'button' are supported
       device_class: switch # could be 'outlet'
       icon: mdi:alarm-bell
   - name: int_alarm_siren
@@ -155,6 +155,6 @@ outputs:
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
-      platform: binary_sensor # only 'binary_sensor' and 'button' are supported
+      platform: switch # only 'switch' and 'button' are supported
       device_class: switch # could be 'outlet'
       icon: mdi:alarm-bell
