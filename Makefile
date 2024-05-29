@@ -21,7 +21,8 @@ ifeq ($(SYSTEMDUNITDEST),)
 SYSTEMDUNITDEST=/lib/systemd/system/
 endif
 ifeq ($(CONFIG_FILE_FOR_DOCKER),)
-CONFIG_FILE_FOR_DOCKER=$(shell pwd)/config-docker.yaml
+# NOTE: please override this with a config file containing a valid MQTT broker config
+CONFIG_FILE_FOR_DOCKER=$(shell pwd)/tests/integration-test-config.yaml
 endif
 
 #
@@ -82,7 +83,7 @@ run-docker:
 		exit 3 ; \
 	fi
 	docker run --rm -ti --env DISABLE_HW=1 --network=host \
-		-v $$(pwd)/config-docker.yaml:/etc/ha-alarm-raspy2mqtt.yaml \
+		-v $(CONFIG_FILE_FOR_DOCKER):/etc/ha-alarm-raspy2mqtt.yaml \
 		ha-alarm-raspy2mqtt:latest
 
 run-mosquitto:
