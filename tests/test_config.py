@@ -305,3 +305,29 @@ def test_wrong_config_file_fails_2(tmpdir):
 
     x = AppConfig()
     assert x.load(str(p)) == False
+
+
+
+INVALID_HA_DEVICECLASS_CFG = """
+mqtt_broker:
+  host: something
+i2c_optoisolated_inputs:
+  - name: test
+    input_num: 10
+    active_low: false
+    home_assistant:
+      platform: binary_sensor
+      device_class: a-non-existing-devclass
+gpio_inputs: []
+outputs: []
+"""
+
+
+@pytest.mark.unit
+def test_wrong_config_file_fails_3(tmpdir):
+    # create config file to test:
+    p = tmpdir.mkdir("cfg").join("testconfig.yaml")
+    p.write(INVALID_HA_DEVICECLASS_CFG)
+
+    x = AppConfig()
+    assert x.load(str(p)) == False
