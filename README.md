@@ -11,13 +11,23 @@ For example, this utility requires no configuration on Home Assistant-side thank
 
 # Prerequisites
 
-This software is meant to run on a Raspberry PI that has 2 hardware components installed:
+This software is meant to run on a Raspberry PI and is explicitly referring to GPIO pins available
+on Raspberry PIs.
+In addition to standard GPIOs, rpi2home-assistant optionally provides specific support for the following hat:
+
 * the [Sequent Microsystem 16 opto-insulated inputs HAT](https://sequentmicrosystems.com/collections/all-io-cards/products/16-universal-inputs-card-for-raspberry-pi).
    This software is meant to expose the 16 digital inputs from this HAT
    over MQTT, to ease their integration as (binary) sensors in Home Assistant.
    Note that Sequent Microsystem board is connecting the pin 37 (GPIO 26) of the Raspberry Pi 
    to a pushbutton. This software monitors this pin, and if pressed for more than the
-   desired time, issues the shut-down command.
+   desired time, issues the shut-down command to the Raspberry PI board.
+
+The suggested way to use a RaspberryPI to drive external loads is through the use of relay boards.
+There are a number of alternatives available on the market. The majority of them is really simple and
+ask for the 3.3V or 5V power supply and then connect to the RaspberryPI through GPIO pins either 
+active high or active low.
+A suggested hat exposing relays is:
+
 * a [SeenGreat 2CH output opto-insulated relay HAT](https://seengreat.com/wiki/107/).
    This software is meant to listen on MQTT topics and turn on/off the
    two channels of this HAT.
@@ -27,15 +37,20 @@ Beyond that, this software is meant to be compatible with all 40-pin Raspberry P
 Raspberry Pi 5).
 
 Software prerequisites are:
-* you must have an MQTT broker running somewhere (e.g. a Mosquitto broker)
-* Python >= 3.11; for Raspberry it means you must be using Debian bookworm 12 or Raspbian 12 or higher.
-
+* you must have an MQTT broker running somewhere (e.g. a Mosquitto broker);
+* Python >= 3.11; for Raspberry it means you must be using Debian bookworm 12 or [Raspberry Pi OS](https://www.raspberrypi.com/software/operating-systems/) 12 or higher;
+* there is no particular constraint on the Home Assistant version, even if the project is continuously tested
+  almost only against the latest Home Assistant version available.
 
 # Documentation
 
 ## Build system
 
-This project uses `poetry` as build system (https://python-poetry.org/).
+This project uses `poetry` as build system (https://python-poetry.org/) so the 'build' is as simple as:
+
+```
+python3 -m build
+```
 
 ## Permissions
 
@@ -43,7 +58,8 @@ This python code needs to run as `root` due to ensure access to the Raspberry I2
 
 ## How to install on a Raspberry Pi with Debian Bookworm 12
 
-Note that Raspbian with Python 3.11+ does not allow to install Python software using `pip`.
+Note that [Raspberry Pi OS](https://www.raspberrypi.com/software/operating-systems/) with Python 3.11+ 
+does not allow to install Python software using `pip`.
 Trying to install a Python package that way leads to an error like:
 
 ```
@@ -51,7 +67,7 @@ error: externally-managed-environment [...]
 ```
 
 That means that to install Python software, a virtual environment has to be used.
-This procedure automates the creation of the venv and has been tested on Raspbian 12 (bookworm):
+This procedure automates the creation of the venv and has been tested on Raspberry Pi OS 12 (bookworm):
 
 ```
 sudo su
@@ -67,7 +83,8 @@ make raspbian_start
 ```
 
 Then of course it's important to populate the configuration file, with the specific pinouts for your raspberry HATs
-(see [Preqrequisites](#prerequisites) section). The file is located at `/etc/rpi2home-assistant.yaml`, see [config.yaml](config.yaml) for 
+(see [Preqrequisites](#prerequisites) section). 
+The file is located at `/etc/rpi2home-assistant.yaml`, see [config.yaml](config.yaml) for 
 the documentation of the configuration options, with some basic example.
 
 
@@ -88,7 +105,7 @@ You can launch this software into a docker container by running:
    docker run -d \
       --volume <your config file>:/etc/rpi2home-assistant.yaml \
       --privileged --hostname $(hostname) \
-      ghcr.io/f18m/raspy-sensors2mqtt:<latest version>
+      ghcr.io/f18m/rpi2home-assistant:<latest version>
 ```
 
 
@@ -97,7 +114,8 @@ You can launch this software into a docker container by running:
 To develop changes you can create a branch and push changes there. Then:
 
 ```
-   black .
+   make format
+   make lint
    make docker
    make test
 ```
