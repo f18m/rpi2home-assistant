@@ -35,7 +35,7 @@ def setup(request):
 @pytest.mark.integration
 def test_publish_for_optoisolated_inputs():
 
-    topics_under_test = ["home/opto_input_1", "home/opto_input_2"]
+    topics_under_test = ["rpi2home-assistant/opto_input_1", "rpi2home-assistant/opto_input_2"]
     min_expected_msg = 10
     expected_msg_rate = 2  # in msgs/sec; see the 'publish_period_msec' inside Raspy2MQTTContainer.CONFIG_FILE
 
@@ -114,10 +114,10 @@ def test_publish_for_gpio_inputs():
 def test_publish_subscribe_for_outputs():
 
     test_runs = [
-        {"topic_name": "home/output_1", "payload": "ON", "expected_file_contents": "20: ON"},
-        {"topic_name": "home/output_1", "payload": "OFF", "expected_file_contents": "20: OFF"},
-        {"topic_name": "home/output_2", "payload": "OFF", "expected_file_contents": "21: OFF"},
-        {"topic_name": "home/output_2", "payload": "ON", "expected_file_contents": "21: ON"},
+        {"topic_name": "rpi2home-assistant/output_1", "payload": "ON", "expected_file_contents": "20: ON"},
+        {"topic_name": "rpi2home-assistant/output_1", "payload": "OFF", "expected_file_contents": "20: OFF"},
+        {"topic_name": "rpi2home-assistant/output_2", "payload": "OFF", "expected_file_contents": "21: OFF"},
+        {"topic_name": "rpi2home-assistant/output_2", "payload": "ON", "expected_file_contents": "21: ON"},
     ]
     INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
 
