@@ -307,7 +307,6 @@ def test_wrong_config_file_fails_2(tmpdir):
     assert x.load(str(p)) == False
 
 
-
 INVALID_HA_DEVICECLASS_CFG = """
 mqtt_broker:
   host: something
