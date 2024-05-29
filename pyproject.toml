@@ -14,7 +14,7 @@ line-length = 120
 
 [tool.poetry]
 name = "rpi2home-assistant"
-version = "2.1.0"
+version = "2.1.1"
 description = "Raspberry PI to Home Assistant bridge through MQTT for wired sensors/actuators"
 authors = ["Francesco Montorsi <francesco.montorsi@gmail.com>"]
 readme = "README.md"
