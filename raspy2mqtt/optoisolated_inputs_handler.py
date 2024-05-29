@@ -104,8 +104,8 @@ class OptoIsolatedInputsHandler:
         """
         Publishes over MQTT the status of all opto-isolated inputs.
         This function has a particularity: it's designed to continuously publish over MQTT the status of
-        the input channels. This is a safety feature designed for alarm system: the subscriber can trigger
-        an alarm if the stream of input sensors stops for some reason.
+        the input channels. This is a safety feature designed mostly for alarm systems: thanks to this continuous
+        updates, the subscriber can trigger the burglar alarm if the stream of input sensor updates stops for some reason.
         """
         print(
             f"Connecting to MQTT broker with identifier {OptoIsolatedInputsHandler.client_identifier} to publish OPTOISOLATED INPUT states"

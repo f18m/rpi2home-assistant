@@ -1,5 +1,5 @@
 [Unit]
-Description=HomeAssistant Alarm bridge for wired sensors/actuators
+Description=Raspberry PI to Home Assistant bridge through MQTT for wired sensors/actuators
 After=network-online.target
 Wants=network-online.target
 

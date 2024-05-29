@@ -52,7 +52,7 @@ class AppConfig:
         self.current_hostname = platform.node()
 
         # before launching MQTT connections, define a unique MQTT prefix identifier:
-        self.mqtt_identifier_prefix = "haalarm_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        self.mqtt_identifier_prefix = "rpi2home_assistant_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
         self.mqtt_schema_for_sensor_on_and_off = Schema(
             {
