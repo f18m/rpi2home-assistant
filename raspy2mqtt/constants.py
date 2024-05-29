@@ -27,6 +27,44 @@ class HomeAssistantDefaults:
     DISCOVERY_PUBLISH_PERIOD_SEC = 100
     EXPIRE_AFTER_SEC = 30
     MANUFACTURER = "github.com/f18m"
+    BUTTON_MOMENTARY_PRESS_SEC = 0.5
+    ALLOWED_DEVICE_CLASSES = {
+        # see https://www.home-assistant.io/integrations/binary_sensor/#device-class
+        "binary_sensor": [
+            "battery",
+            "battery_charging",
+            "carbon_monoxide",
+            "cold",
+            "connectivity",
+            "door",
+            "garage_door",
+            "gas",
+            "heat",
+            "light",
+            "lock",
+            "moisture",
+            "motion",
+            "moving",
+            "occupancy",
+            "opening",
+            "plug",
+            "power",
+            "presence",
+            "problem",
+            "running",
+            "safety",
+            "smoke",
+            "sound",
+            "tamper",
+            "update",
+            "vibration",
+            "window",
+        ],
+        # see https://www.home-assistant.io/integrations/switch/#device-class
+        "switch": ["outlet", "switch"],
+        # see https://www.home-assistant.io/integrations/button/#device-class
+        "button": ["identify", "restart", "update"],
+    }
 
 
 # SequentMicrosystem-specific constants

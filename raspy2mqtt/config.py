@@ -75,6 +75,8 @@ class AppConfig:
             {
                 # device_class is required because it's hard to guess...
                 "device_class": str,
+                # the platform defaults to 'binary_sensor' for inputs and to 'switch' for outputs
+                Optional("platform"): str,
                 Optional("expire_after"): int,
                 Optional("icon"): str,
             }
@@ -158,6 +160,7 @@ class AppConfig:
         populate_homeassistant: bool = True,
         has_payload_on_off: bool = True,
         has_state_topic: bool = True,
+        is_output: bool = True,
     ) -> dict:
         if "description" not in entry_dict:
             entry_dict["description"] = entry_dict["name"]
@@ -194,6 +197,8 @@ class AppConfig:
                 print(f"Expire-after for {entry_dict['name']} defaults to [{HomeAssistantDefaults.EXPIRE_AFTER_SEC}]")
             if "icon" not in entry_dict["home_assistant"]:
                 entry_dict["home_assistant"]["icon"] = None
+            if "platform" not in entry_dict["home_assistant"]:
+                entry_dict["home_assistant"]["platform"] = "switch" if is_output else "binary_sensor"
 
         return entry_dict
 
@@ -226,17 +231,33 @@ class AppConfig:
                 self.config["i2c_optoisolated_inputs"] = []
 
             for input_item in self.config["i2c_optoisolated_inputs"]:
+                input_item = self.populate_defaults_in_list_entry(input_item, has_state_topic=False, is_output=False)
+
+                # check GPIO index
                 idx = int(input_item["input_num"])
                 if idx < 1 or idx > 16:
                     raise ValueError(
-                        f"Invalid input_num {idx}. The legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs."
+                        f"Invalid input_num {idx} for entry [{input_item['name']}]: the legal range is [1-16] since the Sequent Microsystem HAT only handles 16 inputs."
                     )
                 if idx in self.optoisolated_inputs_map:
                     raise ValueError(
-                        f"Invalid input_num {idx} for entry {input_item['name']}: such index for the Sequent Microsystem HAT input has already been used. Check again the configuration."
+                        f"Invalid input_num {idx} for entry [{input_item['name']}]: such index for the Sequent Microsystem HAT input has already been used. Check again the configuration."
                     )
 
-                input_item = self.populate_defaults_in_list_entry(input_item, has_state_topic=False)
+                # check HomeAssistant section
+                if input_item["home_assistant"]["platform"] != "binary_sensor":
+                    raise ValueError(
+                        f"Invalid Home Assistant platform value [{input_item['home_assistant']['platform']}] for entry [{input_item['name']}]: only the 'binary_sensor' platform is supported for now."
+                    )
+                if (
+                    input_item["home_assistant"]["device_class"]
+                    not in HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES["binary_sensor"]
+                ):
+                    raise ValueError(
+                        f"Invalid Home Assistant device_class value [{input_item['home_assistant']['device_class']}] for entry [{input_item['name']}]: the allowed values are: {HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES['binary_sensor']}."
+                    )
+
+                # store as valid entry
                 self.optoisolated_inputs_map[idx] = input_item
                 # print(input_item)
             print(f"Loaded {len(self.optoisolated_inputs_map)} opto-isolated input configurations")
@@ -259,16 +280,23 @@ class AppConfig:
                 self.config["gpio_inputs"] = []
 
             for input_item in self.config["gpio_inputs"]:
+                input_item = self.populate_defaults_in_list_entry(
+                    input_item,
+                    populate_homeassistant=False,
+                    has_payload_on_off=False,
+                    has_state_topic=False,
+                    is_output=False,
+                )
+
+                # check GPIO index
                 idx = int(input_item["gpio"])
                 self.check_gpio(idx)
                 if idx in self.gpio_inputs_map:
                     raise ValueError(
-                        f"Invalid gpio index {idx} for entry {input_item['name']}: such GPIO input has already been used. Check again the configuration."
+                        f"Invalid gpio index {idx} for entry [{input_item['name']}]: such GPIO input has already been used. Check again the configuration."
                     )
 
-                input_item = self.populate_defaults_in_list_entry(
-                    input_item, populate_homeassistant=False, has_payload_on_off=False, has_state_topic=False
-                )
+                # store as valid entry
                 self.gpio_inputs_map[idx] = input_item
                 # print(input_item)
             print(f"Loaded {len(self.gpio_inputs_map)} GPIO input configurations")
@@ -291,16 +319,33 @@ class AppConfig:
                 self.config["outputs"] = []
 
             for output_item in self.config["outputs"]:
+                output_item = self.populate_defaults_in_list_entry(output_item)
+
+                # check GPIO index
                 idx = int(output_item["gpio"])
                 self.check_gpio(idx)
-                output_item = self.populate_defaults_in_list_entry(output_item)
 
                 mqtt_topic = output_item["mqtt"]["topic"]
                 if mqtt_topic in self.outputs_map:
                     raise ValueError(
-                        f"Invalid MQTT topic {mqtt_topic} for entry {output_item['name']}: such MQTT topic has already been used. Check again the configuration."
+                        f"Invalid MQTT topic [{mqtt_topic}] for entry [{output_item['name']}]: such MQTT topic has already been used. Check again the configuration."
                     )
 
+                # check HomeAssistant section
+                if output_item["home_assistant"]["platform"] not in ["switch", "button"]:
+                    raise ValueError(
+                        f"Invalid Home Assistant platform value [{output_item['home_assistant']['platform']}] for entry [{output_item['name']}]: only the 'switch' or 'button' platforms are supported for now."
+                    )
+
+                allowed_dev_classes = HomeAssistantDefaults.ALLOWED_DEVICE_CLASSES[
+                    output_item["home_assistant"]["platform"]
+                ]
+                if output_item["home_assistant"]["device_class"] not in allowed_dev_classes:
+                    raise ValueError(
+                        f"Invalid Home Assistant device_class value [{output_item['home_assistant']['device_class']}] for entry [{output_item['name']}]: the allowed values are: {allowed_dev_classes}."
+                    )
+
+                # store as valid entry
                 self.outputs_map[mqtt_topic] = output_item
                 # print(output_item)
             print(f"Loaded {len(self.outputs_map)} digital output configurations")

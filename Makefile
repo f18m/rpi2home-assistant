@@ -20,6 +20,14 @@ endif
 ifeq ($(SYSTEMDUNITDEST),)
 SYSTEMDUNITDEST=/lib/systemd/system/
 endif
+ifeq ($(CONFIG_FILE_FOR_DOCKER),)
+# NOTE: please override this with a config file containing a valid MQTT broker config
+CONFIG_FILE_FOR_DOCKER=$(shell pwd)/tests/integration-test-config.yaml
+endif
+
+#
+# TARGETS FOR DEPLOYING ON RaspBian
+#
 
 raspbian_install:
 	# check OS version
@@ -62,12 +70,20 @@ raspbian_update_dependencies:
 	$(BINDEST)/ha-alarm-raspy2mqtt-venv/bin/pip3 install --upgrade .
 
 
+#
+# TARGETS FOR DEVELOPMENT
+#
+
 docker:
 	docker build -t ha-alarm-raspy2mqtt:latest .
 
 run-docker:
+	@if [ ! -f $(CONFIG_FILE_FOR_DOCKER) ]; then \
+		echo "Could not find the config file $(CONFIG_FILE_FOR_DOCKER) to mount inside the docker... please specify a valid config file with CONFIG_FILE_FOR_DOCKER option." ; \
+		exit 3 ; \
+	fi
 	docker run --rm -ti --env DISABLE_HW=1 --network=host \
-		-v $$(pwd)/mytest.yaml:/etc/ha-alarm-raspy2mqtt.yaml \
+		-v $(CONFIG_FILE_FOR_DOCKER):/etc/ha-alarm-raspy2mqtt.yaml \
 		ha-alarm-raspy2mqtt:latest
 
 run-mosquitto:

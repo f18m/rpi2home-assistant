@@ -5,7 +5,7 @@ import asyncio
 import json
 import sys
 import aiomqtt
-from raspy2mqtt.constants import MqttQOS, MiscAppDefaults
+from raspy2mqtt.constants import MqttQOS, MiscAppDefaults, HomeAssistantDefaults
 from raspy2mqtt.config import AppConfig
 
 #
@@ -126,13 +126,23 @@ class GpioOutputsHandler:
 
                         output_name = output_ch["name"]
                         if mqtt_payload == output_ch["mqtt"]["payload_on"]:
-                            print(
-                                f"Received message for digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
-                            )
-                            self.output_channels[mqtt_topic].on()
+
+                            if output_ch["home_assistant"]["platform"] == "switch":
+                                print(
+                                    f"Received message for SWITCH digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
+                                )
+                                self.output_channels[mqtt_topic].on()
+                            elif output_ch["home_assistant"]["platform"] == "button":
+                                print(
+                                    f"Received message for BUTTON digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state for {HomeAssistantDefaults.BUTTON_MOMENTARY_PRESS_SEC}sec"
+                                )
+                                self.output_channels[mqtt_topic].on()
+                                await asyncio.sleep(HomeAssistantDefaults.BUTTON_MOMENTARY_PRESS_SEC)
+                                self.output_channels[mqtt_topic].off()
+
                         elif mqtt_payload == output_ch["mqtt"]["payload_off"]:
                             print(
-                                f"Received message for digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
+                                f"Received message for SWITCH digital output [{output_name}] from topic [{mqtt_topic}] with payload {mqtt_payload}... changing GPIO output pin state"
                             )
                             self.output_channels[mqtt_topic].off()
                         else:
@@ -185,7 +195,7 @@ class GpioOutputsHandler:
                                 )
 
                                 # publish with RETAIN flag so that Home Assistant will always find an updated status on
-                                # the broker about each switch
+                                # the broker about each switch/button
                                 print(f"Publishing to topic {mqtt_state_topic} the payload {mqtt_payload}")
                                 await client.publish(
                                     mqtt_state_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE, retain=True
@@ -222,7 +232,13 @@ class GpioOutputsHandler:
                     while not GpioOutputsHandler.stop_requested:
                         print("Publishing DISCOVERY messages for GPIO OUTPUTs")
                         for entry in cfg.get_all_outputs():
-                            mqtt_discovery_topic = f"{cfg.homeassistant_discovery_topic_prefix}/switch/{cfg.homeassistant_discovery_topic_node_id}/{entry['name']}/config"
+
+                            mqtt_prefix = cfg.homeassistant_discovery_topic_prefix
+                            mqtt_platform = entry["home_assistant"]["platform"]
+                            mqtt_node_id = cfg.homeassistant_discovery_topic_node_id
+                            mqtt_discovery_topic = (
+                                f"{mqtt_prefix}/{mqtt_platform}/{mqtt_node_id}/{entry['name']}/config"
+                            )
 
                             # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
                             mqtt_payload_dict = {
@@ -230,8 +246,6 @@ class GpioOutputsHandler:
                                 "name": entry["description"],
                                 "command_topic": entry["mqtt"]["topic"],
                                 "state_topic": entry["mqtt"]["state_topic"],
-                                "payload_on": entry["mqtt"]["payload_on"],
-                                "payload_off": entry["mqtt"]["payload_off"],
                                 "device_class": entry["home_assistant"]["device_class"],
                                 # "expire_after": entry['home_assistant']["expire_after"], -- not supported by MQTT switch :(
                                 "device": cfg.get_device_dict(),
@@ -239,6 +253,13 @@ class GpioOutputsHandler:
                             if entry["home_assistant"]["icon"] is not None:
                                 # add icon to the config of the entry:
                                 mqtt_payload_dict["icon"] = entry["home_assistant"]["icon"]
+
+                            if mqtt_platform == "switch":
+                                mqtt_payload_dict["payload_on"] = entry["mqtt"]["payload_on"]
+                                mqtt_payload_dict["payload_off"] = entry["mqtt"]["payload_off"]
+                            elif mqtt_platform == "button":
+                                mqtt_payload_dict["payload_press"] = entry["mqtt"]["payload_on"]
+
                             mqtt_payload = json.dumps(mqtt_payload_dict)
                             await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                             self.stats["num_mqtt_discovery_messages_published"] += 1
@@ -265,8 +286,8 @@ class GpioOutputsHandler:
             f">>   Num states for output channels published on the MQTT broker: {self.stats['num_mqtt_states_published']}"
         )
         print(">>   OUTPUTs DISCOVERY messages:")
-        print(f">>     Num (re)connections to the MQTT broker: {self.stats['num_connections_discovery_publish']}")
         print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")
+        print(f">>     Num (re)connections to the MQTT broker: {self.stats['num_connections_discovery_publish']}")
         print(
             f">>   ERROR: invalid payloads received [subscribe channel]: {self.stats['ERROR_invalid_payload_received']}"
         )

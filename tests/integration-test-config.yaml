@@ -7,8 +7,8 @@ home_assistant:
   # NOTE: the publish-period is checked by integration tests: 500msec -> 2Hz publish frequency
   publish_period_msec: 500
 
-# logging stats every 1sec is nice to debug failed integration tests, since they last very few secs
-log_stats_every: 1
+# disable logging stats during integration tests
+log_stats_every: 0
 
 # --disable-hw is provided when running integration tests, 
 # still we need a few entries for each type of input and output
@@ -19,12 +19,12 @@ i2c_optoisolated_inputs:
     input_num: 1
     active_low: true
     home_assistant:
-      device_class: contact
+      device_class: door
   - name: opto_input_2
     input_num: 2
     active_low: true
     home_assistant:
-      device_class: contact
+      device_class: opening
 
 gpio_inputs:
   - name: gpio_input_1

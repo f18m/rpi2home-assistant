@@ -49,15 +49,22 @@ home_assistant:
     # https://www.home-assistant.io/integrations/mqtt/#use-the-birth-and-will-messages-to-trigger-discovery
     message_period_sec: 100
 
-# stats printed on stdout each N secs:
+# stats printed on stdout each N secs; set N=0 to disable periodic stat printing:
 log_stats_every: 30
 
-# opto-isolated inputs are those sampled by the Sequent Microsystem 16ch-optoinsulated board
-# NOTE1: the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
-# NOTE2: the MQTT topic will be in the form "home/<name>", don't use spaces in the name!
-# NOTE3: to raise security/robustness of the alarm system, on HomeAssistant the "expire_after" property
-#        should be used; the MQTT topics for opto-isolated inputs are continuously updated at a frequency
-#        configured by 'mqtt_broker.publish_period_msec'
+#
+# ** Opto-isolated Inputs Configuration **
+#
+# These inputs are those sampled by the Sequent Microsystem 16ch-optoinsulated board; they are exposed as binary_sensors
+# into Home Assistant.
+# More details:
+# - the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
+# - the MQTT topics published will be in the form "<default_topic_prefix>/<name>", where <default_topic_prefix> is
+#   configured by 'home_assistant.default_topic_prefix'
+# - to improve security/robustness on HomeAssistant the "expire_after" property should be used; the MQTT topics
+#   for opto-isolated inputs are continuously updated at a frequency configured by 'home_assistant.publish_period_msec'
+# - the HomeAssistant platform can only be "binary_sensor" so far and since it's the default value, it can be omitted
+# - Home Assistant MQTT discovery messages are automatically published if 'home_assistant.discovery_messages.enable=true'
 i2c_optoisolated_inputs:
   - name: opto_input_1
     description: Opto-isolated Input for Sensor XYZ
@@ -68,6 +75,7 @@ i2c_optoisolated_inputs:
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
+      platform: binary_sensor
       device_class: motion
       expire_after: 30
       icon: mdi:motion-sensor
@@ -80,15 +88,20 @@ i2c_optoisolated_inputs:
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
+      platform: binary_sensor
       device_class: tamper
       expire_after: 30
       icon: mdi:check-circle
 
-# GPIO inputs are those sampled by Raspberry directly using its own GPIO pins (3.3V compatible)
-# NOTE1: a fundamental difference with 'i2c_optoisolated_inputs' is that the MQTT topics configured
-#        for these GPIO inputs are updated with a message only when the GPIO transition from "inactive -> active"
-#        is detected. If no "inactive -> active" transitions are detected, no MQTT messages are published
-# NOTE2: the MQTT topic will be in the form "<topic>" and will receive the configured "<payload>"
+#
+# ** GPIO Inputs Configuration **
+#
+# These inputs are those sampled by the Raspberry directly using its own GPIO pins (3.3V compatible).
+# A fundamental difference with 'i2c_optoisolated_inputs' is that the MQTT topics configured
+# for these GPIO inputs are updated with a message only when the GPIO transition from "inactive -> active"
+# is detected. If no "inactive -> active" transitions are detected, no MQTT messages are published.
+# Another fundamental difference is that these GPIOs do not create any HomeAssistant entity.
+# The MQTT topic will be in the form "<topic>" and will receive the configured "<payload>".
 gpio_inputs:
   - name: radio_channel_a
     description: Radio Channel A
@@ -98,25 +111,38 @@ gpio_inputs:
       topic: alarmo/command
       payload: ARM_AWAY
     # NO 'home_assistant' dictionary here... reason is that the 'gpio_inputs' do not produce any
-    # HomeAssistant binary_sensor. They just trigger the publish of a particular payload on a particular topic... so far
+    # HomeAssistant entity. They just trigger the publish of a particular payload on a particular topic... 
+    # at least so far
 
-
-# outputs channels are used to drive the SeenGreat 2ch optoinsulated board
-# NOTE1: all outputs are active low in this kind of board (i.e. to trigger the relay the GPIO must be driven low)
-# NOTE2: the MQTT topic subscribed will be in the form "home/<output name>", don't use spaces in the name!
-# NOTE3: the MQTT topic "home/<output name>/state" will be updated after confirming that the output has successfully
-#        changed status
+#
+# ** Output Channels Configuration **
+#
+# These outputs channels are just Raspberry GPIO pins configured as outputs.
+# They are exposed as 'switch' or 'button' into Home Assistant.
+# More details:
+# - the 'active_low=false' property indicates that when the <payload_on> is received over MQTT, then the
+#   GPIO pin should be driven HIGH (3.3V); when the <payload_off> (or nothing) is received over MQTT, then the
+#   GPIO pin should be driven LOW (ground). The 'active_low=true' property inverts the behavior;
+# - the MQTT topic subscribed will be in the form "<default_topic_prefix>/<name>", where <default_topic_prefix> is
+#   configured by 'home_assistant.default_topic_prefix'
+# - the MQTT topic "<default_topic_prefix>/<output name>/state" is automatically updated after confirming that the output 
+#   GPIO pin has successfully changed status
+# - Home Assistant MQTT discovery messages are automatically published if 'home_assistant.discovery_messages.enable=true'
+# - The Home Assistant platform can be either 'switch' (the default) or 'button'; in case 'button' is chosen and
+#   the 'PRESS' notification is received over MQTT, then the GPIO output is turned ON (respecting 'active_low' property)
+#   and 500msec later it is turned OFF (momentary press)
 outputs:
-  - name: ext_alarm_siren
-    description: External Alarm Siren
+  - name: alarm_siren
+    description: Alarm Siren
     gpio: 20
     active_low: true
     mqtt:
-      #command_topic defaults to 'home/<name>'
-      #state_topic defaults to 'home/<name>/state'
+      topic: non-default-mqtt-topic
+      state_topic: non-default-mqtt-topic-state
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
+      platform: binary_sensor # only 'binary_sensor' and 'button' are supported
       device_class: switch # could be 'outlet'
       icon: mdi:alarm-bell
   - name: int_alarm_siren
@@ -124,10 +150,11 @@ outputs:
     gpio: 21
     active_low: true
     mqtt:
-      #command_topic defaults to 'home/<name>'
-      #state_topic defaults to 'home/<name>/state'
+      #topic defaults to '<default_topic_prefix>/<name>'
+      #state_topic defaults to '<default_topic_prefix>/<name>/state'
       payload_on: "ON"
       payload_off: "OFF"
     home_assistant:
+      platform: binary_sensor # only 'binary_sensor' and 'button' are supported
       device_class: switch # could be 'outlet'
       icon: mdi:alarm-bell
