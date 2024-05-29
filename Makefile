@@ -37,17 +37,17 @@ raspbian_install:
 		echo "CHECK IF THIS DISTRIBUTION IS OK... PROCEEDING BUT EXPECT ERRORS" ; \
 		echo ; \
 	else \
-		echo "Your operating system seems to be OK for ha-alarm-raspy2mqtt" ; \
+		echo "Your operating system seems to be OK for rpi2home-assistant" ; \
 	fi
 	# install python venv
-	python3 -m venv $(BINDEST)/ha-alarm-raspy2mqtt-venv
-	$(BINDEST)/ha-alarm-raspy2mqtt-venv/bin/pip3 install .
+	python3 -m venv $(BINDEST)/rpi2home-assistant-venv
+	$(BINDEST)/rpi2home-assistant-venv/bin/pip3 install .
 	# install app config (only if MISSING, don't overwrite customizations)
-	@if [[ -f $(CFGDEST)/ha-alarm-raspy2mqtt.yaml ]]; then \
+	@if [[ -f $(CFGDEST)/rpi2home-assistant.yaml ]]; then \
 		echo "WARNING: a configuration file already exists; copying the updated one with .new suffix" ; \
-		cp -av config.yaml $(CFGDEST)/ha-alarm-raspy2mqtt.yaml.new ; \
+		cp -av config.yaml $(CFGDEST)/rpi2home-assistant.yaml.new ; \
 	else \
-		cp -av config.yaml $(CFGDEST)/ha-alarm-raspy2mqtt.yaml ; \
+		cp -av config.yaml $(CFGDEST)/rpi2home-assistant.yaml ; \
 	fi
 	# install systemd config
 	chmod 644 systemd/*.service
@@ -55,19 +55,19 @@ raspbian_install:
 	systemctl daemon-reload
 
 raspbian_enable_at_boot:
-	systemctl enable ha-alarm-raspy2mqtt.service
+	systemctl enable rpi2home-assistant.service
 	# this is assuming that the Debian package "pigpiod" is already installed:
 	systemctl enable pigpiod.service
 
 raspbian_start:
-	systemctl start ha-alarm-raspy2mqtt.service
+	systemctl start rpi2home-assistant.service
 	systemctl start pigpiod.service
 
 raspbian_show_logs:
-	journalctl -u ha-alarm-raspy2mqtt
+	journalctl -u rpi2home-assistant
 
 raspbian_update_dependencies:
-	$(BINDEST)/ha-alarm-raspy2mqtt-venv/bin/pip3 install --upgrade .
+	$(BINDEST)/rpi2home-assistant-venv/bin/pip3 install --upgrade .
 
 
 #
@@ -75,7 +75,7 @@ raspbian_update_dependencies:
 #
 
 docker:
-	docker build -t ha-alarm-raspy2mqtt:latest .
+	docker build -t rpi2home-assistant:latest .
 
 run-docker:
 	@if [ ! -f $(CONFIG_FILE_FOR_DOCKER) ]; then \
@@ -83,8 +83,8 @@ run-docker:
 		exit 3 ; \
 	fi
 	docker run --rm -ti --env DISABLE_HW=1 --network=host \
-		-v $(CONFIG_FILE_FOR_DOCKER):/etc/ha-alarm-raspy2mqtt.yaml \
-		ha-alarm-raspy2mqtt:latest
+		-v $(CONFIG_FILE_FOR_DOCKER):/etc/rpi2home-assistant.yaml \
+		rpi2home-assistant:latest
 
 run-mosquitto:
 	docker run -d --publish 1883:1883 \

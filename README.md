@@ -1,4 +1,4 @@
-# ha-alarm-raspy2mqtt
+# rpi2home-assistant
 
 Small Python daemon to transform a Raspberry into a bridge from GPIO pins and MQTT, for HomeAssistant usage.
 In particular this software allows to:
@@ -59,15 +59,15 @@ sudo su
 # pigpiod is a package providing the daemon that is required by the pigpio GPIO factory
 apt install git python3-venv python3-dev pigpiod
 cd /root
-git clone https://github.com/f18m/ha-alarm-raspy2mqtt.git
-cd ha-alarm-raspy2mqtt/
+git clone https://github.com/f18m/rpi2home-assistant.git
+cd rpi2home-assistant/
 make raspbian_install
 make raspbian_enable_at_boot
 make raspbian_start
 ```
 
 Then of course it's important to populate the configuration file, with the specific pinouts for your raspberry HATs
-(see [Preqrequisites](#prerequisites) section). The file is located at `/etc/ha-alarm-raspy2mqtt.yaml`, see [config.yaml](config.yaml) for 
+(see [Preqrequisites](#prerequisites) section). The file is located at `/etc/rpi2home-assistant.yaml`, see [config.yaml](config.yaml) for 
 the documentation of the configuration options, with some basic example.
 
 
@@ -76,7 +76,7 @@ the documentation of the configuration options, with some basic example.
 After starting the application you can verify from the logs whether it's running successfully:
 
 ```
-journalctl -u ha-alarm-raspy2mqtt --since="5min ago"
+journalctl -u rpi2home-assistant --since="5min ago"
 ```
 
 ## How to test with Docker
@@ -86,7 +86,7 @@ You can launch this software into a docker container by running:
 
 ```
    docker run -d \
-      --volume <your config file>:/etc/ha-alarm-raspy2mqtt.yaml \
+      --volume <your config file>:/etc/rpi2home-assistant.yaml \
       --privileged --hostname $(hostname) \
       ghcr.io/f18m/raspy-sensors2mqtt:<latest version>
 ```
@@ -107,11 +107,11 @@ To validate locally your changes.
 Finally, once ready, check out your branch on your raspberry and then run:
 
 ```
-	python3 -m venv ~/ha-alarm-raspy2mqtt-venv
-	~/ha-alarm-raspy2mqtt-venv/bin/pip3 install .
-   source ~/ha-alarm-raspy2mqtt-venv/bin/activate
+	python3 -m venv ~/rpi2home-assistant-venv
+	~/rpi2home-assistant-venv/bin/pip3 install .
+   source ~/rpi2home-assistant-venv/bin/activate
    cd <checkout_folder>/raspy2mqtt
-   ./raspy2mqtt -c /etc/ha-alarm-raspy2mqtt.yaml
+   ./raspy2mqtt -c /etc/rpi2home-assistant.yaml
 ```
 
 

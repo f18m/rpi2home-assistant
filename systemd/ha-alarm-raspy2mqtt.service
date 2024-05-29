@@ -10,8 +10,8 @@ StartLimitBurst=5
 Type=simple
 
 # assume that the 'make raspbian_install' command was used and thus that there is a venv
-# containing the ha-alarm-raspy2mqtt software installed in the /root home:
-ExecStart=/root/ha-alarm-raspy2mqtt-venv/bin/raspy2mqtt -c /etc/ha-alarm-raspy2mqtt.yaml
+# containing the rpi2home-assistant software installed in the /root home:
+ExecStart=/root/rpi2home-assistant-venv/bin/raspy2mqtt -c /etc/rpi2home-assistant.yaml
 
 # the following env variable is important; lack of that will result in 
 #  RuntimeError: Failed to add edge detection

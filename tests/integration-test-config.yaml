@@ -1,4 +1,4 @@
-# Config file used by the docker-compose to start the ha-alarm-raspy2mqtt container
+# Config file used by the docker-compose to start the rpi2home-assistant container
 
 mqtt_broker:
   host: overridden_via_env_variable

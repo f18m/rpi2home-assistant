@@ -15,7 +15,7 @@ RUN python3 -m build
 # Stage 2: Create the final image
 FROM python:3.11-slim
 
-LABEL org.opencontainers.image.source=https://github.com/f18m/ha-alarm-raspy2mqtt
+LABEL org.opencontainers.image.source=https://github.com/f18m/rpi2home-assistant
 
 # install the wheel
 WORKDIR /app

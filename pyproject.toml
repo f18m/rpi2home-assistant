@@ -2,7 +2,7 @@
 # FIXME: the 'project' metadata section is commented out because PEP621 is still not supported by Poetry as of Apr 2024, see https://github.com/python-poetry/poetry/issues/3332
 # 
 #[project]
-#name = "ha-alarm-raspy2mqtt"
+#name = "rpi2home-assistant"
 #version = "1.1.1"
 #authors = [
 #  { name="Francesco Montorsi", email="francesco.montorsi@gmail.com" },
@@ -18,8 +18,8 @@
 #]
 
 [project.urls]
-"Homepage" = "https://github.com/f18m/ha-alarm-raspy2mqtt"
-"Bug Tracker" = "https://github.com/f18m/ha-alarm-raspy2mqtt/issues"
+"Homepage" = "https://github.com/f18m/rpi2home-assistant"
+"Bug Tracker" = "https://github.com/f18m/rpi2home-assistant/issues"
 
 [project.scripts]
 raspy2mqtt = "raspy2mqtt:main_loop"
@@ -28,7 +28,7 @@ raspy2mqtt = "raspy2mqtt:main_loop"
 line-length = 120
 
 [tool.poetry]
-name = "ha-alarm-raspy2mqtt"
+name = "rpi2home-assistant"
 version = "2.1.0"
 description = "HomeAssistant Alarm bridge for wired sensors/actuators"
 authors = ["Francesco Montorsi <francesco.montorsi@gmail.com>"]

@@ -79,10 +79,10 @@ class SeqMicroHatConstants:
 
 # Generic app constants/defaults
 class MiscAppDefaults:
-    THIS_APP_NAME = "ha-alarm-raspy2mqtt"
+    THIS_APP_NAME = "rpi2home-assistant"
 
     # File paths constants
-    CONFIG_FILE = "/etc/ha-alarm-raspy2mqtt.yaml"
+    CONFIG_FILE = "/etc/rpi2home-assistant.yaml"
     INTEGRATION_TESTS_OUTPUT_FILE = "/tmp/integration-tests-output"
 
     # Misc constants

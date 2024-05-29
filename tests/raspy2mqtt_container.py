@@ -14,11 +14,11 @@ class Raspy2MQTTContainer(DockerContainer):
     CONFIG_FILE = "integration-test-config.yaml"
 
     def __init__(self, broker: MosquittoContainer) -> None:
-        super().__init__(image="ha-alarm-raspy2mqtt")
+        super().__init__(image="rpi2home-assistant")
 
         TEST_DIR = os.path.dirname(os.path.abspath(__file__))
         cfgfile = os.path.join(TEST_DIR, Raspy2MQTTContainer.CONFIG_FILE)
-        self.with_volume_mapping(cfgfile, "/etc/ha-alarm-raspy2mqtt.yaml", mode="ro")
+        self.with_volume_mapping(cfgfile, "/etc/rpi2home-assistant.yaml", mode="ro")
         self.with_volume_mapping("/tmp", "/tmp", mode="rw")
         self.with_env("DISABLE_HW", "true")
 

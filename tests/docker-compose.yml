@@ -14,12 +14,12 @@ services:
       - ./integration-test-mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
     restart: unless-stopped
 
-  ha-alarm-raspy2mqtt:
+  rpi2home-assistant:
     build: ..
     depends_on:
       - mqtt-broker
     volumes:
-      - ./integration-test-config.yaml:/etc/ha-alarm-raspy2mqtt.yaml:ro
+      - ./integration-test-config.yaml:/etc/rpi2home-assistant.yaml:ro
       - /tmp:/tmp:rw
     environment:
       - DISABLE_HW=true
