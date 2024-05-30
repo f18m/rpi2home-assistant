@@ -97,7 +97,7 @@ the full documentation of the configuration options.
 
 This python code needs to run as `root` due to ensure access to the Raspberry I2C and GPIO peripherals.
 
-## Check Application Outputs
+## Logs
 
 After starting the application you can verify from the logs whether it's running successfully:
 
@@ -105,7 +105,7 @@ After starting the application you can verify from the logs whether it's running
 journalctl -u rpi2home-assistant --since="5min ago"
 ```
 
-## How to test with Docker
+## Deploy/test with Docker
 
 This project also provides a multi-arch docker image to ease testing.
 You can launch this software into a docker container by running:
@@ -137,7 +137,8 @@ To develop changes you can create a branch and push changes there. Then:
 make format
 make lint
 make docker
-make test
+make unit-test
+make integration-test
 ```
 
 To validate locally your changes.
@@ -151,6 +152,16 @@ source ~/rpi2home-assistant-venv/bin/activate
 cd <checkout_folder>/raspy2mqtt
 ./raspy2mqtt -c /etc/rpi2home-assistant.yaml
 ```
+
+Alternatively you can test manually on your local machine by running:
+
+```
+make run-mosquitto
+
+nano myconfig.yaml # stick the Mosquitto port exposed locally inside the config file
+make run-docker CONFIG_FILE_FOR_DOCKER=myconfig.yaml
+```
+
 
 
 # Useful links
