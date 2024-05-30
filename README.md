@@ -124,6 +124,7 @@ so the preferred way to save CPU is to install using a dedicated Python venv (se
 # Development
 
 This section contains information useful in case you want to hack/collaborate on the project.
+Patches/improvements and new features are welcome.
 
 This project uses `poetry` as build system (https://python-poetry.org/) so the 'build' is as simple as:
 
