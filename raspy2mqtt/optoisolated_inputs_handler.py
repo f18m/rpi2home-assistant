@@ -21,6 +21,7 @@ from raspy2mqtt.config import AppConfig
 # OptoIsolatedInputsHandler
 # =======================================================================================================
 
+
 class OptoIsolatedInputsHandler:
     """
     This class handles sampling inputs from the
@@ -174,18 +175,14 @@ class OptoIsolatedInputsHandler:
         self.stats["num_connections_discovery_publish"] += 1
 
         try:
-            async with cfg.create_aiomqtt_client(
-                OptoIsolatedInputsHandler.client_identifier_discovery_pub
-            ) as client:
+            async with cfg.create_aiomqtt_client(OptoIsolatedInputsHandler.client_identifier_discovery_pub) as client:
                 print("Publishing DISCOVERY messages for OPTOISOLATED INPUTs")
                 for entry in cfg.get_all_optoisolated_inputs():
                     mqtt_prefix = cfg.homeassistant_discovery_topic_prefix
                     mqtt_platform = entry["home_assistant"]["platform"]
                     assert mqtt_platform == "binary_sensor"  # the only supported value for now
                     mqtt_node_id = cfg.homeassistant_discovery_topic_node_id
-                    mqtt_discovery_topic = (
-                        f"{mqtt_prefix}/{mqtt_platform}/{mqtt_node_id}/{entry['name']}/config"
-                    )
+                    mqtt_discovery_topic = f"{mqtt_prefix}/{mqtt_platform}/{mqtt_node_id}/{entry['name']}/config"
 
                     # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
                     mqtt_payload_dict = {

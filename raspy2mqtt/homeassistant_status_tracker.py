@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 
-import lib16inpind
-import time
 import asyncio
-import gpiozero
-import json
 import sys
 import aiomqtt
-from raspy2mqtt.constants import MqttQOS, SeqMicroHatConstants
 from raspy2mqtt.config import AppConfig
 
 
@@ -20,6 +15,7 @@ from raspy2mqtt.config import AppConfig
 # =======================================================================================================
 # HomeAssistantStatusTracker
 # =======================================================================================================
+
 
 class HomeAssistantStatusTracker:
     """
@@ -63,20 +59,16 @@ class HomeAssistantStatusTracker:
                     async for message in client.messages:
                         # IMPORTANT: the message.payload and message.topic are not strings and would fail
                         #            a direct comparison to strings... so convert them explicitly to strings first:
-                        mqtt_topic = str(message.topic)
+                        #mqtt_topic = str(message.topic)
                         mqtt_payload = message.payload.decode("UTF-8")
 
                         self.stats["num_mqtt_status_msg_processed"] += 1
                         if mqtt_payload == "online":
-                            print(
-                                f"HomeAssistant status changed to 'online'. Sending MQTT discovery messages."
-                            )
+                            print("HomeAssistant status changed to 'online'. Sending MQTT discovery messages.")
                             # TODO
 
                         elif mqtt_payload == "offline":
-                            print(
-                                f"HomeAssistant status changed to 'offline'."
-                            )
+                            print("HomeAssistant status changed to 'offline'.")
 
             except aiomqtt.MqttError as err:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
@@ -86,9 +78,10 @@ class HomeAssistantStatusTracker:
                 print(f"EXCEPTION: {err}")
                 sys.exit(99)
 
-
     def print_stats(self):
         print(">> HOME ASSISTANT STATUS TRACKER:")
-        print(f">>   Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_subscribe']}")
+        print(
+            f">>   Num (re)connections to the MQTT broker [subscribe channel]: {self.stats['num_connections_subscribe']}"
+        )
         print(f">>   Num MQTT status messages processed: {self.stats['num_mqtt_status_msg_processed']}")
         print(f">>   ERROR: MQTT connections lost: {self.stats['ERROR_num_connections_lost']}")

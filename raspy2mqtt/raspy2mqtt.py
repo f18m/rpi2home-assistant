@@ -184,10 +184,12 @@ async def main_loop():
     button_instances += gpio_inputs_handler.init_hardware(cfg, loop)
     gpio_outputs_handler.init_hardware(cfg)
 
-    homeassistant_status_tracker.set_discovery_publish_coroutines([
-        opto_inputs_handler.homeassistant_discovery_message_publish(cfg),
-        gpio_outputs_handler.homeassistant_discovery_message_publish(cfg)
-    ])
+    homeassistant_status_tracker.set_discovery_publish_coroutines(
+        [
+            opto_inputs_handler.homeassistant_discovery_message_publish(cfg),
+            gpio_outputs_handler.homeassistant_discovery_message_publish(cfg),
+        ]
+    )
 
     # wrap with error-handling code the main loop
     exit_code = 0
