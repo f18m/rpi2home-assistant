@@ -21,6 +21,7 @@ from raspy2mqtt.config import AppConfig
 from raspy2mqtt.optoisolated_inputs_handler import OptoIsolatedInputsHandler
 from raspy2mqtt.gpio_inputs_handler import GpioInputsHandler
 from raspy2mqtt.gpio_outputs_handler import GpioOutputsHandler
+from raspy2mqtt.homeassistant_status_tracker import HomeAssistantStatusTracker
 
 # =======================================================================================================
 # GLOBALs
@@ -175,12 +176,18 @@ async def main_loop():
     opto_inputs_handler = OptoIsolatedInputsHandler()
     gpio_inputs_handler = GpioInputsHandler()
     gpio_outputs_handler = GpioOutputsHandler()
+    homeassistant_status_tracker = HomeAssistantStatusTracker()
     stats_collector = StatsCollector([opto_inputs_handler, gpio_inputs_handler, gpio_outputs_handler])
 
     button_instances = init_hardware(cfg)
     button_instances += opto_inputs_handler.init_hardware(cfg)
     button_instances += gpio_inputs_handler.init_hardware(cfg, loop)
     gpio_outputs_handler.init_hardware(cfg)
+
+    homeassistant_status_tracker.set_discovery_publish_coroutines([
+        opto_inputs_handler.homeassistant_discovery_message_publish(cfg),
+        gpio_outputs_handler.homeassistant_discovery_message_publish(cfg)
+    ])
 
     # wrap with error-handling code the main loop
     exit_code = 0
@@ -216,10 +223,8 @@ async def main_loop():
         ]
 
         if cfg.homeassistant_discovery_messages_enable:
-            tasks += [
-                loop.create_task(opto_inputs_handler.homeassistant_discovery_message_publish(cfg)),
-                loop.create_task(gpio_outputs_handler.homeassistant_discovery_message_publish(cfg)),
-            ]
+            # subscribe to HomeAssistant status notification and eventually trigger MQTT discovery messages
+            loop.create_task(homeassistant_status_tracker.subscribe_status(cfg)),
 
         # this main coroutine will simply wait till a SIGTERM arrives and
         # we get g_stop_requested=True:

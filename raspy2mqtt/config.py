@@ -98,7 +98,6 @@ class AppConfig:
                         Optional("enable"): bool,
                         Optional("topic_prefix"): str,
                         Optional("node_id"): str,
-                        Optional("message_period_sec"): int,
                     },
                 },
                 Optional("log_stats_every"): int,
@@ -410,7 +409,6 @@ class AppConfig:
         print(f"   MQTT publish period: {self.homeassistant_publish_period_sec}s")
         print(f"   Discovery messages: {self.homeassistant_discovery_messages_enable}")
         print(f"   Node ID: {self.homeassistant_discovery_topic_node_id}")
-        print(f"   MQTT discovery message period: {self.homeassistant_discovery_message_period_sec}s")
         print("** I2C isolated inputs:")
         if self.optoisolated_inputs_map is not None:
             for k, v in self.optoisolated_inputs_map.items():
@@ -535,16 +533,6 @@ class AppConfig:
         except KeyError:
             # in this case the key is completely missing or does contain an integer value
             return self.current_hostname  # default value
-
-    @property
-    def homeassistant_discovery_message_period_sec(self) -> float:
-        if self.config is None:
-            return HomeAssistantDefaults.DISCOVERY_PUBLISH_PERIOD_SEC  # default value
-        try:
-            return float(self.config["home_assistant"]["discovery_messages"]["message_period_sec"])
-        except KeyError:
-            # in this case the key is completely missing or does contain an integer value
-            return HomeAssistantDefaults.DISCOVERY_PUBLISH_PERIOD_SEC  # default value
 
     #
     # MISC

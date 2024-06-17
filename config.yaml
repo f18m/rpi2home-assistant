@@ -42,13 +42,6 @@ home_assistant:
     # See https://www.home-assistant.io/integrations/mqtt/#naming-of-mqtt-entities for more info.
     node_id: rpi2home-assistant
 
-    # discovery messages don't need to be published that often... but it's good to re-publish them every 
-    # now and then in case HomeAssistant is restarted.
-    # TODO: an alternative and better approach would be to listen on the HomeAssistant 'status' topic and publish
-    # the discovery messages only when an HomeAssistant restart is detected; see
-    # https://www.home-assistant.io/integrations/mqtt/#use-the-birth-and-will-messages-to-trigger-discovery
-    message_period_sec: 100
-
 # stats printed on stdout each N secs; set N=0 to disable periodic stat printing:
 log_stats_every: 30
 

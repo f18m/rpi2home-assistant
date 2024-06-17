@@ -21,7 +21,6 @@ from raspy2mqtt.config import AppConfig
 # OptoIsolatedInputsHandler
 # =======================================================================================================
 
-
 class OptoIsolatedInputsHandler:
     """
     This class handles sampling inputs from the
@@ -174,49 +173,44 @@ class OptoIsolatedInputsHandler:
         )
         self.stats["num_connections_discovery_publish"] += 1
 
-        while True:
-            try:
-                async with cfg.create_aiomqtt_client(
-                    OptoIsolatedInputsHandler.client_identifier_discovery_pub
-                ) as client:
-                    while not OptoIsolatedInputsHandler.stop_requested:
-                        print("Publishing DISCOVERY messages for OPTOISOLATED INPUTs")
-                        for entry in cfg.get_all_optoisolated_inputs():
+        try:
+            async with cfg.create_aiomqtt_client(
+                OptoIsolatedInputsHandler.client_identifier_discovery_pub
+            ) as client:
+                print("Publishing DISCOVERY messages for OPTOISOLATED INPUTs")
+                for entry in cfg.get_all_optoisolated_inputs():
+                    mqtt_prefix = cfg.homeassistant_discovery_topic_prefix
+                    mqtt_platform = entry["home_assistant"]["platform"]
+                    assert mqtt_platform == "binary_sensor"  # the only supported value for now
+                    mqtt_node_id = cfg.homeassistant_discovery_topic_node_id
+                    mqtt_discovery_topic = (
+                        f"{mqtt_prefix}/{mqtt_platform}/{mqtt_node_id}/{entry['name']}/config"
+                    )
 
-                            mqtt_prefix = cfg.homeassistant_discovery_topic_prefix
-                            mqtt_platform = entry["home_assistant"]["platform"]
-                            assert mqtt_platform == "binary_sensor"  # the only supported value for now
-                            mqtt_node_id = cfg.homeassistant_discovery_topic_node_id
-                            mqtt_discovery_topic = (
-                                f"{mqtt_prefix}/{mqtt_platform}/{mqtt_node_id}/{entry['name']}/config"
-                            )
-
-                            # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
-                            mqtt_payload_dict = {
-                                "unique_id": entry["name"],
-                                "name": entry["description"],
-                                "state_topic": entry["mqtt"]["topic"],
-                                "payload_on": entry["mqtt"]["payload_on"],
-                                "payload_off": entry["mqtt"]["payload_off"],
-                                "device_class": entry["home_assistant"]["device_class"],
-                                "expire_after": entry["home_assistant"]["expire_after"],
-                                "device": cfg.get_device_dict(),
-                            }
-                            if entry["home_assistant"]["icon"] is not None:
-                                # add icon to the config of the entry:
-                                mqtt_payload_dict["icon"] = entry["home_assistant"]["icon"]
-                            mqtt_payload = json.dumps(mqtt_payload_dict)
-                            await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
-                            self.stats["num_mqtt_discovery_messages_published"] += 1
-
-                        await asyncio.sleep(cfg.homeassistant_discovery_message_period_sec)
-            except aiomqtt.MqttError as err:
-                print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
-                self.stats["ERROR_num_connections_lost"] += 1
-                await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
-            except Exception as err:
-                print(f"EXCEPTION: {err}")
-                sys.exit(99)
+                    # NOTE: the HomeAssistant unique_id is what appears in the config file as "name"
+                    mqtt_payload_dict = {
+                        "unique_id": entry["name"],
+                        "name": entry["description"],
+                        "state_topic": entry["mqtt"]["topic"],
+                        "payload_on": entry["mqtt"]["payload_on"],
+                        "payload_off": entry["mqtt"]["payload_off"],
+                        "device_class": entry["home_assistant"]["device_class"],
+                        "expire_after": entry["home_assistant"]["expire_after"],
+                        "device": cfg.get_device_dict(),
+                    }
+                    if entry["home_assistant"]["icon"] is not None:
+                        # add icon to the config of the entry:
+                        mqtt_payload_dict["icon"] = entry["home_assistant"]["icon"]
+                    mqtt_payload = json.dumps(mqtt_payload_dict)
+                    await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
+                    self.stats["num_mqtt_discovery_messages_published"] += 1
+        except aiomqtt.MqttError as err:
+            print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
+            self.stats["ERROR_num_connections_lost"] += 1
+            await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
+        except Exception as err:
+            print(f"EXCEPTION: {err}")
+            sys.exit(99)
 
     def print_stats(self):
         print(">> OPTO-ISOLATED INPUTS:")
