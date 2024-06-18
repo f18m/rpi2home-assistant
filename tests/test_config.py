@@ -92,7 +92,6 @@ def test_config_file_using_defaults_succeeds(tmpdir):
     assert x.homeassistant_discovery_messages_enable == True
     assert x.homeassistant_discovery_topic_prefix == "homeassistant"
     assert x.homeassistant_discovery_topic_node_id == platform.node()
-    assert x.homeassistant_discovery_message_period_sec == 100
 
     # OPTO-ISOLATED INPUTS
     # check that all attributes have been populated with the defaults:
@@ -147,7 +146,6 @@ home_assistant:
     enable: false
     topic_prefix: anotherprefix
     node_id: some_unique_device_id
-    message_period_sec: 1000
 i2c_optoisolated_inputs:
   - name: opto_input_1
     description: just a test
@@ -209,7 +207,6 @@ def test_config_file_fully_specified_succeeds(tmpdir):
     assert x.homeassistant_discovery_messages_enable == False
     assert x.homeassistant_discovery_topic_prefix == "anotherprefix"
     assert x.homeassistant_discovery_topic_node_id == "some_unique_device_id"
-    assert x.homeassistant_discovery_message_period_sec == 1000
 
     # OPTO-ISOLATED INPUTS
     # check that all attributes have been populated with the defaults:

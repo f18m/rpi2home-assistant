@@ -2,8 +2,6 @@ import pytest
 import time
 import signal
 
-# from testcontainers.core.utils import raise_for_deprecated_parameter
-
 from tests.mosquitto_container import MosquittoContainer
 from tests.raspy2mqtt_container import Raspy2MQTTContainer
 
@@ -69,6 +67,7 @@ def test_publish_for_optoisolated_inputs():
             assert almost_equal(msg_rate, expected_msg_rate)
 
         broker.unwatch_all()
+        print("Integration test passed!")
 
 
 @pytest.mark.integration
@@ -108,6 +107,7 @@ def test_publish_for_gpio_inputs():
             assert last_payload == t["expected_payload"]
 
         broker.unwatch_all()
+        print("Integration test passed!")
 
 
 @pytest.mark.integration
@@ -160,3 +160,6 @@ def test_publish_subscribe_for_outputs():
             broker.unwatch_all()
 
             i += 1
+
+        broker.unwatch_all()
+        print("Integration test passed!")

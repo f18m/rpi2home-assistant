@@ -103,7 +103,11 @@ unit-test:
 	pytest -vvv --log-level=INFO -m unit
 
 integration-test:
+ifeq ($(REGEX),)
 	pytest -vvvv --log-level=INFO -s -m integration
+else
+	pytest -vvvv --log-level=INFO -s -m integration -k $(REGEX)
+endif
 
 format:
 	black .
