@@ -638,5 +638,5 @@ class AppConfig:
             # b) node_id is configurable via config file
             "name": self.homeassistant_discovery_topic_node_id,
             "sw_version": self.app_version,
-            "identifiers": [MiscAppDefaults.THIS_APP_NAME + self.current_hostname],
+            "identifiers": [f"{MiscAppDefaults.THIS_APP_NAME}-{self.homeassistant_discovery_topic_node_id}"],
         }

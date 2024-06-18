@@ -1,4 +1,6 @@
-# Config file used by the docker-compose to start the rpi2home-assistant container
+# Config file used by both:
+#  * the docker-compose to start the rpi2home-assistant container
+#  * the pytest test-containers to run integration tests in CI/CD
 
 mqtt_broker:
   host: overridden_via_env_variable
@@ -6,6 +8,10 @@ mqtt_broker:
 home_assistant:
   # NOTE: the publish-period is checked by integration tests: 500msec -> 2Hz publish frequency
   publish_period_msec: 500
+  discovery_messages:
+    # the default node_id is the hostname which changes for each container instance, so to ease integration
+    # tests we use instead a fixed node_id
+    node_id: integration-test-instance
 
 # disable logging stats during integration tests
 log_stats_every: 0

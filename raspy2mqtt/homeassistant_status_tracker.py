@@ -66,9 +66,12 @@ class HomeAssistantStatusTracker:
                         if mqtt_payload == "online":
                             print("HomeAssistant status changed to 'online'. Sending MQTT discovery messages.")
                             # TODO
+                            for coro in self.coroutines_list:
+                                print(f"Launching coroutine {coro}...")
+                                await coro(cfg)
 
                         elif mqtt_payload == "offline":
-                            print("HomeAssistant status changed to 'offline'.")
+                            print("!!! HomeAssistant status changed to 'offline' !!!")
 
             except aiomqtt.MqttError as err:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")

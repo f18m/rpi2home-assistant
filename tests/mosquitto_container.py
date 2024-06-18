@@ -40,7 +40,7 @@ class MosquittoContainer(DockerContainer):
         self.password = password
 
         # setup container:
-        self.with_exposed_ports(self.port)
+        self.with_bind_ports(self.port, self.port)
         if configfile is None:
             # default config ifle
             TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -128,17 +128,17 @@ class MosquittoContainer(DockerContainer):
             # for simplicity: assume strings are used in integration tests and are UTF8-encoded:
             self.last_payload = msg.payload.decode("UTF-8")
 
-        def get_count(self):
+        def get_message_count(self) -> int:
             return self.count
 
-        def get_last_payload(self):
+        def get_last_payload(self) -> str:
             return self.last_payload
 
-        def get_rate(self):
+        def get_rate(self) -> float:
             duration = time.time() - self.timestamp_start_watch
             if duration > 0:
-                return self.count / duration
-            return 0
+                return float(self.count) / float(duration)
+            return 0.0
 
     def on_message(client: mqtt_client.Client, mosquitto_container: "MosquittoContainer", msg: mqtt_client.MQTTMessage):
         # very verbose but useful for debug:
@@ -202,14 +202,14 @@ class MosquittoContainer(DockerContainer):
     def get_messages_received_in_watched_topic(self, topic: str) -> int:
         if topic not in self.watched_topics:
             raise RuntimeError(f"Topic {topic} is not watched! Fix the test")
-        return self.watched_topics[topic].get_count()
+        return self.watched_topics[topic].get_message_count()
 
-    def get_last_payload_received_in_watched_topic(self, topic: str) -> int:
+    def get_last_payload_received_in_watched_topic(self, topic: str) -> str:
         if topic not in self.watched_topics:
             raise RuntimeError(f"Topic {topic} is not watched! Fix the test")
         return self.watched_topics[topic].get_last_payload()
 
-    def get_message_rate_in_watched_topic(self, topic: str) -> int:
+    def get_message_rate_in_watched_topic(self, topic: str) -> float:
         if topic not in self.watched_topics:
             raise RuntimeError(f"Topic {topic} is not watched! Fix the test")
         return self.watched_topics[topic].get_rate()

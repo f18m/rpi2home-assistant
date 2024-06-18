@@ -186,8 +186,8 @@ async def main_loop():
 
     homeassistant_status_tracker.set_discovery_publish_coroutines(
         [
-            opto_inputs_handler.homeassistant_discovery_message_publish(cfg),
-            gpio_outputs_handler.homeassistant_discovery_message_publish(cfg),
+            opto_inputs_handler.homeassistant_discovery_message_publish,
+            gpio_outputs_handler.homeassistant_discovery_message_publish,
         ]
     )
 
