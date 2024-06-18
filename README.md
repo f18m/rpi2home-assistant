@@ -178,6 +178,5 @@ Very similar project, more flexible and much bigger, targeting specific sensor b
 
 # TODO
 
-- Improve HomeAssistant DISCOVERY by publishing them only after HomeAssistant restarts
 - Eventually get rid of GPIOZERO + PIGPIOD which consume CPU and also force use of e.g. the queue.Queue due to
   the multithreading issues; replace these 2 parts with direct Raspberry PI GPIO access?
