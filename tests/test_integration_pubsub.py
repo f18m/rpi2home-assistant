@@ -69,6 +69,7 @@ def test_publish_for_optoisolated_inputs():
         broker.unwatch_all()
         print("Integration test passed!")
 
+
 @pytest.mark.integration
 def test_publish_for_gpio_inputs():
 
@@ -107,6 +108,7 @@ def test_publish_for_gpio_inputs():
 
         broker.unwatch_all()
         print("Integration test passed!")
+
 
 @pytest.mark.integration
 def test_publish_subscribe_for_outputs():
@@ -158,6 +160,6 @@ def test_publish_subscribe_for_outputs():
             broker.unwatch_all()
 
             i += 1
-        
+
         broker.unwatch_all()
         print("Integration test passed!")
