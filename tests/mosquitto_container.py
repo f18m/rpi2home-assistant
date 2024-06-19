@@ -30,6 +30,13 @@ class MosquittoContainerEnhanced(MosquittoContainer):
 
         # dictionary of watched topics and their message counts:
         self.watched_topics = {}
+    
+    def start(self) -> Self:
+        # do container start
+        super().start()
+        # now add callback
+        self.get_client().on_message = MosquittoContainerEnhanced.on_message
+        return self
 
     def stop(self, force=True, delete_volume=True) -> None:
         self.watched_topics = {}  # clean all watched topics as well
