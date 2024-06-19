@@ -12,11 +12,11 @@ from typing import Optional
 
 # MosquittoContainerEnhanced
 
+
 class MosquittoContainerEnhanced(MosquittoContainer):
     """
     Specialization of MosquittoContainer adding the ability to watch topics
     """
-
 
     def __init__(
         self,
@@ -30,7 +30,7 @@ class MosquittoContainerEnhanced(MosquittoContainer):
 
         # dictionary of watched topics and their message counts:
         self.watched_topics = {}
-    
+
     def start(self) -> Self:
         # do container start
         super().start()
@@ -65,7 +65,9 @@ class MosquittoContainerEnhanced(MosquittoContainer):
                 return float(self.count) / float(duration)
             return 0.0
 
-    def on_message(client: mqtt_client.Client, mosquitto_container: "MosquittoContainerEnhanced", msg: mqtt_client.MQTTMessage):
+    def on_message(
+        client: mqtt_client.Client, mosquitto_container: "MosquittoContainerEnhanced", msg: mqtt_client.MQTTMessage
+    ):
         # very verbose but useful for debug:
         # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
         if msg.topic == "$SYS/broker/messages/received":
