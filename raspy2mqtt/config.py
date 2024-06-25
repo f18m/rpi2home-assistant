@@ -82,6 +82,12 @@ class AppConfig:
             }
         )
 
+        self.filter_schema = Schema(
+            {
+                Optional("minimal_duration_sec"): int,
+            }
+        )
+
         self.config_file_schema = Schema(
             {
                 "mqtt_broker": {
@@ -109,6 +115,7 @@ class AppConfig:
                         "active_low": bool,
                         Optional("mqtt"): self.mqtt_schema_for_sensor_on_and_off,
                         "home_assistant": self.home_assistant_schema,
+                        Optional("filter"): self.filter_schema,
                     }
                 ],
                 Optional("gpio_inputs"): [
@@ -160,6 +167,7 @@ class AppConfig:
         has_payload_on_off: bool = True,
         has_state_topic: bool = True,
         is_output: bool = True,
+        populate_filter: bool = True,
     ) -> dict:
         if "description" not in entry_dict:
             entry_dict["description"] = entry_dict["name"]
@@ -198,6 +206,11 @@ class AppConfig:
                 entry_dict["home_assistant"]["icon"] = None
             if "platform" not in entry_dict["home_assistant"]:
                 entry_dict["home_assistant"]["platform"] = "switch" if is_output else "binary_sensor"
+
+        if populate_filter and not is_output:
+            # filtering the output does not make sense, so the filter parameter is allowed only for inputs
+            if "filter" not in entry_dict:
+                entry_dict["filter"] = {}
 
         return entry_dict
 

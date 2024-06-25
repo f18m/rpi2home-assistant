@@ -7,8 +7,10 @@ import gpiozero
 import json
 import sys
 import aiomqtt
+import threading
 from raspy2mqtt.constants import MqttQOS, SeqMicroHatConstants
 from raspy2mqtt.config import AppConfig
+from collections import deque
 
 
 #
@@ -16,6 +18,44 @@ from raspy2mqtt.config import AppConfig
 # Created: May 2024
 # License: Apache license
 #
+
+
+
+# =======================================================================================================
+# CircularBuffer
+# =======================================================================================================
+
+class CircularBuffer:
+    def __init__(self, size):
+        self.size = size
+        self.buffer = [(None, None)] * size  # buffer is empty at the start
+        self.index = 0 # next writable location in the buffer
+        self.is_full = False
+
+    def add_sample(self, timestamp, value):
+        self.buffer[self.index] = (timestamp, value)
+        self.index = (self.index + 1) % self.size  # increment circular buffer index
+
+        if self.index == 0:
+            self.is_full = True  # Se l'indice ritorna a 0, il buffer è pieno
+
+    def get_samples(self):
+        if not self.is_full:
+            return self.buffer[:self.index]  # Restituisce solo gli elementi validi
+        return self.buffer[self.index:] + self.buffer[:self.index]  # Restituisce gli elementi in ordine circolare
+
+    def get_last_sample(self):
+        if not self.is_full and self.index == 0:
+            return None  # Nessun elemento nel buffer
+        last_index = (self.index - 1) % self.size
+        return self.buffer[last_index]
+
+    def clear(self):
+        self.buffer = [(None, None)] * self.size
+        self.index = 0
+        self.is_full = False
+
+
 
 # =======================================================================================================
 # OptoIsolatedInputsHandler
@@ -37,9 +77,15 @@ class OptoIsolatedInputsHandler:
     client_identifier = "_optoisolated_publisher"
     client_identifier_discovery_pub = "_optoisolated_discovery_publisher"
 
+    buffer_num_samples = 64
+
     def __init__(self):
         # last reading of the 16 digital opto-isolated inputs
-        self.optoisolated_inputs_sampled_values = 0
+        self.optoisolated_inputs_sampled_values = []
+        for i in range(SeqMicroHatConstants.MAX_CHANNELS):
+            self.optoisolated_inputs_sampled_values.append(CircularBuffer(OptoIsolatedInputsHandler.buffer_num_samples))
+
+        self.lock = threading.Lock()
 
         self.stats = {
             "num_readings": 0,
@@ -85,11 +131,16 @@ class OptoIsolatedInputsHandler:
         """
 
         # NOTE0: since this routine is invoked by the gpiozero library, it runs on a secondary OS thread
-        #        so _in theory_ we should be using a mutex when writing to the global 'optoisolated_inputs_sampled_values'
-        #        variable. In practice since it's a simple integer variable, I don't think the mutex is needed.
+        #        so we must use a mutex when writing to the 'optoisolated_inputs_sampled_values' array
         # NOTE1: this is a blocking call that will block until the 16 inputs are sampled
         # NOTE2: this might raise a TimeoutError exception in case the I2C bus transaction fails
-        self.optoisolated_inputs_sampled_values = lib16inpind.readAll(SeqMicroHatConstants.STACK_LEVEL)
+        packed_sample = lib16inpind.readAll(SeqMicroHatConstants.STACK_LEVEL)
+        timestamp = int(time.time())
+
+        with self.lock:
+            for i in range(SeqMicroHatConstants.MAX_CHANNELS):
+                self.optoisolated_inputs_sampled_values[i].add_sample(timestamp, bool(packed_sample & (1 << i)))
+
         self.stats["num_readings"] += 1
 
         # FIXME: right now, it's hard to force-wake the coroutine
@@ -123,7 +174,8 @@ class OptoIsolatedInputsHandler:
                             #            integer, whenever it is necessary to update it
 
                             # Extract the bit at position i-th using bitwise AND operation
-                            bit_value = bool(self.optoisolated_inputs_sampled_values & (1 << i))
+                            with self.lock:
+                                bit_value = self.optoisolated_inputs_sampled_values[i].get_last_sample()[1]
 
                             # convert from zero-based index 'i' to 1-based index, as used in the config file
                             input_cfg = cfg.get_optoisolated_input_config(1 + i)
