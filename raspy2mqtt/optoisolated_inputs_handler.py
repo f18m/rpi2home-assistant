@@ -10,8 +10,6 @@ import aiomqtt
 import threading
 from raspy2mqtt.constants import MqttQOS, SeqMicroHatConstants
 from raspy2mqtt.config import AppConfig
-from collections import deque
-
 
 #
 # Author: fmontorsi
@@ -20,16 +18,16 @@ from collections import deque
 #
 
 
-
 # =======================================================================================================
 # CircularBuffer
 # =======================================================================================================
+
 
 class CircularBuffer:
     def __init__(self, size):
         self.size = size
         self.buffer = [(None, None)] * size  # buffer is empty at the start
-        self.index = 0 # next writable location in the buffer
+        self.index = 0  # next writable location in the buffer
         self.is_full = False
 
     def add_sample(self, timestamp, value):
@@ -41,8 +39,8 @@ class CircularBuffer:
 
     def get_samples(self):
         if not self.is_full:
-            return self.buffer[:self.index]  # Restituisce solo gli elementi validi
-        return self.buffer[self.index:] + self.buffer[:self.index]  # Restituisce gli elementi in ordine circolare
+            return self.buffer[: self.index]  # Restituisce solo gli elementi validi
+        return self.buffer[self.index :] + self.buffer[: self.index]  # Restituisce gli elementi in ordine circolare
 
     def get_last_sample(self):
         if not self.is_full and self.index == 0:
@@ -54,7 +52,6 @@ class CircularBuffer:
         self.buffer = [(None, None)] * self.size
         self.index = 0
         self.is_full = False
-
 
 
 # =======================================================================================================

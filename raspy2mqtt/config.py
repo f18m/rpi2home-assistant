@@ -243,7 +243,9 @@ class AppConfig:
                 self.config["i2c_optoisolated_inputs"] = []
 
             for input_item in self.config["i2c_optoisolated_inputs"]:
-                input_item = self.populate_defaults_in_list_entry(input_item, has_state_topic=False, is_output=False)
+                input_item = self.populate_defaults_in_list_entry(
+                    input_item, has_state_topic=False, is_output=False, populate_filter=True
+                )
 
                 # check GPIO index
                 idx = int(input_item["input_num"])
@@ -298,6 +300,7 @@ class AppConfig:
                     has_payload_on_off=False,
                     has_state_topic=False,
                     is_output=False,
+                    populate_filter=False,  # GPIO inputs do not support filtering at this time
                 )
 
                 # check GPIO index
@@ -331,7 +334,12 @@ class AppConfig:
                 self.config["outputs"] = []
 
             for output_item in self.config["outputs"]:
-                output_item = self.populate_defaults_in_list_entry(output_item)
+
+                output_item = self.populate_defaults_in_list_entry(
+                    output_item,
+                    is_output=True,
+                    populate_filter=False,  # filtering does not make sense for outputs
+                )
 
                 # check GPIO index
                 idx = int(output_item["gpio"])
