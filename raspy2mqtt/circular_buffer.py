@@ -97,16 +97,16 @@ class CircularBuffer:
             sample_age_sec = last_ts - s[0]
             if sample_age_sec >= min_stability_sec:
                 # debug only:
-                #print(
+                # print(
                 #    f"sample_offset_in_the_past={sample_offset_in_the_past} -> sample_age_sec={sample_age_sec} -> STABLE for threshold {min_stability_sec}"
-                #)
+                # )
                 # found a stable sample!
                 return s
 
             # debug only:
-            #print(
+            # print(
             #    f"sample_offset_in_the_past={sample_offset_in_the_past} -> sample_age_sec={sample_age_sec} -> UNSTABLE for threshold {min_stability_sec}"
-            #)
+            # )
 
             # keep going backward
             sample_offset_in_the_past += 1
