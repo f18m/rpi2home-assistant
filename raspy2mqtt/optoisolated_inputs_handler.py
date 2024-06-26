@@ -54,6 +54,7 @@ class OptoIsolatedInputsHandler:
             "num_mqtt_messages": 0,
             "num_connections_discovery_publish": 0,
             "num_mqtt_discovery_messages_published": 0,
+            "ERROR_no_stable_samples": 0,
             "ERROR_num_connections_lost": 0,
         }
 
@@ -147,13 +148,22 @@ class OptoIsolatedInputsHandler:
                                 filter_min_duration = input_cfg["filter"]["stability_threshold_sec"]
                                 if filter_min_duration == 0:
                                     # filtering disabled -- just pick the most updated sample and use it
-                                    bit_value = self.optoisolated_inputs_sampled_values[i].get_last_sample()[1]
+                                    sample = self.optoisolated_inputs_sampled_values[i].get_last_sample()
+                                    assert (
+                                        sample is not None
+                                    )  # this should be impossible as buffer is always initialized with 1 sample at least
                                 else:
                                     # filtering enabled -- choose sensor status:
-                                    bit_value = self.optoisolated_inputs_sampled_values[i].get_stable_sample(
+                                    sample = self.optoisolated_inputs_sampled_values[i].get_stable_sample(
                                         timestamp_now, filter_min_duration
-                                    )[1]
+                                    )
+                                    if sample is None:
+                                        # failed to find a 'stable' sample -- assume the input is malfunctioning
+                                        self.stats["ERROR_no_stable_samples"] += 1
+                                        sample = (0, False)
 
+                            # sample is a tuple (TIMESTAMP;VALUE), extract just the value:
+                            bit_value = sample[1]
                             if input_cfg["active_low"]:
                                 logical_value = not bit_value
                                 # input_type = "active low"
