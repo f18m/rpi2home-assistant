@@ -100,9 +100,9 @@ def test_circbuf_get_past_sample():
     #   circular_buffer.index = next writable entry = 1
     #
     # note that the first sample (1,False) has been "forgot" -- too old compared to the buffer memory of 3 transitions
-    assert circular_buffer.get_past_sample(1) == (0, (50, True))
-    assert circular_buffer.get_past_sample(2) == (2, (30, False))
-    assert circular_buffer.get_past_sample(3) == (1, (20, True))
+    assert circular_buffer.get_past_sample(1) == (50, True)
+    assert circular_buffer.get_past_sample(2) == (30, False)
+    assert circular_buffer.get_past_sample(3) == (20, True)
     assert circular_buffer.get_past_sample(4) == None
 
 
@@ -150,6 +150,7 @@ def test_circbuf_get_stable_sample2():
     assert circular_buffer.get_stable_sample(now_ts, min_stability_sec=2) == (56, True)
     # if we ask at +1sec since last sample, a sample stable for at least 5sec, we'll get back to the very first sample...
     assert circular_buffer.get_stable_sample(now_ts, min_stability_sec=5) == (1, False)
+
 
 @pytest.mark.unit
 def test_circbuf_clear():

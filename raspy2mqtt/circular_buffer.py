@@ -64,11 +64,7 @@ class CircularBuffer:
         return self.buffer[idx_mod:] + self.buffer[:idx_mod]  # linearize the circular buffer
 
     def get_last_sample(self) -> tuple:
-        r = self.get_past_sample(1)  # look 1 sample in the past, which means the last pushed sample
-        if r is None:
-            return None
-        # r[0] contains the index inside this buffer, which the caller typically don't care about
-        return r[1]
+        return self.get_past_sample(1)  # look 1 sample in the past, which means the last pushed sample
 
     def get_past_sample(self, sample_offset_in_the_past: int) -> tuple:
         if self.index == 0:
@@ -83,7 +79,7 @@ class CircularBuffer:
             # the caller is trying to explore too much in the past -- beyond the buffer memory
             return None
         last_index = (self.index - sample_offset_in_the_past) % self.size
-        return (last_index, self.buffer[last_index])
+        return self.buffer[last_index]
 
     def get_stable_sample(self, now_ts: int, min_stability_sec: float) -> tuple:
         if self.index == 0:
@@ -95,26 +91,27 @@ class CircularBuffer:
         last_ts = now_ts
         sample_offset_in_the_past = 1
         while sample_offset_in_the_past <= self.size:
-            r = self.get_past_sample(sample_offset_in_the_past)
-            assert r is not None
-
-            idx = r[0]  # index
-            s = r[1]  # sample tuple (TIMESTAMP;VALUE)
+            s = self.get_past_sample(sample_offset_in_the_past)
+            assert s is not None
 
             sample_age_sec = last_ts - s[0]
             if sample_age_sec >= min_stability_sec:
-                print(f"sample_offset_in_the_past={sample_offset_in_the_past} -> sample_age_sec={sample_age_sec} -> STABLE for threshold {min_stability_sec}")
+                print(
+                    f"sample_offset_in_the_past={sample_offset_in_the_past} -> sample_age_sec={sample_age_sec} -> STABLE for threshold {min_stability_sec}"
+                )
                 return s
-            
-            print(f"sample_offset_in_the_past={sample_offset_in_the_past} -> sample_age_sec={sample_age_sec} -> UNSTABLE for threshold {min_stability_sec}")
+
+            print(
+                f"sample_offset_in_the_past={sample_offset_in_the_past} -> sample_age_sec={sample_age_sec} -> UNSTABLE for threshold {min_stability_sec}"
+            )
 
             # keep going backward
             sample_offset_in_the_past += 1
             last_ts = s[0]
-        
+
         # the whole buffer has been inspected but all value transitions were shorter than 'min_stability_sec'
         return None
-    
+
     def clear(self) -> None:
         self.buffer = [(None, None)] * self.size
         self.index = 0
