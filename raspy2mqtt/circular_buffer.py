@@ -92,7 +92,9 @@ class CircularBuffer:
         sample_offset_in_the_past = 1
         while sample_offset_in_the_past <= self.size:
             s = self.get_past_sample(sample_offset_in_the_past)
-            assert s is not None
+            if s is None:
+                # trying to dig too much into the past... perhaps the circular buffer is not completely full yet...
+                return None
 
             sample_age_sec = last_ts - s[0]
             if sample_age_sec >= min_stability_sec:
