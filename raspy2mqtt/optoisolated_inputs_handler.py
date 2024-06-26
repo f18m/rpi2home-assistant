@@ -24,34 +24,32 @@ from raspy2mqtt.config import AppConfig
 
 
 class CircularBuffer:
-    def __init__(self, size):
+    def __init__(self, size: int):
         self.size = size
         self.buffer = [(None, None)] * size  # buffer is empty at the start
         self.index = 0  # next writable location in the buffer
-        self.is_full = False
 
-    def add_sample(self, timestamp, value):
-        self.buffer[self.index] = (timestamp, value)
-        self.index = (self.index + 1) % self.size  # increment circular buffer index
+    def push_sample(self, timestamp: int, value: bool) -> None:
+        self.buffer[self.index % self.size] = (timestamp, value)
+        self.index += 1
 
+    def get_all_samples(self) -> list:
         if self.index == 0:
-            self.is_full = True  # Se l'indice ritorna a 0, il buffer è pieno
+            return None  # buffer is empty
+        if self.index <= self.size:
+            return self.buffer[: self.index]  # return only valid/populated items
+        idx_mod = self.index % self.size
+        return self.buffer[idx_mod:] + self.buffer[:idx_mod]  # linearize the circular buffer
 
-    def get_samples(self):
-        if not self.is_full:
-            return self.buffer[: self.index]  # Restituisce solo gli elementi validi
-        return self.buffer[self.index :] + self.buffer[: self.index]  # Restituisce gli elementi in ordine circolare
-
-    def get_last_sample(self):
-        if not self.is_full and self.index == 0:
-            return None  # Nessun elemento nel buffer
+    def get_last_sample(self) -> tuple:
+        if self.index == 0:
+            return None  # buffer is empty
         last_index = (self.index - 1) % self.size
         return self.buffer[last_index]
 
-    def clear(self):
+    def clear(self) -> None:
         self.buffer = [(None, None)] * self.size
         self.index = 0
-        self.is_full = False
 
 
 # =======================================================================================================
@@ -97,6 +95,11 @@ class OptoIsolatedInputsHandler:
         buttons = []
         if cfg.disable_hw:
             print("Skipping optoisolated inputs HW initialization (--disable-hw was given)")
+
+            timestamp = int(time.time())
+            with self.lock:
+                for i in range(SeqMicroHatConstants.MAX_CHANNELS):
+                    self.optoisolated_inputs_sampled_values[i].push_sample(timestamp, False)
         else:
             # check if the opto-isolated input board from Sequent Microsystem is indeed present:
             try:
@@ -136,7 +139,7 @@ class OptoIsolatedInputsHandler:
 
         with self.lock:
             for i in range(SeqMicroHatConstants.MAX_CHANNELS):
-                self.optoisolated_inputs_sampled_values[i].add_sample(timestamp, bool(packed_sample & (1 << i)))
+                self.optoisolated_inputs_sampled_values[i].push_sample(timestamp, bool(packed_sample & (1 << i)))
 
         self.stats["num_readings"] += 1
 
