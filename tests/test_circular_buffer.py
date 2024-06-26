@@ -1,7 +1,6 @@
 import pytest
 import time
-from raspy2mqtt.optoisolated_inputs_handler import CircularBuffer
-
+from raspy2mqtt.circular_buffer import CircularBuffer
 
 @pytest.mark.unit
 def test_circbuf_push_sample():
