@@ -11,6 +11,7 @@ import threading
 from raspy2mqtt.constants import MqttQOS, SeqMicroHatConstants
 from raspy2mqtt.config import AppConfig
 from raspy2mqtt.circular_buffer import CircularBuffer
+
 #
 # Author: fmontorsi
 # Created: May 2024
