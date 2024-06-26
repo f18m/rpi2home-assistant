@@ -194,7 +194,7 @@ class OptoIsolatedInputsHandler:
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
             except Exception as err:
-                print(f"EXCEPTION: {err}")
+                print(f"EXCEPTION: [{err}]. Exiting with code 99.")
                 sys.exit(99)
 
     async def homeassistant_discovery_message_publish(self, cfg: AppConfig):
@@ -251,4 +251,5 @@ class OptoIsolatedInputsHandler:
         print(">>   OPTO-ISOLATED DISCOVERY messages:")
         print(f">>     Num MQTT discovery messages published: {self.stats['num_mqtt_discovery_messages_published']}")
         print(f">>     Num (re)connections to the MQTT broker: {self.stats['num_connections_discovery_publish']}")
+        print(f">>   ERROR: unstable samples found: {self.stats['ERROR_no_stable_samples']}")
         print(f">>   ERROR: MQTT connections lost: {self.stats['ERROR_num_connections_lost']}")
