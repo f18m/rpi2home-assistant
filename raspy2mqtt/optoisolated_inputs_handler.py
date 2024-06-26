@@ -105,6 +105,7 @@ class OptoIsolatedInputsHandler:
 
         with self.lock:
             for i in range(SeqMicroHatConstants.MAX_CHANNELS):
+                # Extract the bit at position i-th using bitwise AND operation
                 self.optoisolated_inputs_sampled_values[i].push_sample(timestamp, bool(packed_sample & (1 << i)))
 
         self.stats["num_readings"] += 1
@@ -135,33 +136,35 @@ class OptoIsolatedInputsHandler:
                         # Publish each sampled value as a separate MQTT topic
                         update_loop_start_sec = time.perf_counter()
                         for i in range(SeqMicroHatConstants.MAX_CHANNELS):
-
-                            # IMPORTANT: this function expects something else to update the 'optoisolated_inputs_sampled_values'
-                            #            integer, whenever it is necessary to update it
-
-                            # Extract the bit at position i-th using bitwise AND operation
-                            with self.lock:
-                                bit_value = self.optoisolated_inputs_sampled_values[i].get_last_sample()[1]
-
                             # convert from zero-based index 'i' to 1-based index, as used in the config file
                             input_cfg = cfg.get_optoisolated_input_config(1 + i)
-                            if input_cfg is not None:
-                                if input_cfg["active_low"]:
-                                    logical_value = not bit_value
-                                    # input_type = "active low"
+                            if input_cfg is None:
+                                continue
+
+                            # acquire last sampled value for the i-th input
+                            with self.lock:
+                                filter_min_duration = input_cfg["filter"]["minimal_duration_sec"]
+                                if filter_min_duration == 0:
+                                    # filtering disabled -- just pick the most updated sample and use it
+                                    bit_value = self.optoisolated_inputs_sampled_values[i].get_last_sample()[1]
                                 else:
-                                    logical_value = bit_value
-                                    # input_type = "active high"
+                                    # filtering enabled -- choose sensor status:
+                                    bit_value = self.optoisolated_inputs_sampled_values[i].get_last_sample()[1]
 
-                                payload = (
-                                    input_cfg["mqtt"]["payload_on"]
-                                    if logical_value
-                                    else input_cfg["mqtt"]["payload_off"]
-                                )
-                                # print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
+                            if input_cfg["active_low"]:
+                                logical_value = not bit_value
+                                # input_type = "active low"
+                            else:
+                                logical_value = bit_value
+                                # input_type = "active high"
 
-                                await client.publish(input_cfg["mqtt"]["topic"], payload, qos=MqttQOS.AT_LEAST_ONCE)
-                                self.stats["num_mqtt_messages"] += 1
+                            payload = (
+                                input_cfg["mqtt"]["payload_on"] if logical_value else input_cfg["mqtt"]["payload_off"]
+                            )
+                            # print(f"From INPUT#{i+1} [{input_type}] read {int(bit_value)} -> {int(logical_value)}; publishing on mqtt topic [{topic}] the payload: {payload}")
+
+                            await client.publish(input_cfg["mqtt"]["topic"], payload, qos=MqttQOS.AT_LEAST_ONCE)
+                            self.stats["num_mqtt_messages"] += 1
 
                         update_loop_duration_sec = time.perf_counter() - update_loop_start_sec
                         # print(f"Updating all sensors on MQTT took {update_loop_duration_sec} secs")
