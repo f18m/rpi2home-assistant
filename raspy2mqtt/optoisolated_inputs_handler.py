@@ -135,6 +135,7 @@ class OptoIsolatedInputsHandler:
                     while not OptoIsolatedInputsHandler.stop_requested:
                         # Publish each sampled value as a separate MQTT topic
                         update_loop_start_sec = time.perf_counter()
+                        timestamp_now = int(time.time())
                         for i in range(SeqMicroHatConstants.MAX_CHANNELS):
                             # convert from zero-based index 'i' to 1-based index, as used in the config file
                             input_cfg = cfg.get_optoisolated_input_config(1 + i)
@@ -150,7 +151,7 @@ class OptoIsolatedInputsHandler:
                                 else:
                                     # filtering enabled -- choose sensor status:
                                     bit_value = self.optoisolated_inputs_sampled_values[i].get_stable_sample(
-                                        filter_min_duration
+                                        timestamp_now, filter_min_duration
                                     )[1]
 
                             if input_cfg["active_low"]:
