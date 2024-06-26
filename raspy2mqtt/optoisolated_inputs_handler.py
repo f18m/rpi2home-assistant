@@ -143,7 +143,7 @@ class OptoIsolatedInputsHandler:
 
                             # acquire last sampled value for the i-th input
                             with self.lock:
-                                filter_min_duration = input_cfg["filter"]["minimal_duration_sec"]
+                                filter_min_duration = input_cfg["filter"]["stability_threshold_sec"]
                                 if filter_min_duration == 0:
                                     # filtering disabled -- just pick the most updated sample and use it
                                     bit_value = self.optoisolated_inputs_sampled_values[i].get_last_sample()[1]

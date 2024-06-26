@@ -84,7 +84,7 @@ class AppConfig:
 
         self.filter_schema = Schema(
             {
-                Optional("minimal_duration_sec"): int,
+                Optional("stability_threshold_sec"): int,
             }
         )
 
@@ -211,8 +211,8 @@ class AppConfig:
             # filtering the output does not make sense, so the filter parameter is allowed only for inputs
             if "filter" not in entry_dict:
                 entry_dict["filter"] = {}
-            if "minimal_duration_sec" not in entry_dict["filter"]:
-                entry_dict["filter"]["minimal_duration_sec"] = 0  # 0 means filtering is disabled
+            if "stability_threshold_sec" not in entry_dict["filter"]:
+                entry_dict["filter"]["stability_threshold_sec"] = 0  # 0 means filtering is disabled
         return entry_dict
 
     def load(self, cfg_yaml: str) -> bool:

@@ -98,7 +98,7 @@ def test_config_file_using_defaults_succeeds(tmpdir):
     assert x.get_optoisolated_input_config(1) == {
         "active_low": True,
         "description": "opto_input_1",
-        "filter": {"minimal_duration_sec": 0},
+        "filter": {"stability_threshold_sec": 0},
         "home_assistant": {"device_class": "tamper", "expire_after": 30, "icon": None, "platform": "binary_sensor"},
         "input_num": 1,
         "mqtt": {"payload_off": "OFF", "payload_on": "ON", "topic": "rpi2home-assistant/opto_input_1"},
@@ -162,7 +162,7 @@ i2c_optoisolated_inputs:
       expire_after: 1000
       icon: mdi:check-circle
     filter:
-      minimal_duration_sec: 3
+      stability_threshold_sec: 3
 gpio_inputs:
   - name: radio_channel_a
     description: yet another test
@@ -217,7 +217,7 @@ def test_config_file_fully_specified_succeeds(tmpdir):
         "active_low": True,
         "description": "just a test",
         "filter": {
-            "minimal_duration_sec": 3,
+            "stability_threshold_sec": 3,
         },
         "home_assistant": {
             "device_class": "tamper",
