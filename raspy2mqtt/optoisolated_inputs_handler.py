@@ -149,7 +149,7 @@ class OptoIsolatedInputsHandler:
                                     bit_value = self.optoisolated_inputs_sampled_values[i].get_last_sample()[1]
                                 else:
                                     # filtering enabled -- choose sensor status:
-                                    bit_value = self.optoisolated_inputs_sampled_values[i].get_last_sample()[1]
+                                    bit_value = self.optoisolated_inputs_sampled_values[i].get_stable_sample(filter_min_duration)[1]
 
                             if input_cfg["active_low"]:
                                 logical_value = not bit_value
