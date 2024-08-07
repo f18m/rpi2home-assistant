@@ -47,8 +47,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # testcontainers 4.6.0 has introduced the MosquittoContainer, see
+    # https://github.com/testcontainers/testcontainers-python/releases/tag/testcontainers-v4.6.0
     - name: install pypi-packaged dependencies for unit and integration tests
-      run: sudo pip3 install pytest testcontainers paho-mqtt aiomqtt schema
+      run: sudo pip3 install pytest 'testcontainers>=4.6.0' paho-mqtt aiomqtt schema
 
     # FIXME: we should have all dependencies centralized in the TOML file and install them as:
     # - name: Install dependencies
