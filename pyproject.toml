@@ -14,7 +14,7 @@ build-backend = "poetry.core.masonry.api"
 "Bug Tracker" = "https://github.com/f18m/rpi2home-assistant/issues"
 
 [project.scripts]
-raspy2mqtt = "raspy2mqtt:main_loop"
+raspy2mqtt = "raspy2mqtt.main:entrypoint"
 
 [tool.black]
 line-length = 120
@@ -28,7 +28,7 @@ readme = "README.md"
 packages = [{include = "raspy2mqtt"}]
 
 [tool.poetry.scripts]
-raspy2mqtt = "raspy2mqtt.raspy2mqtt:main"
+raspy2mqtt = "raspy2mqtt.main:main.entrypoint"
 
 # DEPENDENCIES
 # 1) since Renovate bot is used, it's best to pin dependency versions; 
