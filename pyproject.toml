@@ -1,3 +1,10 @@
+[project]
+name = "rpi2home-assistant"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 # 
 # NOTE: the 'project' metadata section is not present because PEP621 is still not supported
 #       by Poetry as of Apr 2024, see https://github.com/python-poetry/poetry/issues/3332
@@ -7,7 +14,7 @@
 "Bug Tracker" = "https://github.com/f18m/rpi2home-assistant/issues"
 
 [project.scripts]
-raspy2mqtt = "raspy2mqtt:main_loop"
+raspy2mqtt = "raspy2mqtt.main:entrypoint"
 
 [tool.black]
 line-length = 120
@@ -21,7 +28,7 @@ readme = "README.md"
 packages = [{include = "raspy2mqtt"}]
 
 [tool.poetry.scripts]
-raspy2mqtt = "raspy2mqtt.raspy2mqtt:main"
+raspy2mqtt = "raspy2mqtt.main:main.entrypoint"
 
 # DEPENDENCIES
 # 1) since Renovate bot is used, it's best to pin dependency versions; 
@@ -43,6 +50,3 @@ gpiozero = "2.0.1"
 pigpio = "1.78"
 schema = "0.7.7"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"

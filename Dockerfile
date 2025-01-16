@@ -4,7 +4,7 @@ FROM python:3.11-slim AS builder
 WORKDIR /app
 RUN mkdir /app/raspy2mqtt
 ADD raspy2mqtt /app/raspy2mqtt
-COPY pyproject.toml README.md /app
+COPY pyproject.toml README.md /app/
 RUN ls -l /app
 RUN pip3 install build
 

@@ -255,7 +255,7 @@ async def main_loop():
     return exit_code
 
 
-def main():
+def entrypoint():
     if instance_already_running(MiscAppDefaults.THIS_APP_NAME):
         print(
             "Sorry, detected another instance of this daemon is already running. Using the same I2C bus from 2 sofware programs is not recommended. Aborting."
@@ -273,4 +273,4 @@ def main():
 # =======================================================================================================
 
 if __name__ == "__main__":
-    main()
+    entrypoint()
