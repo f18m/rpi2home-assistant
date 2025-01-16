@@ -56,10 +56,14 @@ log_stats_every: 30
 # - the inputs are numbered 1-based, just like in the silk-screen printing on the board itself
 # - the MQTT topics published will be in the form "<default_topic_prefix>/<name>", where <default_topic_prefix> is
 #   configured by 'home_assistant.default_topic_prefix'
-# - to improve security/robustness on HomeAssistant the "expire_after" property should be used; the MQTT topics
-#   for opto-isolated inputs are continuously updated at a frequency configured by 'home_assistant.publish_period_msec'
-# - the HomeAssistant platform can only be "binary_sensor" so far and since it's the default value, it can be omitted
-# - Home Assistant MQTT discovery messages are automatically published if 'home_assistant.discovery_messages.enable=true'
+# - to improve security/robustness it's suggested to set the "<entry>.home_assistant.expire_after" property;
+#   rpi2home-assistant will continuously update (send messages on) the MQTT topics for opto-isolated inputs 
+#   at the frequency configured by 'home_assistant.publish_period_msec'. Thus it's suggested to set the "expire_after"
+#   to 2x or 3x times the value of the 'home_assistant.publish_period_msec' key.
+# - the key '<entry>.home_assistant.platform' can only accept the value "binary_sensor" so far 
+#   and since it's the default value, it can be omitted
+# - Home Assistant MQTT discovery messages are automatically published if 'home_assistant.discovery_messages.enable' is
+#   set to 'true'
 i2c_optoisolated_inputs:
   - name: opto_input_1
     description: Opto-isolated Input for Sensor XYZ
@@ -118,7 +122,7 @@ gpio_inputs:
 # ** Output Channels Configuration **
 #
 # These outputs channels are just Raspberry GPIO pins configured as outputs.
-# They are exposed as 'switch' or 'button' into Home Assistant.
+# They are exposed as 'switch' or 'button' entities into Home Assistant.
 # More details:
 # - the 'active_low=false' property indicates that when the <payload_on> is received over MQTT, then the
 #   GPIO pin should be driven HIGH (3.3V); when the <payload_off> (or nothing) is received over MQTT, then the
@@ -128,9 +132,11 @@ gpio_inputs:
 # - the MQTT topic "<default_topic_prefix>/<output name>/state" is automatically updated after confirming that the output 
 #   GPIO pin has successfully changed status
 # - Home Assistant MQTT discovery messages are automatically published if 'home_assistant.discovery_messages.enable=true'
-# - The Home Assistant platform can be either 'switch' (the default) or 'button'; in case 'button' is chosen and
-#   the 'PRESS' notification is received over MQTT, then the GPIO output is turned ON (respecting 'active_low' property)
-#   and 500msec later it is turned OFF (momentary press)
+# - The '<entry>.home_assistant.platform' key can be either 'switch' (the default) or 'button'. 
+#   In case 'button' is chosen and the '<entry>.mqtt.payload_on' message is received over MQTT, then the GPIO output 
+#   is turned ON (respecting 'active_low' property) and 500msec later it is turned OFF (momentary press).
+#   In case 'switch' is chosen, then whenever the '<entry>.mqtt.payload_on' message is received, the GPIO output is turned ON
+#   (respecting 'active_low' property) and whenever the '<entry>.mqtt.payload_off' message is received, the GPIO output is turned OFF.
 outputs:
   - name: alarm_siren
     description: Alarm Siren
