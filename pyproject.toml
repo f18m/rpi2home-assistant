@@ -1,3 +1,10 @@
+[project]
+name = "rpi2home-assistant"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 # 
 # NOTE: the 'project' metadata section is not present because PEP621 is still not supported
 #       by Poetry as of Apr 2024, see https://github.com/python-poetry/poetry/issues/3332
@@ -43,6 +50,3 @@ gpiozero = "2.0.1"
 pigpio = "1.78"
 schema = "0.7.7"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
