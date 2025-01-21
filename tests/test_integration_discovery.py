@@ -2,8 +2,6 @@ import pytest
 import time
 import json
 
-# from testcontainers.core.utils import raise_for_deprecated_parameter
-
 from tests.mosquitto_container import MosquittoContainerEnhanced
 from tests.raspy2mqtt_container import Raspy2MQTTContainer
 

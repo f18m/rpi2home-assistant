@@ -2,8 +2,6 @@ import os
 from testcontainers.core.container import DockerContainer
 from testcontainers.mqtt import MosquittoContainer
 
-# from testcontainers.core.utils import raise_for_deprecated_parameter
-
 from tests.mosquitto_container import MosquittoContainerEnhanced
 
 
