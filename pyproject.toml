@@ -43,7 +43,7 @@ raspy2mqtt = "raspy2mqtt.main:main.entrypoint"
 #              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-aiomqtt = "2.3.1"
+aiomqtt = "2.3.2"
 sm16inpind = "1.0.1"
 PyYAML = "6.0.2"
 gpiozero = "2.0.1"
