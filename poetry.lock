@@ -165,13 +165,13 @@ testing = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "importlib-metad
 
 [[package]]
 name = "sm16inpind"
-version = "1.0.1"
+version = "1.1.5"
 description = "Library to control 16inpind Automation Card"
 optional = false
 python-versions = "*"
 files = [
-    {file = "SM16inpind-1.0.1-py2.py3-none-any.whl", hash = "sha256:66d589de88b8d07d967f89f278a120e4a4f902af981f868cac443be3f52edb80"},
-    {file = "SM16inpind-1.0.1.tar.gz", hash = "sha256:62cc7ed575087dd7d20c66a0131edd4f4067fef091a24ce494c073a5234b59c6"},
+    {file = "sm16inpind-1.1.5-py2.py3-none-any.whl", hash = "sha256:f5841df89ae2570401f2bf57ec6d0d0ad9cc47ed8cddc05662811c2342824ac9"},
+    {file = "sm16inpind-1.1.5.tar.gz", hash = "sha256:5af2575d3672935f389c13ec6dacfe8449edd4b5529ec79b7d4a2ac8d2bf82a3"},
 ]
 
 [package.dependencies]
@@ -196,4 +196,4 @@ test = ["mock", "nose"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4.0"
-content-hash = "89212e1e7cae46231c556a1e69a5201e7ce68161e7bd721a2cdf07b5f45e252b"
+content-hash = "7d5d9d8031deac8204b586c242fdad0a00999a97b685dee504955788d8402a9c"
