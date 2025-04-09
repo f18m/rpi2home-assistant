@@ -2,13 +2,13 @@
 
 [[package]]
 name = "aiomqtt"
-version = "2.3.1"
+version = "2.3.2"
 description = "The idiomatic asyncio MQTT client"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "aiomqtt-2.3.1-py3-none-any.whl", hash = "sha256:4915b548344b689be2d4670324deeb283218b76a30eb993755fcbb3e5d228a0c"},
-    {file = "aiomqtt-2.3.1.tar.gz", hash = "sha256:829d8f8d132ac25212aa6db2ed84182acf774fce0a3469558d0ab13ae2b30cbd"},
+    {file = "aiomqtt-2.3.2-py3-none-any.whl", hash = "sha256:e67f877454b04437732a7eb005d8f8751df1ba7931b2eb1b7a7d8bf7e50c96e7"},
+    {file = "aiomqtt-2.3.2.tar.gz", hash = "sha256:96d979aeac930f031b0efa4c8e71ab337b3b330cf175b9329905419a38d8509c"},
 ]
 
 [package.dependencies]
@@ -196,4 +196,4 @@ test = ["mock", "nose"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4.0"
-content-hash = "74403a597c2ff2c7f216d28fb505c922cf420119470e4e6d0ea5a6917911a988"
+content-hash = "89212e1e7cae46231c556a1e69a5201e7ce68161e7bd721a2cdf07b5f45e252b"
