@@ -244,6 +244,8 @@ class GpioOutputsHandler:
                         "device_class": entry["home_assistant"]["device_class"],
                         # "expire_after": entry['home_assistant']["expire_after"], -- not supported by MQTT switch :(
                         "device": cfg.get_device_dict(),
+
+                        # FIXME: origin dict is missing!
                     }
                     if entry["home_assistant"]["icon"] is not None:
                         # add icon to the config of the entry:
