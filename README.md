@@ -1,5 +1,6 @@
 # rpi2home-assistant
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/f18m/rpi2home-assistant/main.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/rpi2home-assistant)
 
 This project provides a Python daemon to **transform a [Raspberry PI](https://www.raspberrypi.com/) into a bridge between GPIO inputs/outputs and [Home Assistant](https://www.home-assistant.io/), through MQTT**.
