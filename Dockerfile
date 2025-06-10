@@ -26,4 +26,5 @@ COPY --from=builder /build/wheel/*.whl .
 RUN pip3 install --no-cache-dir *.whl
 
 ENV PYTHONUNBUFFERED=1
-CMD [ "raspy2mqtt" ]
+ENTRYPOINT [ "raspy2mqtt" ]
+
