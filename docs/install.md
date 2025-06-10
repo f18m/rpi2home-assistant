@@ -31,9 +31,11 @@ make raspbian_start
 Then of course it's important to populate the configuration file, with the specific pinouts for your raspberry HATs
 (see [Preqrequisites](#prerequisites) section). 
 
-## Install as Pypi
+## Using Pypi and `pip`
 
-This is really easy and the procedure relies also in this case on the creation of a venv:
+This project is packaged as a Python wheel at https://pypi.org/project/rpi2home-assistant/.
+This makes it possible to install rpi2home-assistant using `pip`.
+The procedure relies also in this case on the creation of a venv:
 
 ```sh
 apt install python3-venv
