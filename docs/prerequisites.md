@@ -1,6 +1,16 @@
 # Prerequisites
 
-This software is meant to run on a Raspberry PI.
+This software is meant to run on a Raspberry PI. Any other target platform is currently not supported.
+This section provides more information about _hardware_ and _software_ prerequisites on the Raspberry PI.
+
+## Supported Raspberry PI variants
+
+This software is meant to be compatible with all 40-pin Raspberry Pi boards
+(Raspberry Pi 1 Model A+ & B+, Raspberry Pi 2, Raspberry Pi 3, Raspberry Pi 4,
+Raspberry Pi 5).
+
+## Supported Hardware
+
 In addition to standard GPIOs, _rpi2home-assistant_ **optionally** provides specific support for the following hat:
 
 ![Sequent Microsystem 16 opto-insulated inputs HAT](/docs/seq-microsystem-optoisolated-hat.png?raw=true "Sequent Microsystem 16 opto-insulated inputs HAT")
@@ -27,13 +37,8 @@ A couple of suggested hats exposing relays are:
 
 * [Sunfounder 4 Channel 5V Relay Module](http://wiki.sunfounder.cc/index.php?title=4_Channel_5V_Relay_Module).
 
+## Software prerequisites
 
-Beyond that, this software is meant to be compatible with all 40-pin Raspberry Pi boards
-(Raspberry Pi 1 Model A+ & B+, Raspberry Pi 2, Raspberry Pi 3, Raspberry Pi 4,
-Raspberry Pi 5).
-
-Software prerequisites are:
 * you must have an **MQTT broker** running somewhere (e.g. a Mosquitto broker);
 * **Python >= 3.11**; for Raspberry it means you must be using Debian bookworm 12 or [Raspberry Pi OS](https://www.raspberrypi.com/software/operating-systems/) 12 or higher;
-* there is no particular constraint on the Home Assistant version, even if the project is continuously tested
-  almost only against the latest Home Assistant version available.
+* there is no particular constraint on the [Home Assistant](https://www.home-assistant.io/) version, even if the project is continuously tested almost only against the latest Home Assistant version available.

@@ -1,6 +1,7 @@
 # rpi2home-assistant
 
-This project provides a Python daemon to **transform a [Raspberry PI](https://www.raspberrypi.com/) into a bridge between GPIO inputs/outputs and HomeAssistant, through MQTT**.
+This project provides a Python daemon to **transform a [Raspberry PI](https://www.raspberrypi.com/) into a bridge between GPIO inputs/outputs and [Home Assistant](https://www.home-assistant.io/), through MQTT**.
+
 In particular this software allows to:
 * sample low-voltage inputs from Raspberry GPIO pins directly (with no isolation/protection/HAT), publish them on MQTT and get them exposed to Home Assistant as [binary sensors](https://www.home-assistant.io/integrations/binary_sensor.mqtt/);
 * sample a wide range of electrical signals (voltages) from 3V-48V AC or DC, using a dedicated Raspberry HAT, publish them on MQTT and get them exposed to Home Assistant as [binary sensors](https://www.home-assistant.io/integrations/binary_sensor.mqtt/);
