@@ -1,6 +1,8 @@
 # Installation
 
-## How to install on a Raspberry Pi with Debian Bookworm 12
+This section focuses on how to install on a Raspberry Pi with Debian Bookworm 12.
+
+## Using `git` and `make`
 
 The [Raspberry Pi OS](https://www.raspberrypi.com/software/operating-systems/) does not allow to install Python software using `pip`.
 Trying to install a Python package that way leads to an error like:
