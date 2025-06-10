@@ -4,14 +4,14 @@ from testcontainers.mqtt import MosquittoContainer
 from testcontainers.core.waiting_utils import wait_container_is_ready
 from typing_extensions import Self
 
-# from testcontainers.core.utils import raise_for_deprecated_parameter
 from paho.mqtt import client as mqtt_client
 import paho.mqtt.enums
 from queue import Queue
 from typing import Optional
 
-# MosquittoContainerEnhanced
-
+# ---------------------------------------------------------------------------- #
+#                          MosquittoContainerEnhanced                          #
+# ---------------------------------------------------------------------------- #
 
 class MosquittoContainerEnhanced(MosquittoContainer):
     """
@@ -85,8 +85,9 @@ class MosquittoContainerEnhanced(MosquittoContainer):
         Returns the total number of messages received by the broker so far.
         """
 
-        client = self.get_client()
-        if not client.is_connected():
+        try:
+            client = self.get_client()
+        except OSError as err:
             raise RuntimeError(f"Could not connect to Mosquitto broker: {err}")
 
         client.subscribe("$SYS/broker/messages/received")
@@ -100,8 +101,9 @@ class MosquittoContainerEnhanced(MosquittoContainer):
             return 0
 
     def watch_topics(self, topics: list):
-        client = self.get_client()
-        if not client.is_connected():
+        try:
+            client = self.get_client()
+        except OSError as err:
             raise RuntimeError(f"Could not connect to Mosquitto broker: {err}")
 
         filtered_topics = []
@@ -118,8 +120,9 @@ class MosquittoContainerEnhanced(MosquittoContainer):
             raise RuntimeError(f"Failed to subscribe to topics: {filtered_topics}")
 
     def unwatch_all(self):
-        client = self.get_client()
-        if not client.is_connected():
+        try:
+            client = self.get_client()
+        except OSError as err:
             raise RuntimeError(f"Could not connect to Mosquitto broker: {err}")
 
         # unsubscribe from all topics

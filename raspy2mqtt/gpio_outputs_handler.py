@@ -244,6 +244,12 @@ class GpioOutputsHandler:
                         "device_class": entry["home_assistant"]["device_class"],
                         # "expire_after": entry['home_assistant']["expire_after"], -- not supported by MQTT switch :(
                         "device": cfg.get_device_dict(),
+
+                        "origin": {
+                            "name":"rpi2home-assistant",
+                            "sw": psmqtt_ver,
+                            "url": "https://github.com/eschava/psmqtt"
+                        },
                     }
                     if entry["home_assistant"]["icon"] is not None:
                         # add icon to the config of the entry:
