@@ -123,6 +123,12 @@ endif
 build-wheel:
 	python3 -m build --wheel --outdir dist/
 
+test-wheel:
+	rm -rf dist/ && \
+ 		pip3 uninstall -y rpi2home-assistant && \
+		$(MAKE) build-wheel && \
+		pip3 install dist/rpi2home_assistant-*py3-none-any.whl
+
 format:
 	black .
 

@@ -9,10 +9,9 @@
 #  DEPRECATED: RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
 #              As of March 2024, RPI.GPIO does not work anymore on latest Raspbian, see https://github.com/gpiozero/gpiozero/issues/1136
 #              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
-python = ">=3.11,<4.0"
-aiomqtt = "2.4.0"
-sm16inpind = "1.0.1"
-PyYAML = "6.0.2"
-gpiozero = "2.0.1"
-pigpio = "1.78"
-schema = "0.7.7"
+aiomqtt==2.4.0
+sm16inpind==1.0.1
+PyYAML==6.0.2
+gpiozero==2.0.1
+pigpio==1.78
+schema==0.7.7
