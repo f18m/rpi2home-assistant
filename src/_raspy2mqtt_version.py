@@ -1,1 +1,1 @@
-version = "2.2.1.post1.dev1+g2aaf883.d20250610"
+version = "2.2.1.post1.dev2+ga83ee32.d20250610"

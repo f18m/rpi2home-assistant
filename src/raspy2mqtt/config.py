@@ -11,7 +11,7 @@ import aiomqtt
 import os
 import platform
 from datetime import datetime, timezone
-from raspy2mqtt.constants import MqttDefaults, HomeAssistantDefaults, SeqMicroHatConstants, MiscAppDefaults
+from .constants import MqttDefaults, HomeAssistantDefaults, SeqMicroHatConstants, MiscAppDefaults
 
 from schema import Schema, Optional, SchemaError, Regex
 

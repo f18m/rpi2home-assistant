@@ -1,6 +1,6 @@
 import pytest
 import platform
-from raspy2mqtt.config import AppConfig
+from src.raspy2mqtt.config import AppConfig
 
 
 @pytest.mark.unit

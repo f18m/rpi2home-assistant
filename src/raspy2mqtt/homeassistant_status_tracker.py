@@ -9,7 +9,7 @@
 import asyncio
 import sys
 import aiomqtt
-from raspy2mqtt.config import AppConfig
+from .config import AppConfig
 
 
 # =======================================================================================================

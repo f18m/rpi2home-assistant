@@ -36,7 +36,7 @@ jobs:
     - name: run formatter
       run: black . --check
     - name: run linter
-      run: ruff check raspy2mqtt/
+      run: ruff check src/raspy2mqtt/
     
   # -------------------------------------------------------------------------- 
   #                                   tests                                   
