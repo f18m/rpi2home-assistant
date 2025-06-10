@@ -6,8 +6,8 @@ import asyncio
 import queue
 import sys
 import aiomqtt
-from raspy2mqtt.constants import MqttQOS
-from raspy2mqtt.config import AppConfig
+from .constants import MqttQOS
+from .config import AppConfig
 
 #
 # Author: fmontorsi

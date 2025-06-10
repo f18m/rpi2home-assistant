@@ -15,13 +15,13 @@ import asyncio
 import gpiozero
 import subprocess
 import signal
-from raspy2mqtt.stats import StatsCollector
-from raspy2mqtt.constants import SeqMicroHatConstants, MiscAppDefaults
-from raspy2mqtt.config import AppConfig
-from raspy2mqtt.optoisolated_inputs_handler import OptoIsolatedInputsHandler
-from raspy2mqtt.gpio_inputs_handler import GpioInputsHandler
-from raspy2mqtt.gpio_outputs_handler import GpioOutputsHandler
-from raspy2mqtt.homeassistant_status_tracker import HomeAssistantStatusTracker
+from .stats import StatsCollector
+from .constants import SeqMicroHatConstants, MiscAppDefaults
+from .config import AppConfig
+from .optoisolated_inputs_handler import OptoIsolatedInputsHandler
+from .gpio_inputs_handler import GpioInputsHandler
+from .gpio_outputs_handler import GpioOutputsHandler
+from .homeassistant_status_tracker import HomeAssistantStatusTracker
 
 # =======================================================================================================
 # GLOBALs

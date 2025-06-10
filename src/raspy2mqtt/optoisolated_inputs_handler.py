@@ -8,9 +8,9 @@ import json
 import sys
 import aiomqtt
 import threading
-from raspy2mqtt.constants import MqttQOS, SeqMicroHatConstants
-from raspy2mqtt.config import AppConfig
-from raspy2mqtt.circular_buffer import CircularBuffer
+from .constants import MqttQOS, SeqMicroHatConstants
+from .config import AppConfig
+from .circular_buffer import CircularBuffer
 
 #
 # Author: fmontorsi

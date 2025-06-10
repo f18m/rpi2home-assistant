@@ -1,0 +1,17 @@
+# DEPENDENCIES
+# 1) since Renovate bot is used, it's best to pin dependency versions; 
+#    see https://docs.renovatebot.com/modules/manager/poetry/
+# 2) reference docs for each dependency:
+#  aiomqtt ->    https://sbtinstruments.github.io/aiomqtt/
+#  SM16inpind -> https://github.com/SequentMicrosystems/16inpind-rpi/tree/main/python
+#  PyYAML ->     https://pyyaml.org/wiki/PyYAMLDocumentation
+#  gpiozero ->   https://gpiozero.readthedocs.io/en/latest/index.html
+#  DEPRECATED: RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
+#              As of March 2024, RPI.GPIO does not work anymore on latest Raspbian, see https://github.com/gpiozero/gpiozero/issues/1136
+#              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
+aiomqtt==2.4.0
+sm16inpind==1.0.1
+PyYAML==6.0.2
+gpiozero==2.0.1
+pigpio==1.78
+schema==0.7.7

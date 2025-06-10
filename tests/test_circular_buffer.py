@@ -1,6 +1,6 @@
 import pytest
 import time
-from raspy2mqtt.circular_buffer import CircularBuffer
+from src.raspy2mqtt.circular_buffer import CircularBuffer
 
 
 @pytest.mark.unit

@@ -1,15 +1,18 @@
 # Stage 1: the builder
 FROM python:3.11-slim AS builder
 
-WORKDIR /app
-RUN mkdir /app/raspy2mqtt
-ADD raspy2mqtt /app/raspy2mqtt
-COPY pyproject.toml README.md /app/
-RUN ls -l /app
-RUN pip3 install build
+# NOTE: git is required to get the "hatch-vcs" plugin to work and produce the _raspy2mqtt_version.py file
+RUN apt update && apt install -y git
 
-# produce the wheel
-RUN python3 -m build
+WORKDIR /build
+COPY requirements.txt pyproject.toml README.md /build/
+ADD ./src ./src/
+COPY ./.git ./.git/
+
+RUN python -m pip install --upgrade pip
+RUN pip install --target=/build/deps -r requirements.txt
+RUN pip install build
+RUN python -m build --wheel --outdir /build/wheel
 
 
 # Stage 2: Create the final image
@@ -19,8 +22,9 @@ LABEL org.opencontainers.image.source=https://github.com/f18m/rpi2home-assistant
 
 # install the wheel
 WORKDIR /app
-COPY --from=builder /app/dist/*.whl .
+COPY --from=builder /build/wheel/*.whl .
 RUN pip3 install --no-cache-dir *.whl
 
 ENV PYTHONUNBUFFERED=1
-CMD [ "raspy2mqtt" ]
+ENTRYPOINT [ "raspy2mqtt" ]
+

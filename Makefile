@@ -8,6 +8,7 @@
 #  * creation of venv
 #  * installation of this project into that venv
 #  * distribution of config file in standard system folders
+#
 
 SHELL = /bin/bash
 
@@ -24,6 +25,8 @@ ifeq ($(CONFIG_FILE_FOR_DOCKER),)
 # NOTE: please override this with a config file containing a valid MQTT broker config
 CONFIG_FILE_FOR_DOCKER=$(shell pwd)/tests/integration-test-config.yaml
 endif
+
+all: build-wheel lint test
 
 #
 # TARGETS FOR DEPLOYING ON RaspBian
@@ -117,8 +120,17 @@ else
 	pytest -vvvv --log-level=INFO -s -m integration -k $(REGEX)
 endif
 
+build-wheel:
+	python3 -m build --wheel --outdir dist/
+
+test-wheel:
+	rm -rf dist/ && \
+ 		pip3 uninstall -y rpi2home-assistant && \
+		$(MAKE) build-wheel && \
+		pip3 install dist/rpi2home_assistant-*py3-none-any.whl
+
 format:
 	black .
 
 lint:
-	ruff check raspy2mqtt/
+	ruff check src/raspy2mqtt/
