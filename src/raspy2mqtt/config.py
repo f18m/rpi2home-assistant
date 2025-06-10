@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+#
+# Author: fmontorsi
+# Created: Apr 2024
+# License: Apache license
+#
+
 import yaml
 import aiomqtt
 import os
@@ -8,14 +14,6 @@ from datetime import datetime, timezone
 from raspy2mqtt.constants import MqttDefaults, HomeAssistantDefaults, SeqMicroHatConstants, MiscAppDefaults
 
 from schema import Schema, Optional, SchemaError, Regex
-from importlib.metadata import version
-from importlib.metadata import PackageNotFoundError
-
-#
-# Author: fmontorsi
-# Created: Apr 2024
-# License: Apache license
-#
 
 
 # =======================================================================================================
@@ -42,12 +40,7 @@ class AppConfig:
         self.verbose = False
 
         # technically speaking the version is not an "app config" but centralizing it here is handy
-        try:
-            self.app_version = str(version(MiscAppDefaults.THIS_APP_NAME))
-        except PackageNotFoundError:
-            # this happens when e.g. running unit tests inside Github runners where the wheel
-            # package for this project is not installed:
-            self.app_version = "N/A"
+        self.app_version = AppConfig.get_embedded_version()
 
         self.current_hostname = platform.node()
 
@@ -141,6 +134,20 @@ class AppConfig:
                 ],
             }
         )
+
+    @staticmethod
+    def get_embedded_version() -> str:
+        """
+        Returns the embedded version of this utility, forged at build time
+        by the "hatch-vcs" plugin.
+
+        In particular the "hatch-vcs" plugin writes a _raspy2mqtt_version.py file
+        that contains a 'version' variable with the version string.
+        """
+
+        from _raspy2mqtt_version import version as __version__
+
+        return __version__
 
     def check_gpio(self, idx: int):
         reserved_gpios = [

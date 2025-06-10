@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-import asyncio
-import sys
-import aiomqtt
-from raspy2mqtt.config import AppConfig
-
-
 #
 # Author: fmontorsi
 # Created: June 2024
 # License: Apache license
 #
+
+import asyncio
+import sys
+import aiomqtt
+from raspy2mqtt.config import AppConfig
+
 
 # =======================================================================================================
 # HomeAssistantStatusTracker
