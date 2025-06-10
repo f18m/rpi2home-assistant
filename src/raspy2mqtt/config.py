@@ -40,7 +40,10 @@ class AppConfig:
         self.verbose = False
 
         # technically speaking the version is not an "app config" but centralizing it here is handy
-        self.app_version = AppConfig.get_embedded_version()
+        try:
+            self.app_version = AppConfig.get_embedded_version()
+        except ModuleNotFoundError:
+            self.app_version = "N/A"
 
         self.current_hostname = platform.node()
 
