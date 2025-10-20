@@ -1,5 +1,5 @@
 # Stage 1: the builder
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 # NOTE: git is required to get the "hatch-vcs" plugin to work and produce the _raspy2mqtt_version.py file
 RUN apt update && apt install -y git
@@ -16,7 +16,7 @@ RUN python -m build --wheel --outdir /build/wheel
 
 
 # Stage 2: Create the final image
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 LABEL org.opencontainers.image.source=https://github.com/f18m/rpi2home-assistant
 
