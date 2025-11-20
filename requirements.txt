@@ -11,7 +11,7 @@
 #              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
 aiomqtt==2.4.0
 sm16inpind==1.0.1
-PyYAML==6.0.2
+PyYAML==6.0.3
 gpiozero==2.0.1
 pigpio==1.78
 schema==0.7.8
