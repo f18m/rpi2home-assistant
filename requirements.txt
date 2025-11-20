@@ -14,4 +14,4 @@ sm16inpind==1.0.1
 PyYAML==6.0.2
 gpiozero==2.0.1
 pigpio==1.78
-schema==0.7.7
+schema==0.7.8
