@@ -10,7 +10,7 @@
 #              As of March 2024, RPI.GPIO does not work anymore on latest Raspbian, see https://github.com/gpiozero/gpiozero/issues/1136
 #              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
 aiomqtt==2.5.0
-sm16inpind==1.0.1
+sm16inpind==1.1.5
 PyYAML==6.0.3
 gpiozero==2.0.1
 pigpio==1.78
