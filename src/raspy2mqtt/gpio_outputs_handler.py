@@ -5,8 +5,8 @@ import asyncio
 import json
 import sys
 import aiomqtt
-from raspy2mqtt.constants import MqttQOS, MiscAppDefaults, HomeAssistantDefaults
-from raspy2mqtt.config import AppConfig
+from .constants import MqttQOS, MiscAppDefaults, HomeAssistantDefaults
+from .config import AppConfig
 
 #
 # Author: fmontorsi

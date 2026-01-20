@@ -1,13 +1,19 @@
 [project]
 name = "rpi2home-assistant"
+description = "Raspberry PI to Home Assistant bridge through MQTT for wired sensors/actuators"
+authors = [
+  { name="Francesco Montorsi", email="francesco.montorsi.nospam@gmail.com" },
+]
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dynamic = ["dependencies", "version"]
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-# 
-# NOTE: the 'project' metadata section is not present because PEP621 is still not supported
-#       by Poetry as of Apr 2024, see https://github.com/python-poetry/poetry/issues/3332
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [project.urls]
 "Homepage" = "https://github.com/f18m/rpi2home-assistant"
@@ -19,34 +25,28 @@ raspy2mqtt = "raspy2mqtt.main:entrypoint"
 [tool.black]
 line-length = 120
 
-[tool.poetry]
-name = "rpi2home-assistant"
-version = "2.2.0"
-description = "Raspberry PI to Home Assistant bridge through MQTT for wired sensors/actuators"
-authors = ["Francesco Montorsi <francesco.montorsi@gmail.com>"]
-readme = "README.md"
-packages = [{include = "raspy2mqtt"}]
+[build-system]
+requires = ["hatchling", "hatch-vcs", "hatch-requirements-txt"]
+build-backend = "hatchling.build"
 
-[tool.poetry.scripts]
-raspy2mqtt = "raspy2mqtt.main:main.entrypoint"
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
 
-# DEPENDENCIES
-# 1) since Renovate bot is used, it's best to pin dependency versions; 
-#    see https://docs.renovatebot.com/modules/manager/poetry/
-# 2) reference docs for each dependency:
-#  aiomqtt ->    https://sbtinstruments.github.io/aiomqtt/
-#  SM16inpind -> https://github.com/SequentMicrosystems/16inpind-rpi/tree/main/python
-#  PyYAML ->     https://pyyaml.org/wiki/PyYAMLDocumentation
-#  gpiozero ->   https://gpiozero.readthedocs.io/en/latest/index.html
-#  DEPRECATED: RPi.GPIO ->   https://pythonhosted.org/RPIO/   (backend for gpiozero)
-#              As of March 2024, RPI.GPIO does not work anymore on latest Raspbian, see https://github.com/gpiozero/gpiozero/issues/1136
-#              So I had to switch to pigpio, which however needs a daemon to be running to work (!!!)
-[tool.poetry.dependencies]
-python = ">=3.11,<4.0"
-aiomqtt = "2.3.0"
-sm16inpind = "1.0.1"
-PyYAML = "6.0.2"
-gpiozero = "2.0.1"
-pigpio = "1.78"
-schema = "0.7.7"
+[tool.hatch.build.targets.wheel]
+only-include = ["src"]
+sources = ["src"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/_raspy2mqtt_version.py"
+template = '''
+version = "{version}"
+'''
+
+# disable guessing of next version, 
+# see https://setuptools-scm.readthedocs.io/en/latest/extending/#setuptools_scmversion_scheme
+[tool.hatch.version.raw-options]
+version_scheme = "no-guess-dev"
 

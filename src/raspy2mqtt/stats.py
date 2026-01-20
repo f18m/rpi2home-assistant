@@ -4,7 +4,7 @@ import time
 import asyncio
 
 # from raspy2mqtt.constants import *
-from raspy2mqtt.config import AppConfig
+from .config import AppConfig
 
 #
 # Author: fmontorsi
