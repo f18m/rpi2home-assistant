@@ -5,7 +5,6 @@ import signal
 from tests.mosquitto_container import MosquittoContainerEnhanced
 from tests.raspy2mqtt_container import Raspy2MQTTContainer
 
-
 # GLOBALs
 
 broker = MosquittoContainerEnhanced()

@@ -15,7 +15,6 @@ from .constants import MqttDefaults, HomeAssistantDefaults, SeqMicroHatConstants
 
 from schema import Schema, Optional, SchemaError, Regex
 
-
 # =======================================================================================================
 # AppConfig
 # =======================================================================================================
