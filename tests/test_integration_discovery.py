@@ -2,8 +2,6 @@ import pytest
 import time
 import json
 
-# from testcontainers.core.utils import raise_for_deprecated_parameter
-
 from tests.mosquitto_container import MosquittoContainerEnhanced
 from tests.raspy2mqtt_container import Raspy2MQTTContainer
 
@@ -22,6 +20,11 @@ EXPECTED_DISCOVERY_MSG_OUTPUT_1 = """
     "identifiers": [
       "rpi2home-assistant-integration-test-instance"
     ]
+  },
+  "origin": {
+    "name": "rpi2home-assistant",
+    "sw": "__THIS_FIELD_IS_NOT_CHECKED__",
+    "url": "https://github.com/f18m/rpi2home-assistant"
   },
   "payload_on": "ON",
   "payload_off": "OFF"
@@ -45,6 +48,11 @@ EXPECTED_DISCOVERY_MSG_OPTO_ISOLATED_INPUT_1 = """
     "identifiers": [
       "rpi2home-assistant-integration-test-instance"
     ]
+  },
+  "origin": {
+    "name": "rpi2home-assistant",
+    "sw": "__THIS_FIELD_IS_NOT_CHECKED__",
+    "url": "https://github.com/f18m/rpi2home-assistant"
   }
 }
 """
@@ -105,6 +113,10 @@ def test_mqtt_discovery_messages():
                 # updating this testcase on every new release:
                 del config_dict["device"]["sw_version"]
                 del expected_dict["device"]["sw_version"]
+                if "origin" in config_dict and "sw" in config_dict["origin"]:
+                    del config_dict["origin"]["sw"]
+                if "origin" in expected_dict and "sw" in expected_dict["origin"]:
+                    del expected_dict["origin"]["sw"]
 
                 # check also the contents of the discovery message:
                 assert config_dict == expected_dict

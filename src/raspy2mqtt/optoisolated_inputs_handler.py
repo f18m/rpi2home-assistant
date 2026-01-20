@@ -40,13 +40,14 @@ class OptoIsolatedInputsHandler:
 
     buffer_num_samples = 64
 
-    def __init__(self):
+    def __init__(self, app_version: str):
         # last reading of the 16 digital opto-isolated inputs
         self.optoisolated_inputs_sampled_values = []
         for i in range(SeqMicroHatConstants.MAX_CHANNELS):
             self.optoisolated_inputs_sampled_values.append(CircularBuffer(OptoIsolatedInputsHandler.buffer_num_samples))
 
         self.lock = threading.Lock()
+        self.app_version = app_version
 
         self.stats = {
             "num_readings": 0,
@@ -228,6 +229,11 @@ class OptoIsolatedInputsHandler:
                         "device_class": entry["home_assistant"]["device_class"],
                         "expire_after": entry["home_assistant"]["expire_after"],
                         "device": cfg.get_device_dict(),
+                        "origin": {
+                            "name": "rpi2home-assistant",
+                            "sw": self.app_version,
+                            "url": "https://github.com/f18m/rpi2home-assistant",
+                        },
                     }
                     if entry["home_assistant"]["icon"] is not None:
                         # add icon to the config of the entry:
