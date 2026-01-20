@@ -670,4 +670,5 @@ class AppConfig:
             "name": self.homeassistant_discovery_topic_node_id,
             "sw_version": self.app_version,
             "identifiers": [f"{MiscAppDefaults.THIS_APP_NAME}-{self.homeassistant_discovery_topic_node_id}"],
+            "configuration_url": "https://github.com/f18m/rpi2home-assistant",
         }
