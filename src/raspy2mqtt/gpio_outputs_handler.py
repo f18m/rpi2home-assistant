@@ -66,9 +66,10 @@ class GpioOutputsHandler:
     client_identifier_sub = "_outputs_cmd_subscriber"
     client_identifier_discovery_pub = "_outputs_discovery_publisher"
 
-    def __init__(self):
+    def __init__(self, app_version: str):
         # global dictionary of gpiozero.LED instances used to drive outputs; key=MQTT topic
         self.output_channels = {}
+        self.app_version = app_version
 
         self.stats = {
             "num_connections_subscribe": 0,
@@ -244,11 +245,10 @@ class GpioOutputsHandler:
                         "device_class": entry["home_assistant"]["device_class"],
                         # "expire_after": entry['home_assistant']["expire_after"], -- not supported by MQTT switch :(
                         "device": cfg.get_device_dict(),
-
                         "origin": {
-                            "name":"rpi2home-assistant",
-                            "sw": psmqtt_ver,
-                            "url": "https://github.com/eschava/psmqtt"
+                            "name": "rpi2home-assistant",
+                            "sw": self.app_version,
+                            "url": "https://github.com/eschava/psmqtt",
                         },
                     }
                     if entry["home_assistant"]["icon"] is not None:

@@ -5,7 +5,6 @@
 # Created: Feb 2024
 # License: Apache license
 #
-# TODO: add HomeAssistant discovery messages
 
 import argparse
 import os
@@ -175,7 +174,7 @@ async def main_loop():
     # initialize handlers
     opto_inputs_handler = OptoIsolatedInputsHandler()
     gpio_inputs_handler = GpioInputsHandler()
-    gpio_outputs_handler = GpioOutputsHandler()
+    gpio_outputs_handler = GpioOutputsHandler(cfg.app_version)
     homeassistant_status_tracker = HomeAssistantStatusTracker()
     stats_collector = StatsCollector([opto_inputs_handler, gpio_inputs_handler, gpio_outputs_handler])
 

@@ -13,6 +13,7 @@ from typing import Optional
 #                          MosquittoContainerEnhanced                          #
 # ---------------------------------------------------------------------------- #
 
+
 class MosquittoContainerEnhanced(MosquittoContainer):
     """
     Specialization of MosquittoContainer adding the ability to watch topics
