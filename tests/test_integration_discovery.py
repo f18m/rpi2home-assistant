@@ -48,6 +48,11 @@ EXPECTED_DISCOVERY_MSG_OPTO_ISOLATED_INPUT_1 = """
     "identifiers": [
       "rpi2home-assistant-integration-test-instance"
     ]
+  },
+  "origin": {
+    "name": "rpi2home-assistant",
+    "sw": "__THIS_FIELD_IS_NOT_CHECKED__",
+    "url": "https://github.com/f18m/rpi2home-assistant"
   }
 }
 """
