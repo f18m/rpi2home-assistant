@@ -248,7 +248,7 @@ class GpioOutputsHandler:
                         "origin": {
                             "name": "rpi2home-assistant",
                             "sw": self.app_version,
-                            "url": "https://github.com/eschava/psmqtt",
+                            "url": "https://github.com/f18m/rpi2home-assistant",
                         },
                     }
                     if entry["home_assistant"]["icon"] is not None:

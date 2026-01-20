@@ -21,6 +21,11 @@ EXPECTED_DISCOVERY_MSG_OUTPUT_1 = """
       "rpi2home-assistant-integration-test-instance"
     ]
   },
+  "origin": {
+    "name": "rpi2home-assistant",
+    "sw": "__THIS_FIELD_IS_NOT_CHECKED__",
+    "url": "https://github.com/f18m/rpi2home-assistant"
+  },
   "payload_on": "ON",
   "payload_off": "OFF"
 }
@@ -103,6 +108,10 @@ def test_mqtt_discovery_messages():
                 # updating this testcase on every new release:
                 del config_dict["device"]["sw_version"]
                 del expected_dict["device"]["sw_version"]
+                if "origin" in config_dict and "sw" in config_dict["origin"]:
+                    del config_dict["origin"]["sw"]
+                if "origin" in expected_dict and "sw" in expected_dict["origin"]:
+                    del expected_dict["origin"]["sw"]
 
                 # check also the contents of the discovery message:
                 assert config_dict == expected_dict
