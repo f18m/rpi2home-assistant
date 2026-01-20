@@ -13,6 +13,7 @@ EXPECTED_DISCOVERY_MSG_OUTPUT_1 = """
   "state_topic": "rpi2home-assistant/output_1/state",
   "device_class": "switch",
   "device": {
+    "configuration_url": "https://github.com/f18m/rpi2home-assistant",
     "manufacturer": "github.com/f18m",
     "model": "rpi2home-assistant",
     "name": "integration-test-instance",
@@ -41,6 +42,7 @@ EXPECTED_DISCOVERY_MSG_OPTO_ISOLATED_INPUT_1 = """
   "device_class": "door",
   "expire_after": 30,
   "device": {
+    "configuration_url": "https://github.com/f18m/rpi2home-assistant",
     "manufacturer": "github.com/f18m",
     "model": "rpi2home-assistant",
     "name": "integration-test-instance",
