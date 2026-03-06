@@ -57,9 +57,9 @@ class SelfStatusPublisher:
         print(
             f"Connecting to MQTT broker with identifier {SelfStatusPublisher.client_identifier} to publish self status on topic [{status_topic}]"
         )
-        self.stats["num_connections"] += 1
         while True:
             try:
+                self.stats["num_connections"] += 1
                 async with cfg.create_aiomqtt_client(SelfStatusPublisher.client_identifier, will=will) as client:
                     await client.publish(status_topic, self.PAYLOAD_ONLINE, qos=MqttQOS.AT_LEAST_ONCE, retain=True)
                     print(f"Published '{self.PAYLOAD_ONLINE}' to status topic [{status_topic}]")
