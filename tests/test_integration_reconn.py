@@ -48,7 +48,9 @@ def test_mqtt_reconnection():
             measure_period_sec = 5
             topics_under_test = ["rpi2home-assistant/opto_input_1"]
             broker.watch_topics(topics_under_test)
-            print(f"Attempt {attempt}-th: Checking if messages are received from topics {topics_under_test} in the next {measure_period_sec}sec...")
+            print(
+                f"Attempt {attempt}-th: Checking if messages are received from topics {topics_under_test} in the next {measure_period_sec}sec..."
+            )
 
             for idx in range(1, 3):
                 time.sleep(1.5)
