@@ -644,11 +644,16 @@ class AppConfig:
     #
     # MQTT HELPERs
     #
-    def create_aiomqtt_client(self, identifier_str: str) -> aiomqtt.Client:
+    @property
+    def status_mqtt_topic(self) -> str:
+        return f"{self.homeassistant_default_topic_prefix}/status"
+
+    def create_aiomqtt_client(self, identifier_str: str, will: aiomqtt.Will = None) -> aiomqtt.Client:
         """
         Creates an aiomqtt client based on the configuration information provided to this app.
         The 'identifier_str' can be used to uniquely name the client connection.
         Such unique name appears in MQTT broker logs and is useful for debug.
+        The optional 'will' parameter sets the Last Will and Testament for the client.
         """
         return aiomqtt.Client(
             hostname=self.mqtt_broker_host,
@@ -657,6 +662,7 @@ class AppConfig:
             username=self.mqtt_broker_user,
             password=self.mqtt_broker_password,
             identifier=self.mqtt_identifier_prefix + identifier_str,
+            will=will,
         )
 
     def get_device_dict(self) -> dict:

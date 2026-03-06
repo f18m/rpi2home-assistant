@@ -21,6 +21,7 @@ from .optoisolated_inputs_handler import OptoIsolatedInputsHandler
 from .gpio_inputs_handler import GpioInputsHandler
 from .gpio_outputs_handler import GpioOutputsHandler
 from .homeassistant_status_tracker import HomeAssistantStatusTracker
+from .self_status_publisher import SelfStatusPublisher
 
 # =======================================================================================================
 # GLOBALs
@@ -176,7 +177,8 @@ async def main_loop():
     gpio_inputs_handler = GpioInputsHandler()
     gpio_outputs_handler = GpioOutputsHandler(cfg.app_version)
     homeassistant_status_tracker = HomeAssistantStatusTracker()
-    stats_collector = StatsCollector([opto_inputs_handler, gpio_inputs_handler, gpio_outputs_handler])
+    self_status_publisher = SelfStatusPublisher()
+    stats_collector = StatsCollector([opto_inputs_handler, gpio_inputs_handler, gpio_outputs_handler, self_status_publisher])
 
     button_instances = init_hardware(cfg)
     button_instances += opto_inputs_handler.init_hardware(cfg)
@@ -221,6 +223,7 @@ async def main_loop():
             loop.create_task(gpio_inputs_handler.process_gpio_inputs_queue_and_publish(cfg)),
             loop.create_task(gpio_outputs_handler.subscribe_and_activate_outputs(cfg)),
             loop.create_task(gpio_outputs_handler.publish_outputs_state(cfg)),
+            loop.create_task(self_status_publisher.publish_status(cfg)),
         ]
 
         if cfg.homeassistant_discovery_messages_enable:
@@ -236,6 +239,7 @@ async def main_loop():
         GpioInputsHandler.stop_requested = True
         GpioOutputsHandler.stop_requested = True
         OptoIsolatedInputsHandler.stop_requested = True
+        SelfStatusPublisher.stop_requested = True
         for t in tasks:
             t.cancel()
 
