@@ -33,7 +33,7 @@ class MosquittoContainerEnhanced(MosquittoContainer):
         self.watched_topics = {}
 
     def start(self) -> Self:
-        # since version 2.1.1 - 2026-02-04, which fixed a PUID/PGID issue, the container needs to write to the data directory, 
+        # since version 2.1.1 - 2026-02-04, which fixed a PUID/PGID issue, the container needs to write to the data directory,
         # so we need to map it to a volume
         # see also upstream fix at https://github.com/testcontainers/testcontainers-python/pull/978
         super().with_volume_mapping("mosquitto_data", "/data", mode="rw")
