@@ -38,15 +38,17 @@ def test_mqtt_reconnection():
                     assert False
 
             # ok seems the container is still up -- that's good -- now let's see if it can reconnect
-            print("Attempt {attempt}-th: About to restart the broker...")
+            print(f"Attempt {attempt}-th: About to restart the broker...")
             try:
                 broker.start()
             except Exception as e:
                 print(e)
                 assert False
 
+            measure_period_sec = 5
             topics_under_test = ["rpi2home-assistant/opto_input_1"]
             broker.watch_topics(topics_under_test)
+            print(f"Attempt {attempt}-th: Checking if messages are received from topics {topics_under_test} in the next {measure_period_sec}sec...")
 
             for idx in range(1, 3):
                 time.sleep(1.5)
@@ -58,8 +60,9 @@ def test_mqtt_reconnection():
                     assert False
 
             # now verify that there is also traffic on the topics:
-            # time.sleep(4)
+            time.sleep(measure_period_sec)
             msg_rate = broker.get_message_rate_in_watched_topic(topics_under_test[0])
+            print(f"Attempt {attempt}-th: Measured message rate for topics {topics_under_test}: {msg_rate} msgs/sec")
             assert msg_rate > 0
 
         print("Test passed. Container logs should indicate several attempts to reconnect:")
