@@ -181,9 +181,7 @@ async def main_loop(args):
     gpio_inputs_handler = GpioInputsHandler()
     gpio_outputs_handler = GpioOutputsHandler(cfg.app_version)
     homeassistant_status_tracker = HomeAssistantStatusTracker()
-    stats_collector = StatsCollector(
-        [opto_inputs_handler, gpio_inputs_handler, gpio_outputs_handler]
-    )
+    stats_collector = StatsCollector([opto_inputs_handler, gpio_inputs_handler, gpio_outputs_handler])
 
     button_instances = init_hardware(cfg)
     button_instances += opto_inputs_handler.init_hardware(cfg)
@@ -272,7 +270,7 @@ async def main_loop(args):
         stats_collector.print_stats()
 
         # on graceful exit, we MUST publish the "status offline" message ourselves;
-        # MQTT Last Will and Testament (LWT) is not sent during a normal, graceful closure (DISCONNECT packet). 
+        # MQTT Last Will and Testament (LWT) is not sent during a normal, graceful closure (DISCONNECT packet).
         # It is designed specifically for unexpected disconnections—such as network loss, power failure,
         # or crashes—where the broker realizes the client is gone via timeout
         await client.publish(cfg.status_mqtt_topic, PAYLOAD_OFFLINE, qos=MqttQOS.AT_LEAST_ONCE, retain=True)
