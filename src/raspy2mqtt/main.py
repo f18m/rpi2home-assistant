@@ -207,6 +207,7 @@ async def main_loop(args):
     async with cfg.create_aiomqtt_client(g_main_client_identifier, will=will) as client:
 
         # send the "status online" msg
+        print("Publishing ONLINE payload on the STATUS topic")
         await client.publish(cfg.status_mqtt_topic, PAYLOAD_ONLINE, qos=MqttQOS.AT_LEAST_ONCE, retain=True)
 
         # wrap with error-handling code the main loop
@@ -266,14 +267,15 @@ async def main_loop(args):
                 except asyncio.CancelledError:
                     pass
 
-        print("Printing stats for the last time:")
-        stats_collector.print_stats()
-
         # on graceful exit, we MUST publish the "status offline" message ourselves;
         # MQTT Last Will and Testament (LWT) is not sent during a normal, graceful closure (DISCONNECT packet).
         # It is designed specifically for unexpected disconnections—such as network loss, power failure,
         # or crashes—where the broker realizes the client is gone via timeout
+        print("Publishing OFFLINE payload on the STATUS topic")
         await client.publish(cfg.status_mqtt_topic, PAYLOAD_OFFLINE, qos=MqttQOS.AT_LEAST_ONCE, retain=True)
+
+    print("Printing stats for the last time:")
+    stats_collector.print_stats()
 
     print(f"Exiting gracefully with exit code {exit_code}...")
     return exit_code
