@@ -162,3 +162,34 @@ def test_publish_subscribe_for_outputs():
 
         broker.unwatch_all()
         print("Integration test passed!")
+
+
+@pytest.mark.integration
+def test_publish_self_status():
+
+    status_topic = "rpi2home-assistant/status"
+
+    with Raspy2MQTTContainer(broker=broker) as container:
+        time.sleep(1)  # give time to the Raspy2MQTTContainer to fully start
+        if not container.is_running():
+            print("Container under test has stopped running... test failed.")
+            container.print_logs()
+            assert False
+
+        broker.watch_topics([status_topic])
+        time.sleep(2)  # give time for the status message to be published
+
+        broker.print_logs()
+        container.print_logs()
+
+        msg_count = broker.get_messages_received_in_watched_topic(status_topic)
+        last_payload = broker.get_last_payload_received_in_watched_topic(status_topic)
+        print(f"** TEST RESULTS [{status_topic}]")
+        print(f"Total messages in topic [{status_topic}]: {msg_count} msgs")
+        print(f"Last payload in topic [{status_topic}]: {last_payload}")
+
+        assert msg_count >= 1
+        assert last_payload == "online"
+
+        broker.unwatch_all()
+        print("Integration test passed!")
