@@ -25,7 +25,7 @@ class MosquittoContainerEnhanced(MosquittoContainer):
 
     def __init__(
         self,
-        image: str = "eclipse-mosquitto:2.1.2",
+        image: str = "eclipse-mosquitto:2.1.2-alpine",
         **kwargs,
     ) -> None:
         super().__init__(image, **kwargs)
