@@ -1,8 +1,10 @@
 import os
 import time
+
 from testcontainers.mqtt import MosquittoContainer
 from testcontainers.core.waiting_utils import wait_container_is_ready
 from typing_extensions import Self
+from pathlib import Path
 
 from paho.mqtt import client as mqtt_client
 import paho.mqtt.enums
@@ -19,9 +21,11 @@ class MosquittoContainerEnhanced(MosquittoContainer):
     Specialization of MosquittoContainer adding the ability to watch topics
     """
 
+    CONFIG_FILE = "mosquitto-default-configuration.conf"
+
     def __init__(
         self,
-        image: str = "eclipse-mosquitto:latest",
+        image: str = "eclipse-mosquitto:2.1.2-alpine",
         **kwargs,
     ) -> None:
         super().__init__(image, **kwargs)
@@ -33,8 +37,16 @@ class MosquittoContainerEnhanced(MosquittoContainer):
         self.watched_topics = {}
 
     def start(self) -> Self:
+        # since version 2.1.1 - 2026-02-04, which fixed a PUID/PGID issue, the container needs to write to the data directory,
+        # so we need to map it to a volume
+        # see also upstream fix at https://github.com/testcontainers/testcontainers-python/pull/978
+        super().with_volume_mapping("mosquitto_data", "/data", mode="rw")
+
+        # default config file
+        configfile = Path(__file__).parent / MosquittoContainerEnhanced.CONFIG_FILE
+
         # do container start
-        super().start()
+        super().start(configfile=configfile)
         # now add callback
         self.get_client().on_message = MosquittoContainerEnhanced.on_message
         return self
