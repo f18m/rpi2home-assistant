@@ -152,13 +152,11 @@ async def signal_handler(sig: signal.Signals) -> None:
     print(f"Received signal {sig.name}... stopping all async tasks")
 
 
-async def main_loop():
+async def main_loop(args):
     global g_stop_requested
 
     cfg = AppConfig()
     print(f"{MiscAppDefaults.THIS_APP_NAME} version {cfg.app_version} starting")
-
-    args = parse_command_line()
 
     if not cfg.load(args.config):
         return 1  # invalid config file... abort with failure exit code
@@ -261,6 +259,8 @@ async def main_loop():
 
 
 def entrypoint():
+    args = parse_command_line()
+
     if instance_already_running(MiscAppDefaults.THIS_APP_NAME):
         print(
             "Sorry, detected another instance of this daemon is already running. Using the same I2C bus from 2 sofware programs is not recommended. Aborting."
@@ -268,7 +268,7 @@ def entrypoint():
         sys.exit(3)
 
     try:
-        sys.exit(asyncio.run(main_loop()))
+        sys.exit(asyncio.run(main_loop(args)))
     except KeyboardInterrupt:
         print("Stopping due to CTRL+C")
 
