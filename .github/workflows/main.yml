@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: install pypi-packaged dependencies
       run: sudo pip3 install build
 
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: install pypi-packaged dependencies
       run: sudo pip3 install black ruff
     - name: run formatter
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     # testcontainers 4.6.0 has introduced the MosquittoContainer, see
     # https://github.com/testcontainers/testcontainers-python/releases/tag/testcontainers-v4.6.0
