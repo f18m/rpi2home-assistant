@@ -158,6 +158,89 @@ async def signal_handler(sig: signal.Signals) -> None:
     print(f"Received signal {sig.name}... stopping all async tasks")
 
 
+async def run_mqtt_session(
+    cfg,
+    client,
+    stats_collector,
+    opto_inputs_handler,
+    gpio_inputs_handler,
+    gpio_outputs_handler,
+    homeassistant_status_tracker,
+):
+    """Run the main application loop over an already-connected MQTT client.
+
+    Publishes the online status, launches all sub-task coroutines and waits
+    until a stop is requested, then cancels the tasks and publishes the
+    offline status before returning.
+    """
+    # send the "status online" msg
+    print("Publishing ONLINE payload on the STATUS topic")
+    await client.publish(cfg.status_mqtt_topic, PAYLOAD_ONLINE, qos=MqttQOS.AT_LEAST_ONCE, retain=True)
+
+    # wrap with error-handling code the main loop
+    print("Starting main loop")
+    while not g_stop_requested:
+        # the double-nested 'try' is the only way I found in Python 3.11.2 to catch properly
+        # both exception groups (using the 'except*' syntax) and also have a default catch-all
+        # label using regular 'except' syntax.
+
+        # NOTE: unfortunately we cannot use a taskgroup: the problem is the function
+        # subscribe_and_activate_outputs() which uses the aiomqtt.Client.messages generator
+        # which does not allow to easily stop the 'waiting for next message' operation.
+        # This means we need to create each task manually with asyncio.EventLoop.create_task()
+        # and cancel() them whenever a SIGTERM is received.
+        #
+        # async with asyncio.TaskGroup() as tg:
+        #     tg.create_task(print_stats_periodically(cfg))
+        #     # inputs:
+        #     tg.create_task(publish_optoisolated_inputs(cfg))
+        #     tg.create_task(process_gpio_inputs_queue_and_publish(cfg))
+        #     # outputs:
+        #     tg.create_task(subscribe_and_activate_outputs(cfg))
+        #     tg.create_task(publish_outputs_state(cfg))
+
+        # launch all coroutines:
+        loop = asyncio.get_running_loop()
+        tasks = [
+            loop.create_task(stats_collector.print_stats_periodically(cfg)),
+            loop.create_task(opto_inputs_handler.publish_optoisolated_inputs(cfg)),
+            loop.create_task(gpio_inputs_handler.process_gpio_inputs_queue_and_publish(cfg)),
+            loop.create_task(gpio_outputs_handler.subscribe_and_activate_outputs(cfg)),
+            loop.create_task(gpio_outputs_handler.publish_outputs_state(cfg)),
+        ]
+
+        if cfg.homeassistant_discovery_messages_enable:
+            # subscribe to HomeAssistant status notification and eventually trigger MQTT discovery messages
+            loop.create_task(homeassistant_status_tracker.subscribe_status(cfg)),
+
+        # this main coroutine will simply wait till a SIGTERM arrives and
+        # we get g_stop_requested=True:
+        while not g_stop_requested:
+            await asyncio.sleep(1)
+
+        print("Main coroutine is now cancelling all sub-tasks (coroutines)")
+        GpioInputsHandler.stop_requested = True
+        GpioOutputsHandler.stop_requested = True
+        OptoIsolatedInputsHandler.stop_requested = True
+        for t in tasks:
+            t.cancel()
+
+        print("Waiting cancellation of all tasks")
+        for t in tasks:
+            # Wait for the task to be cancelled
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
+
+    # on graceful exit, we MUST publish the "status offline" message ourselves;
+    # MQTT Last Will and Testament (LWT) is not sent during a normal, graceful closure (DISCONNECT packet).
+    # It is designed specifically for unexpected disconnections—such as network loss, power failure,
+    # or crashes—where the broker realizes the client is gone via timeout
+    print("Publishing OFFLINE payload on the STATUS topic")
+    await client.publish(cfg.status_mqtt_topic, PAYLOAD_OFFLINE, qos=MqttQOS.AT_LEAST_ONCE, retain=True)
+
+
 async def main_loop(args):
     global g_stop_requested
 
@@ -209,74 +292,15 @@ async def main_loop(args):
     while not g_stop_requested:
         try:
             async with cfg.create_aiomqtt_client(g_main_client_identifier, will=will) as client:
-
-                # send the "status online" msg
-                print("Publishing ONLINE payload on the STATUS topic")
-                await client.publish(cfg.status_mqtt_topic, PAYLOAD_ONLINE, qos=MqttQOS.AT_LEAST_ONCE, retain=True)
-
-                # wrap with error-handling code the main loop
-                print("Starting main loop")
-                while not g_stop_requested:
-                    # the double-nested 'try' is the only way I found in Python 3.11.2 to catch properly
-                    # both exception groups (using the 'except*' syntax) and also have a default catch-all
-                    # label using regular 'except' syntax.
-
-                    # NOTE: unfortunately we cannot use a taskgroup: the problem is the function
-                    # subscribe_and_activate_outputs() which uses the aiomqtt.Client.messages generator
-                    # which does not allow to easily stop the 'waiting for next message' operation.
-                    # This means we need to create each task manually with asyncio.EventLoop.create_task()
-                    # and cancel() them whenever a SIGTERM is received.
-                    #
-                    # async with asyncio.TaskGroup() as tg:
-                    #     tg.create_task(print_stats_periodically(cfg))
-                    #     # inputs:
-                    #     tg.create_task(publish_optoisolated_inputs(cfg))
-                    #     tg.create_task(process_gpio_inputs_queue_and_publish(cfg))
-                    #     # outputs:
-                    #     tg.create_task(subscribe_and_activate_outputs(cfg))
-                    #     tg.create_task(publish_outputs_state(cfg))
-
-                    # launch all coroutines:
-                    loop = asyncio.get_running_loop()
-                    tasks = [
-                        loop.create_task(stats_collector.print_stats_periodically(cfg)),
-                        loop.create_task(opto_inputs_handler.publish_optoisolated_inputs(cfg)),
-                        loop.create_task(gpio_inputs_handler.process_gpio_inputs_queue_and_publish(cfg)),
-                        loop.create_task(gpio_outputs_handler.subscribe_and_activate_outputs(cfg)),
-                        loop.create_task(gpio_outputs_handler.publish_outputs_state(cfg)),
-                    ]
-
-                    if cfg.homeassistant_discovery_messages_enable:
-                        # subscribe to HomeAssistant status notification and eventually trigger MQTT discovery messages
-                        loop.create_task(homeassistant_status_tracker.subscribe_status(cfg)),
-
-                    # this main coroutine will simply wait till a SIGTERM arrives and
-                    # we get g_stop_requested=True:
-                    while not g_stop_requested:
-                        await asyncio.sleep(1)
-
-                    print("Main coroutine is now cancelling all sub-tasks (coroutines)")
-                    GpioInputsHandler.stop_requested = True
-                    GpioOutputsHandler.stop_requested = True
-                    OptoIsolatedInputsHandler.stop_requested = True
-                    for t in tasks:
-                        t.cancel()
-
-                    print("Waiting cancellation of all tasks")
-                    for t in tasks:
-                        # Wait for the task to be cancelled
-                        try:
-                            await t
-                        except asyncio.CancelledError:
-                            pass
-
-                # on graceful exit, we MUST publish the "status offline" message ourselves;
-                # MQTT Last Will and Testament (LWT) is not sent during a normal, graceful closure (DISCONNECT packet).
-                # It is designed specifically for unexpected disconnections—such as network loss, power failure,
-                # or crashes—where the broker realizes the client is gone via timeout
-                print("Publishing OFFLINE payload on the STATUS topic")
-                await client.publish(cfg.status_mqtt_topic, PAYLOAD_OFFLINE, qos=MqttQOS.AT_LEAST_ONCE, retain=True)
-
+                await run_mqtt_session(
+                    cfg,
+                    client,
+                    stats_collector,
+                    opto_inputs_handler,
+                    gpio_inputs_handler,
+                    gpio_outputs_handler,
+                    homeassistant_status_tracker,
+                )
         except aiomqtt.MqttError as e:
             print(f"Failed to connect to MQTT broker: {e}. Retrying in {cfg.mqtt_reconnection_period_sec}s...")
             await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
