@@ -20,13 +20,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+    - name: set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.11"
     - name: install pypi-packaged dependencies
-      run: sudo pip3 install build
+      run: python -m pip install build
 
     # test Python packaging
     - name: package the pypi
       run: |
-        python3 -m build
+        python -m build
 
   # -------------------------------------------------------------------------- 
   #                           formatter_and_linter                                   
@@ -36,8 +40,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+    - name: set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.11"
     - name: install pypi-packaged dependencies
-      run: sudo pip3 install black ruff
+      run: python -m pip install black ruff
     - name: run formatter
       run: black . --check
     - name: run linter
@@ -51,11 +59,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
-
+    - name: set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.11"
     # testcontainers 4.6.0 has introduced the MosquittoContainer, see
     # https://github.com/testcontainers/testcontainers-python/releases/tag/testcontainers-v4.6.0
     - name: install pypi-packaged dependencies for unit and integration tests
-      run: sudo pip3 install pytest 'testcontainers>=4.6.0' paho-mqtt aiomqtt schema
+      run: python -m pip install pytest 'testcontainers>=4.6.0' paho-mqtt aiomqtt schema
 
     # FIXME: we should have all dependencies centralized in the TOML file and install them as:
     # - name: Install dependencies
@@ -64,9 +75,9 @@ jobs:
     #     poetry show --tree
 
     - name: run unit tests
-      run: pytest -vvv -m unit
+      run: python -m pytest -vvv -m unit
 
     - name: build docker image
       run: docker build -t rpi2home-assistant:latest .
     - name: run integration tests
-      run: pytest -vvv --capture=no -m integration
+      run: python -m pytest -vvv --capture=no -m integration

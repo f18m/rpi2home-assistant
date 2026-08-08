@@ -1,12 +1,14 @@
 [project]
 name = "rpi2home-assistant"
 description = "Raspberry PI to Home Assistant bridge through MQTT for wired sensors/actuators"
+requires-python = ">=3.11,<3.12"
 authors = [
   { name="Francesco Montorsi", email="francesco.montorsi.nospam@gmail.com" },
 ]
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]

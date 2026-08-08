@@ -134,6 +134,8 @@ class GpioInputsHandler:
                             self.stats["num_mqtt_messages"] += 1
 
                         self.gpio_queue.task_done()
+            except asyncio.CancelledError:
+                raise
             except aiomqtt.MqttError as err:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1

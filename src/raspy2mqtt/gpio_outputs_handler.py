@@ -153,6 +153,8 @@ class GpioOutputsHandler:
                             self.stats["ERROR_invalid_payload_received"] += 1
 
                         self.stats["num_mqtt_commands_processed"] += 1
+            except asyncio.CancelledError:
+                raise
             except aiomqtt.MqttError as err:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1
@@ -208,6 +210,8 @@ class GpioOutputsHandler:
                                 output_status_map[mqtt_topic] = output_status
 
                         await asyncio.sleep(cfg.homeassistant_publish_period_sec)
+            except asyncio.CancelledError:
+                raise
             except aiomqtt.MqttError as err:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1
@@ -265,6 +269,8 @@ class GpioOutputsHandler:
                     await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                     self.stats["num_mqtt_discovery_messages_published"] += 1
 
+        except asyncio.CancelledError:
+            raise
         except aiomqtt.MqttError as err:
             print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
             self.stats["ERROR_num_connections_lost"] += 1

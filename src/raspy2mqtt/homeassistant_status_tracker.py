@@ -82,6 +82,8 @@ class HomeAssistantStatusTracker:
                             # this is typically not a good news, unless it's a planned maintainance
                             print("!!! HomeAssistant status changed to 'offline' !!!")
 
+            except asyncio.CancelledError:
+                raise
             except aiomqtt.MqttError as err:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1

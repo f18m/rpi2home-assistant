@@ -190,6 +190,8 @@ class OptoIsolatedInputsHandler:
                             actual_sleep_time_sec -= update_loop_duration_sec
 
                         await asyncio.sleep(actual_sleep_time_sec)
+            except asyncio.CancelledError:
+                raise
             except aiomqtt.MqttError as err:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1
@@ -241,6 +243,8 @@ class OptoIsolatedInputsHandler:
                     mqtt_payload = json.dumps(mqtt_payload_dict)
                     await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                     self.stats["num_mqtt_discovery_messages_published"] += 1
+        except asyncio.CancelledError:
+            raise
         except aiomqtt.MqttError as err:
             print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
             self.stats["ERROR_num_connections_lost"] += 1
