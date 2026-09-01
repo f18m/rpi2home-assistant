@@ -1,16 +1,14 @@
-#!/usr/bin/env python3
-
-import time
-import asyncio
-
-# from raspy2mqtt.constants import *
-from .config import AppConfig
-
 #
 # Author: fmontorsi
 # Created: Apr 2024
 # License: Apache license
 #
+
+import asyncio
+import time
+
+# from raspy2mqtt.constants import *
+from .config import AppConfig
 
 # =======================================================================================================
 # StatsCollector

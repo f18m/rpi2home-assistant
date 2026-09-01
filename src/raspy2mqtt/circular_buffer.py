@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 #
 # Author: fmontorsi
 # Created: June 2024
@@ -84,9 +82,8 @@ class CircularBuffer:
     def get_stable_sample(self, now_ts: int, min_stability_sec: float) -> tuple:
         if self.index == 0:
             return None  # buffer is empty
-        if now_ts < self.last_timestamp:
-            # fix invalid timestamp (NTP adjustment?)
-            now_ts = self.last_timestamp
+        # fix invalid timestamp (NTP adjustment?)
+        now_ts = max(now_ts, self.last_timestamp)
         # starting from the last sample search going backwards the first "stable" sample:
         last_ts = now_ts
         sample_offset_in_the_past = 1

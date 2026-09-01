@@ -13,16 +13,16 @@ jobs:
     - name: set up Python
       uses: actions/setup-python@v7
       with:
-        python-version: "3.x"
+        python-version: "3.11"
     - name: install pypa/build
       run: >-
-        python3 -m
+        python -m
         pip install build --user
     
     # package & store artifacts
     - name: package the pypi
       run: |
-        python3 -m build
+        python -m build
     - name: store the distribution packages
       uses: actions/upload-artifact@v7
       with:

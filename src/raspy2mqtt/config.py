@@ -1,19 +1,23 @@
-#!/usr/bin/env python3
-
 #
 # Author: fmontorsi
 # Created: Apr 2024
 # License: Apache license
 #
 
-import yaml
-import aiomqtt
 import os
 import platform
-from datetime import datetime, timezone
-from .constants import MqttDefaults, HomeAssistantDefaults, SeqMicroHatConstants, MiscAppDefaults
+from datetime import UTC, datetime
 
-from schema import Schema, Optional, SchemaError, Regex
+import aiomqtt
+import yaml
+from schema import Optional, Regex, Schema, SchemaError
+
+from .constants import (
+    HomeAssistantDefaults,
+    MiscAppDefaults,
+    MqttDefaults,
+    SeqMicroHatConstants,
+)
 
 # =======================================================================================================
 # AppConfig
@@ -47,7 +51,7 @@ class AppConfig:
         self.current_hostname = platform.node()
 
         # before launching MQTT connections, define a unique MQTT prefix identifier:
-        self.mqtt_identifier_prefix = "rpi2home_assistant_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        self.mqtt_identifier_prefix = "rpi2home_assistant_" + datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
         self.mqtt_schema_for_sensor_on_and_off = Schema(
             {
@@ -190,12 +194,11 @@ class AppConfig:
                 entry_dict["mqtt"]["topic"] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}"
                 print(f"Topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['topic']}]")
 
-            if has_state_topic:
-                if "state_topic" not in entry_dict["mqtt"]:
-                    entry_dict["mqtt"][
-                        "state_topic"
-                    ] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}/state"
-                    print(f"State topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['state_topic']}]")
+            if has_state_topic and "state_topic" not in entry_dict["mqtt"]:
+                entry_dict["mqtt"][
+                    "state_topic"
+                ] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}/state"
+                print(f"State topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['state_topic']}]")
 
             if has_payload_on_off:
                 if "payload_on" not in entry_dict["mqtt"]:
