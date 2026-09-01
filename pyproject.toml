@@ -17,6 +17,15 @@ dynamic = ["dependencies", "version"]
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
+[project.optional-dependencies]
+# testcontainers 4.6.0 has introduced the MosquittoContainer
+# testcontainers 4.15.0 contains a fix for Mosquitto >= 2.1.2
+test = [
+  "pytest",
+  "testcontainers>=4.15.0",
+  "paho-mqtt",
+]
+
 [project.urls]
 "Homepage" = "https://github.com/f18m/rpi2home-assistant"
 "Bug Tracker" = "https://github.com/f18m/rpi2home-assistant/issues"

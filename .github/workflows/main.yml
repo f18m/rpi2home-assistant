@@ -59,20 +59,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+
     - name: set up Python 3.11
       uses: actions/setup-python@v7
       with:
         python-version: "3.11"
-    # testcontainers 4.6.0 has introduced the MosquittoContainer, see
-    # https://github.com/testcontainers/testcontainers-python/releases/tag/testcontainers-v4.6.0
-    - name: install pypi-packaged dependencies for unit and integration tests
-      run: python -m pip install . pytest 'testcontainers>=4.6.0' paho-mqtt
 
-    # FIXME: we should have all dependencies centralized in the TOML file and install them as:
-    # - name: Install dependencies
-    #   run: |
-    #     poetry install --no-interaction --with dev --all-extras
-    #     poetry show --tree
+    - name: install pypi-packaged dependencies for unit and integration tests
+      run: sudo pip3 install '.[test]'
 
     - name: run unit tests
       run: python -m pytest -vvv -m unit
