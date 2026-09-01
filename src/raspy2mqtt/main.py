@@ -161,7 +161,7 @@ async def signal_handler(sig: signal.Signals) -> None:
 
 
 async def main_loop(args):
-    #global g_stop_requested # the global is not modified, just read
+    # global g_stop_requested # the global is not modified, just read
 
     cfg = AppConfig()
     print(f"{MiscAppDefaults.THIS_APP_NAME} version {cfg.app_version} starting")
