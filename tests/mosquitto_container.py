@@ -37,10 +37,10 @@ class MosquittoContainerEnhanced(MosquittoContainer):
         self.watched_topics = {}
 
     def start(self) -> Self:
-        # since version 2.1.1 - 2026-02-04, which fixed a PUID/PGID issue, the container needs to write to the data directory,
-        # so we need to map it to a volume
-        # see also upstream fix at https://github.com/testcontainers/testcontainers-python/pull/978
-        super().with_volume_mapping("mosquitto_data", "/data", mode="rw")
+        # since version 2.1.1 - 2026-02-04, which fixed a PUID/PGID issue, the container needs to write to the data directory;
+        # the upstream MosquittoContainer.start() (see https://github.com/testcontainers/testcontainers-python/pull/978)
+        # already mounts /data as a tmpfs volume, so we must not map it again here or docker will reject the
+        # container creation with "Duplicate mount point: /data"
 
         # default config file
         configfile = Path(__file__).parent / MosquittoContainerEnhanced.CONFIG_FILE
