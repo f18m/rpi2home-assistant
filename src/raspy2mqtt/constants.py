@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
-
 #
 # Author: fmontorsi
 # Created: Apr 2024
 # License: Apache license
 #
+
+from typing import ClassVar
 
 
 # MQTT constants
@@ -28,7 +28,7 @@ class HomeAssistantDefaults:
     EXPIRE_AFTER_SEC = 30
     MANUFACTURER = "github.com/f18m"
     BUTTON_MOMENTARY_PRESS_SEC = 0.5
-    ALLOWED_DEVICE_CLASSES = {
+    ALLOWED_DEVICE_CLASSES: ClassVar[dict[str, list[str]]] = {
         # see https://www.home-assistant.io/integrations/binary_sensor/#device-class
         "binary_sensor": [
             "battery",

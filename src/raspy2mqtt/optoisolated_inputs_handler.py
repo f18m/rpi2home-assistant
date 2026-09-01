@@ -1,22 +1,22 @@
-#!/usr/bin/env python3
-
-import lib16inpind
-import time
-import asyncio
-import gpiozero
-import json
-import sys
-import aiomqtt
-import threading
-from .constants import MqttQOS, SeqMicroHatConstants
-from .config import AppConfig
-from .circular_buffer import CircularBuffer
-
 #
 # Author: fmontorsi
 # Created: May 2024
 # License: Apache license
 #
+
+import asyncio
+import json
+import sys
+import threading
+import time
+
+import aiomqtt
+import gpiozero
+import lib16inpind
+
+from .circular_buffer import CircularBuffer
+from .config import AppConfig
+from .constants import MqttQOS, SeqMicroHatConstants
 
 # =======================================================================================================
 # OptoIsolatedInputsHandler
@@ -78,7 +78,7 @@ class OptoIsolatedInputsHandler:
             except OSError as e:
                 print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
                 return 2
-            except BaseException as e:
+            except BaseException as e:  # noqa: BLE001 -- last-resort catch-all before aborting HW init
                 print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
                 return 2
 
@@ -190,11 +190,13 @@ class OptoIsolatedInputsHandler:
                             actual_sleep_time_sec -= update_loop_duration_sec
 
                         await asyncio.sleep(actual_sleep_time_sec)
+            except asyncio.CancelledError:
+                raise
             except aiomqtt.MqttError as err:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
-            except Exception as err:
+            except Exception as err:  # noqa: BLE001 -- last-resort catch-all before fatal exit
                 print(f"EXCEPTION: [{err}]. Exiting with code 99.")
                 sys.exit(99)
 
@@ -241,11 +243,13 @@ class OptoIsolatedInputsHandler:
                     mqtt_payload = json.dumps(mqtt_payload_dict)
                     await client.publish(mqtt_discovery_topic, mqtt_payload, qos=MqttQOS.AT_LEAST_ONCE)
                     self.stats["num_mqtt_discovery_messages_published"] += 1
+        except asyncio.CancelledError:
+            raise
         except aiomqtt.MqttError as err:
             print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
             self.stats["ERROR_num_connections_lost"] += 1
             await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 -- last-resort catch-all before fatal exit
             print(f"EXCEPTION: {err}")
             sys.exit(99)
 
