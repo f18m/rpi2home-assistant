@@ -53,7 +53,7 @@ jobs:
     - uses: actions/checkout@v7
 
     - name: install pypi-packaged dependencies for unit and integration tests
-      run: python -m pip install '.[test]'
+      run: sudo pip3 install '.[test]'
 
     - name: run unit tests
       run: python -m pytest -vvv -m unit
