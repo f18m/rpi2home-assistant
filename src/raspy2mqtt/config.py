@@ -1,19 +1,23 @@
-#!/usr/bin/env python3
-
 #
 # Author: fmontorsi
 # Created: Apr 2024
 # License: Apache license
 #
 
-import yaml
-import aiomqtt
 import os
 import platform
-from datetime import datetime, timezone
-from .constants import MqttDefaults, HomeAssistantDefaults, SeqMicroHatConstants, MiscAppDefaults
+from datetime import UTC, datetime
 
-from schema import Schema, Optional, SchemaError, Regex
+import aiomqtt
+import yaml
+from schema import Optional, Regex, Schema, SchemaError
+
+from .constants import (
+    HomeAssistantDefaults,
+    MiscAppDefaults,
+    MqttDefaults,
+    SeqMicroHatConstants,
+)
 
 # =======================================================================================================
 # AppConfig
@@ -47,7 +51,7 @@ class AppConfig:
         self.current_hostname = platform.node()
 
         # before launching MQTT connections, define a unique MQTT prefix identifier:
-        self.mqtt_identifier_prefix = "rpi2home_assistant_" + datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        self.mqtt_identifier_prefix = "rpi2home_assistant_" + datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
         self.mqtt_schema_for_sensor_on_and_off = Schema(
             {

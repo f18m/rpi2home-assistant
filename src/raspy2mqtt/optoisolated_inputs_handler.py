@@ -1,22 +1,22 @@
-#!/usr/bin/env python3
-
-import lib16inpind
-import time
-import asyncio
-import gpiozero
-import json
-import sys
-import aiomqtt
-import threading
-from .constants import MqttQOS, SeqMicroHatConstants
-from .config import AppConfig
-from .circular_buffer import CircularBuffer
-
 #
 # Author: fmontorsi
 # Created: May 2024
 # License: Apache license
 #
+
+import asyncio
+import json
+import sys
+import threading
+import time
+
+import aiomqtt
+import gpiozero
+import lib16inpind
+
+from .circular_buffer import CircularBuffer
+from .config import AppConfig
+from .constants import MqttQOS, SeqMicroHatConstants
 
 # =======================================================================================================
 # OptoIsolatedInputsHandler

@@ -1,18 +1,18 @@
-#!/usr/bin/env python3
-
-import gpiozero
-import asyncio
-import json
-import sys
-import aiomqtt
-from .constants import MqttQOS, MiscAppDefaults, HomeAssistantDefaults
-from .config import AppConfig
-
 #
 # Author: fmontorsi
 # Created: May 2024
 # License: Apache license
 #
+
+import asyncio
+import json
+import sys
+
+import aiomqtt
+import gpiozero
+
+from .config import AppConfig
+from .constants import HomeAssistantDefaults, MiscAppDefaults, MqttQOS
 
 # =======================================================================================================
 # DummyOutputCh

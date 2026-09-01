@@ -1,19 +1,19 @@
-#!/usr/bin/env python3
-
-import gpiozero
-import signal
-import asyncio
-import queue
-import sys
-import aiomqtt
-from .constants import MqttQOS
-from .config import AppConfig
-
 #
 # Author: fmontorsi
 # Created: May 2024
 # License: Apache license
 #
+
+import asyncio
+import queue
+import signal
+import sys
+
+import aiomqtt
+import gpiozero
+
+from .config import AppConfig
+from .constants import MqttQOS
 
 # =======================================================================================================
 # GpioInputsHandler

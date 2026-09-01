@@ -7,21 +7,23 @@
 #
 
 import argparse
-import os
-import fcntl
-import sys
 import asyncio
-import gpiozero
-import subprocess
+import fcntl
+import os
 import signal
+import subprocess
+import sys
+
 import aiomqtt
-from .stats import StatsCollector
-from .constants import SeqMicroHatConstants, MiscAppDefaults, MqttQOS
+import gpiozero
+
 from .config import AppConfig
-from .optoisolated_inputs_handler import OptoIsolatedInputsHandler
+from .constants import MiscAppDefaults, MqttQOS, SeqMicroHatConstants
 from .gpio_inputs_handler import GpioInputsHandler
 from .gpio_outputs_handler import GpioOutputsHandler
 from .homeassistant_status_tracker import HomeAssistantStatusTracker
+from .optoisolated_inputs_handler import OptoIsolatedInputsHandler
+from .stats import StatsCollector
 
 # =======================================================================================================
 # GLOBALs
@@ -107,7 +109,7 @@ def instance_already_running(label="default"):
         # LOCK_EX = exclusive lock
         fcntl.lockf(lock_file_pointer, fcntl.LOCK_EX | fcntl.LOCK_NB)
         already_running = False
-    except IOError:
+    except OSError:
         already_running = True
 
     return already_running
@@ -159,7 +161,7 @@ async def signal_handler(sig: signal.Signals) -> None:
 
 
 async def main_loop(args):
-    global g_stop_requested
+    #global g_stop_requested # the global is not modified, just read
 
     cfg = AppConfig()
     print(f"{MiscAppDefaults.THIS_APP_NAME} version {cfg.app_version} starting")
@@ -174,7 +176,7 @@ async def main_loop(args):
     # install signal handler
     loop = asyncio.get_running_loop()
     for sig in [signal.SIGINT, signal.SIGTERM]:
-        loop.add_signal_handler(sig, lambda: asyncio.create_task(signal_handler(sig)))
+        loop.add_signal_handler(sig, lambda sig=sig: asyncio.create_task(signal_handler(sig)))
 
     # initialize handlers
     opto_inputs_handler = OptoIsolatedInputsHandler(cfg.app_version)

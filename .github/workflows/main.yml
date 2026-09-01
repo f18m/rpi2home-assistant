@@ -45,7 +45,7 @@ jobs:
       with:
         python-version: "3.11"
     - name: install pypi-packaged dependencies
-      run: python -m pip install black ruff
+      run: python -m pip install black==26.5.1 ruff==0.16.2
     - name: run formatter
       run: black . --check
     - name: run linter

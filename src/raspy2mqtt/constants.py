@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 #
 # Author: fmontorsi
 # Created: Apr 2024

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 #
 # Author: fmontorsi
 # Created: June 2024
@@ -8,7 +6,9 @@
 
 import asyncio
 import sys
+
 import aiomqtt
+
 from .config import AppConfig
 
 # =======================================================================================================
