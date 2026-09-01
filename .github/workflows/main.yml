@@ -20,6 +20,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+    - name: set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.11"
     - name: install pypi-packaged dependencies
       run: python -m pip install build
 
@@ -36,6 +40,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+    - name: set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.11"
     - name: install pypi-packaged dependencies
       run: python -m pip install black==26.5.1 ruff==0.16.2
     - name: run formatter
@@ -52,8 +60,13 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
+    - name: set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.11"
+
     - name: install pypi-packaged dependencies for unit and integration tests
-      run: sudo pip3 install '.[test]'
+      run: python -m pip install '.[test]'
 
     - name: run unit tests
       run: python -m pytest -vvv -m unit
