@@ -78,7 +78,7 @@ class OptoIsolatedInputsHandler:
             except OSError as e:
                 print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
                 return 2
-            except BaseException as e:
+            except BaseException as e:  # noqa: BLE001 -- last-resort catch-all before aborting HW init
                 print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
                 return 2
 
@@ -196,7 +196,7 @@ class OptoIsolatedInputsHandler:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
-            except Exception as err:
+            except Exception as err:  # noqa: BLE001 -- last-resort catch-all before fatal exit
                 print(f"EXCEPTION: [{err}]. Exiting with code 99.")
                 sys.exit(99)
 
@@ -249,7 +249,7 @@ class OptoIsolatedInputsHandler:
             print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
             self.stats["ERROR_num_connections_lost"] += 1
             await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 -- last-resort catch-all before fatal exit
             print(f"EXCEPTION: {err}")
             sys.exit(99)
 

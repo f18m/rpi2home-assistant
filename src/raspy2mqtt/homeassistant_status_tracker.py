@@ -88,7 +88,7 @@ class HomeAssistantStatusTracker:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
-            except Exception as err:
+            except Exception as err:  # noqa: BLE001 -- last-resort catch-all before fatal exit
                 print(f"EXCEPTION: {err}")
                 sys.exit(99)
 

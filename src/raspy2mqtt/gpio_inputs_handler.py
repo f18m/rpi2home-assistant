@@ -72,7 +72,7 @@ class GpioInputsHandler:
             print("Skipping GPIO inputs HW initialization (--disable-hw was given)")
 
             for sig in [signal.SIGUSR1, signal.SIGUSR2]:
-                loop.add_signal_handler(sig, lambda: asyncio.create_task(self.emulate_gpio_input(sig)))
+                loop.add_signal_handler(sig, lambda sig=sig: asyncio.create_task(self.emulate_gpio_input(sig)))
 
         else:
 
@@ -140,7 +140,7 @@ class GpioInputsHandler:
                 print(f"Connection lost: {err}; reconnecting in {cfg.mqtt_reconnection_period_sec} seconds ...")
                 self.stats["ERROR_num_connections_lost"] += 1
                 await asyncio.sleep(cfg.mqtt_reconnection_period_sec)
-            except Exception as err:
+            except Exception as err:  # noqa: BLE001 -- last-resort catch-all before fatal exit
                 print(f"EXCEPTION: {err}")
                 sys.exit(99)
 

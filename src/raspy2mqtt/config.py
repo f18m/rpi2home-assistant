@@ -194,12 +194,11 @@ class AppConfig:
                 entry_dict["mqtt"]["topic"] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}"
                 print(f"Topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['topic']}]")
 
-            if has_state_topic:
-                if "state_topic" not in entry_dict["mqtt"]:
-                    entry_dict["mqtt"][
-                        "state_topic"
-                    ] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}/state"
-                    print(f"State topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['state_topic']}]")
+            if has_state_topic and "state_topic" not in entry_dict["mqtt"]:
+                entry_dict["mqtt"][
+                    "state_topic"
+                ] = f"{self.homeassistant_default_topic_prefix}/{entry_dict['name']}/state"
+                print(f"State topic for {entry_dict['name']} defaults to [{entry_dict['mqtt']['state_topic']}]")
 
             if has_payload_on_off:
                 if "payload_on" not in entry_dict["mqtt"]:
