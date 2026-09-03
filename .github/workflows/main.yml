@@ -23,7 +23,7 @@ jobs:
     - name: set up Python 3.11
       uses: actions/setup-python@v7
       with:
-        python-version: "3.11"
+        python-version: "3.14"
     - name: install pypi-packaged dependencies
       run: python -m pip install build
 
@@ -43,7 +43,7 @@ jobs:
     - name: set up Python 3.11
       uses: actions/setup-python@v7
       with:
-        python-version: "3.11"
+        python-version: "3.14"
     - name: install pypi-packaged dependencies
       run: python -m pip install black==26.5.1 ruff==0.16.2
     - name: run formatter
@@ -63,7 +63,7 @@ jobs:
     - name: set up Python 3.11
       uses: actions/setup-python@v7
       with:
-        python-version: "3.11"
+        python-version: "3.14"
 
     - name: install pypi-packaged dependencies for unit and integration tests
       run: python -m pip install '.[test]'
