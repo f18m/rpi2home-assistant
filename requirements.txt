@@ -12,6 +12,6 @@
 aiomqtt==2.5.1
 sm16inpind==1.1.5
 PyYAML==6.0.3
-gpiozero==2.0.1
+gpiozero==2.0.1.post3
 pigpio==1.78
 schema==0.7.8
