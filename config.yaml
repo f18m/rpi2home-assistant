@@ -11,10 +11,10 @@ mqtt_broker:
   # in case the connection with the broker drops, a reconnection will be attempted each X msec:
   reconnection_period_msec: 1500
 
-  # in case your broker has authentication turned on, please provide user/pw
-  # TODO: password is cleartext right now, which is insecure
+  # in case your broker has authentication turned on, please provide a user and password
   #user: 
-  #password:
+  # Set the password with MQTT_BROKER_PASSWORD or provide a Docker secret file using
+  # MQTT_BROKER_PASSWORD_FILE=/run/secrets/mqtt_password. The environment variable takes precedence.
 
 home_assistant:
   # how often should this software re-publish the status of all inputs / outputs inside MQTT?

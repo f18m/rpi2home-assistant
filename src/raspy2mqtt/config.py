@@ -417,7 +417,7 @@ class AppConfig:
         self.disable_hw = args.disable_hw
         self.verbose = args.verbose
 
-    def merge_options_from_env_vars(self):
+    def merge_options_from_env_vars(self) -> bool:
         # merge env vars into the configuration object:
         if os.environ.get("DISABLE_HW", None) is not None:
             self.disable_hw = True
@@ -429,6 +429,17 @@ class AppConfig:
         if os.environ.get("MQTT_BROKER_PORT", None) is not None:
             # this particular env var can override the value coming from the config file:
             self.mqtt_broker_port = os.environ.get("MQTT_BROKER_PORT")
+        if os.environ.get("MQTT_BROKER_PASSWORD", None) is not None:
+            self.mqtt_broker_password = os.environ["MQTT_BROKER_PASSWORD"]
+        elif os.environ.get("MQTT_BROKER_PASSWORD_FILE", None) is not None:
+            password_file = os.environ["MQTT_BROKER_PASSWORD_FILE"]
+            try:
+                with open(password_file, encoding="utf-8") as file:
+                    self.mqtt_broker_password = file.read().rstrip("\r\n")
+            except OSError as e:
+                print(f"Error reading MQTT broker password file '{password_file}': {e}")
+                return False
+        return True
 
     def print_config_summary(self):
         print("Config summary:")
@@ -487,6 +498,10 @@ class AppConfig:
         if "password" not in self.config["mqtt_broker"]:
             return None  # default is unauthenticated
         return self.config["mqtt_broker"]["password"]
+
+    @mqtt_broker_password.setter
+    def mqtt_broker_password(self, value):
+        self.config["mqtt_broker"]["password"] = value
 
     @property
     def mqtt_broker_port(self) -> int:
