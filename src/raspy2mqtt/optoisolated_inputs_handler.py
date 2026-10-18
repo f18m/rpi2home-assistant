@@ -48,6 +48,8 @@ class OptoIsolatedInputsHandler:
 
         self.lock = threading.Lock()
         self.app_version = app_version
+        # False when the (optional) Sequent Microsystem board is not configured/present
+        self.hw_available = True
 
         self.stats = {
             "num_readings": 0,
@@ -68,19 +70,25 @@ class OptoIsolatedInputsHandler:
             with self.lock:
                 for i in range(SeqMicroHatConstants.MAX_CHANNELS):
                     self.optoisolated_inputs_sampled_values[i].push_sample(timestamp, False)
+        elif not cfg.get_all_optoisolated_inputs():
+            print("No opto-isolated inputs configured: skipping Sequent Microsystem board initialization")
+            self.hw_available = False
         else:
             # check if the opto-isolated input board from Sequent Microsystem is indeed present:
             try:
                 _ = lib16inpind.readAll(SeqMicroHatConstants.STACK_LEVEL)
             except FileNotFoundError as e:
-                print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
-                return 2
+                print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Opto-isolated inputs will be disabled.")
+                self.hw_available = False
+                return []
             except OSError as e:
-                print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
-                return 2
+                print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Opto-isolated inputs will be disabled.")
+                self.hw_available = False
+                return []
             except BaseException as e:  # noqa: BLE001 -- last-resort catch-all before aborting HW init
-                print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Aborting.")
-                return 2
+                print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Opto-isolated inputs will be disabled.")
+                self.hw_available = False
+                return []
 
             print("Initializing SequentMicrosystem GPIO interrupt line")
             b = gpiozero.Button(SeqMicroHatConstants.INTERRUPT_GPIO, pull_up=True)
@@ -127,6 +135,8 @@ class OptoIsolatedInputsHandler:
         the input channels. This is a safety feature designed mostly for alarm systems: thanks to this continuous
         updates, the subscriber can trigger the burglar alarm if the stream of input sensor updates stops for some reason.
         """
+        if not self.hw_available:
+            return
         print(
             f"Connecting to MQTT broker with identifier {OptoIsolatedInputsHandler.client_identifier} to publish OPTOISOLATED INPUT states"
         )
