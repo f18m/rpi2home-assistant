@@ -213,7 +213,7 @@ async def run_mqtt_session(
 
         if cfg.homeassistant_discovery_messages_enable:
             # subscribe to HomeAssistant status notification and eventually trigger MQTT discovery messages
-            loop.create_task(homeassistant_status_tracker.subscribe_status(cfg)),
+            loop.create_task(homeassistant_status_tracker.subscribe_status(cfg))
 
         # this main coroutine will simply wait till a SIGTERM arrives and
         # we get g_stop_requested=True:

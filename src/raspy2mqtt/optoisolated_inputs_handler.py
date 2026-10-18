@@ -78,15 +78,21 @@ class OptoIsolatedInputsHandler:
             try:
                 _ = lib16inpind.readAll(SeqMicroHatConstants.STACK_LEVEL)
             except FileNotFoundError as e:
-                print(f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Opto-isolated inputs will be disabled.")
+                print(
+                    f"Could not read from the Sequent Microsystem opto-isolated input board: {e}. Opto-isolated inputs will be disabled."
+                )
                 self.hw_available = False
                 return []
             except OSError as e:
-                print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Opto-isolated inputs will be disabled.")
+                print(
+                    f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Opto-isolated inputs will be disabled."
+                )
                 self.hw_available = False
                 return []
             except BaseException as e:  # noqa: BLE001 -- last-resort catch-all before aborting HW init
-                print(f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Opto-isolated inputs will be disabled.")
+                print(
+                    f"Error while reading from the Sequent Microsystem opto-isolated input board: {e}. Opto-isolated inputs will be disabled."
+                )
                 self.hw_available = False
                 return []
 
