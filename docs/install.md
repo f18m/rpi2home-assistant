@@ -56,5 +56,25 @@ docker run -d \
    ghcr.io/f18m/rpi2home-assistant:<latest version>
 ```
 
+For an MQTT broker that requires authentication, set `MQTT_BROKER_PASSWORD` to supply
+the password through an environment variable. To avoid exposing the password in the
+container environment, mount a secret file and set `MQTT_BROKER_PASSWORD_FILE` to its
+path, for example:
+
+```sh
+docker run -d \
+   --volume <your config file>:/etc/rpi2home-assistant.yaml:ro \
+   --volume <path to secret file>:/run/secrets/mqtt_password:ro \
+   --env MQTT_BROKER_PASSWORD_FILE=/run/secrets/mqtt_password \
+   --privileged --hostname $(hostname) \
+   ghcr.io/f18m/rpi2home-assistant:<latest version>
+```
+
+Provide the broker username in the configuration file's `mqtt_broker.user` setting.
+If both password environment variables are set, `MQTT_BROKER_PASSWORD` takes
+precedence over `MQTT_BROKER_PASSWORD_FILE`. A password set in either environment
+variable overrides the YAML `mqtt_broker.password` value. A trailing newline in a
+password file is ignored.
+
 However please note that using Docker on a Raspberry PI is probably an overkill for this application,
 so the preferred way to save CPU is to install using a dedicated Python venv (see above).

@@ -264,6 +264,59 @@ def test_config_file_fully_specified_succeeds(tmpdir):
     }
 
 
+@pytest.mark.unit
+def test_mqtt_password_from_environment_overrides_config(tmpdir, monkeypatch):
+    p = tmpdir.mkdir("cfg").join("testconfig.yaml")
+    p.write(MINIMAL_CFG + "  password: from_config\n")
+    monkeypatch.setenv("MQTT_BROKER_PASSWORD", "from_environment")
+    monkeypatch.delenv("MQTT_BROKER_PASSWORD_FILE", raising=False)
+
+    x = AppConfig()
+    assert x.load(str(p)) is True
+    assert x.merge_options_from_env_vars() is True
+    assert x.mqtt_broker_password == "from_environment"
+
+
+@pytest.mark.unit
+def test_mqtt_password_from_file_strips_trailing_newline(tmpdir, monkeypatch):
+    p = tmpdir.mkdir("cfg").join("testconfig.yaml")
+    p.write(MINIMAL_CFG)
+    password_file = tmpdir.join("mqtt_password")
+    password_file.write("secret\n")
+    monkeypatch.delenv("MQTT_BROKER_PASSWORD", raising=False)
+    monkeypatch.setenv("MQTT_BROKER_PASSWORD_FILE", str(password_file))
+
+    x = AppConfig()
+    assert x.load(str(p)) is True
+    assert x.merge_options_from_env_vars() is True
+    assert x.mqtt_broker_password == "secret"
+
+
+@pytest.mark.unit
+def test_mqtt_password_environment_takes_precedence_over_file(tmpdir, monkeypatch):
+    p = tmpdir.mkdir("cfg").join("testconfig.yaml")
+    p.write(MINIMAL_CFG)
+    password_file = tmpdir.join("mqtt_password")
+    password_file.write("from_file")
+    monkeypatch.setenv("MQTT_BROKER_PASSWORD", "from_environment")
+    monkeypatch.setenv("MQTT_BROKER_PASSWORD_FILE", str(password_file))
+
+    x = AppConfig()
+    assert x.load(str(p)) is True
+    assert x.merge_options_from_env_vars() is True
+    assert x.mqtt_broker_password == "from_environment"
+
+
+@pytest.mark.unit
+def test_missing_mqtt_password_file_fails_env_merge(monkeypatch):
+    monkeypatch.delenv("MQTT_BROKER_PASSWORD", raising=False)
+    monkeypatch.setenv("MQTT_BROKER_PASSWORD_FILE", "/a/path/that/does/not/exist")
+
+    x = AppConfig()
+    x.config = {"mqtt_broker": {"host": "something"}}
+    assert x.merge_options_from_env_vars() is False
+
+
 INVALID_INPUTNUM_CFG = """
 mqtt_broker:
   host: something

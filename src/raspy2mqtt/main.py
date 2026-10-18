@@ -253,7 +253,8 @@ async def main_loop(args):
         return 1  # invalid config file... abort with failure exit code
 
     cfg.merge_options_from_cli(args)
-    cfg.merge_options_from_env_vars()
+    if not cfg.merge_options_from_env_vars():
+        return 1
     cfg.print_config_summary()
 
     # install signal handler
