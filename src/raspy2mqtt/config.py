@@ -431,7 +431,10 @@ class AppConfig:
             self.mqtt_broker_port = os.environ.get("MQTT_BROKER_PORT")
         if os.environ.get("MQTT_BROKER_PASSWORD", None) is not None:
             self.mqtt_broker_password = os.environ["MQTT_BROKER_PASSWORD"]
-        elif os.environ.get("MQTT_BROKER_PASSWORD_FILE", None) is not None:
+        elif os.environ.get("MQTT_BROKER_PASSWORD_FILE", None) is not None and self.mqtt_broker_user is not None:
+            # the password file is read only if an MQTT user is configured: this allows e.g. the systemd unit
+            # to always set MQTT_BROKER_PASSWORD_FILE, even if the user runs an MQTT broker without authentication
+            # and thus the file does not exist
             password_file = os.environ["MQTT_BROKER_PASSWORD_FILE"]
             try:
                 with open(password_file, encoding="utf-8") as file:

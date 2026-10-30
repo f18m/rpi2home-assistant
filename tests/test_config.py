@@ -280,7 +280,7 @@ def test_mqtt_password_from_environment_overrides_config(tmpdir, monkeypatch):
 @pytest.mark.unit
 def test_mqtt_password_from_file_strips_trailing_newline(tmpdir, monkeypatch):
     p = tmpdir.mkdir("cfg").join("testconfig.yaml")
-    p.write(MINIMAL_CFG)
+    p.write(MINIMAL_CFG + "  user: someuser\n")
     password_file = tmpdir.join("mqtt_password")
     password_file.write("secret\n")
     monkeypatch.delenv("MQTT_BROKER_PASSWORD", raising=False)
@@ -313,8 +313,20 @@ def test_missing_mqtt_password_file_fails_env_merge(monkeypatch):
     monkeypatch.setenv("MQTT_BROKER_PASSWORD_FILE", "/a/path/that/does/not/exist")
 
     x = AppConfig()
-    x.config = {"mqtt_broker": {"host": "something"}}
+    x.config = {"mqtt_broker": {"host": "something", "user": "someuser"}}
     assert x.merge_options_from_env_vars() is False
+
+
+@pytest.mark.unit
+def test_mqtt_password_file_ignored_without_mqtt_user(monkeypatch):
+    # e.g. the systemd unit always sets MQTT_BROKER_PASSWORD_FILE, but the broker might have no authentication
+    monkeypatch.delenv("MQTT_BROKER_PASSWORD", raising=False)
+    monkeypatch.setenv("MQTT_BROKER_PASSWORD_FILE", "/a/path/that/does/not/exist")
+
+    x = AppConfig()
+    x.config = {"mqtt_broker": {"host": "something"}}
+    assert x.merge_options_from_env_vars() is True
+    assert x.mqtt_broker_password is None
 
 
 INVALID_INPUTNUM_CFG = """

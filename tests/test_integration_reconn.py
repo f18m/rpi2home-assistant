@@ -46,7 +46,7 @@ def test_mqtt_reconnection():
                 assert False
 
             measure_period_sec = 5
-            topics_under_test = ["rpi2home-assistant/opto_input_1"]
+            topics_under_test = ["rpi2home-assistant/opto_input_1", "rpi2home-assistant/status"]
             broker.watch_topics(topics_under_test)
             print(
                 f"Attempt {attempt}-th: Checking if messages are received from topics {topics_under_test} in the next {measure_period_sec}sec..."
@@ -66,6 +66,11 @@ def test_mqtt_reconnection():
             msg_rate = broker.get_message_rate_in_watched_topic(topics_under_test[0])
             print(f"Attempt {attempt}-th: Measured message rate for topics {topics_under_test}: {msg_rate} msgs/sec")
             assert msg_rate > 0
+
+            # the ONLINE status must be published again after the reconnection
+            status_topic = "rpi2home-assistant/status"
+            assert broker.get_messages_received_in_watched_topic(status_topic) >= 1
+            assert broker.get_last_payload_received_in_watched_topic(status_topic) == "online"
 
         print("Test passed. Container logs should indicate several attempts to reconnect:")
         container.print_logs()
