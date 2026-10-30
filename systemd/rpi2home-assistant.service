@@ -19,6 +19,16 @@ Environment="GPIOZERO_PIN_FACTORY=pigpio"
 
 # PYTHONUNBUFFERED is important to ensure sdtout is flushed timely so "journalctl" shows logs of this service unit:
 Environment=PYTHONUNBUFFERED=1
+
+# MQTT_BROKER_PASSWORD_FILE is read only if the 'mqtt_broker.user' option is set in the config file;
+# if your MQTT broker has no authentication, the file does not need to exist.
+# Otherwise point it to a file under e.g. /root containing only the password, and make sure to restrict its
+# permissions with "chmod 600" so that only the owner (root) can read it.
+# Example of how to create the password file ('printf' avoids adding a trailing newline):
+#    sudo sh -c 'umask 077; printf "%s" "my-mqtt-password" > /root/.mqtt_broker_password'
+#    sudo chmod 600 /root/.mqtt_broker_password
+Environment="MQTT_BROKER_PASSWORD_FILE=/root/.mqtt_broker_password"
+
 Restart=on-failure
 RestartSec=5s
 
