@@ -140,6 +140,10 @@ def init_hardware(cfg: AppConfig):
         print("Unable to load a gpiozero pin factory. Typically this happens if you don't have pigpio installed.")
         print("Alternatively you can run this software for basic testing exporting the env variable DISABLE_HW.")
 
+    if not cfg.sequent_microsystem_hat_enable:
+        print("Sequent Microsystem HAT is disabled: skipping initialization of its GPIO shutdown button")
+        return []
+
     buttons = []
     print("Initializing SequentMicrosystem GPIO shutdown button")
     b = gpiozero.Button(SeqMicroHatConstants.SHUTDOWN_BUTTON_GPIO, hold_time=5)

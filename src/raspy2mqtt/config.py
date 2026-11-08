@@ -106,6 +106,9 @@ class AppConfig:
                     },
                 },
                 Optional("log_stats_every"): int,
+                Optional("sequent_microsystem_hat"): {
+                    Optional("enable"): bool,
+                },
                 Optional("i2c_optoisolated_inputs"): [
                     {
                         "name": Regex(r"^[a-z0-9_]+$"),
@@ -156,12 +159,15 @@ class AppConfig:
         return __version__
 
     def check_gpio(self, idx: int):
-        reserved_gpios = [
-            SeqMicroHatConstants.SHUTDOWN_BUTTON_GPIO,
-            SeqMicroHatConstants.INTERRUPT_GPIO,
-            SeqMicroHatConstants.I2C_SDA,
-            SeqMicroHatConstants.I2C_SCL,
-        ]
+        # these GPIO pins are wired to the Sequent Microsystem HAT, so they are free only when the HAT is disabled
+        reserved_gpios = []
+        if self.sequent_microsystem_hat_enable:
+            reserved_gpios = [
+                SeqMicroHatConstants.SHUTDOWN_BUTTON_GPIO,
+                SeqMicroHatConstants.INTERRUPT_GPIO,
+                SeqMicroHatConstants.I2C_SDA,
+                SeqMicroHatConstants.I2C_SCL,
+            ]
         if idx < 1 or idx > 40:
             raise ValueError(
                 f"Invalid GPIO index {idx}. The legal range is [1-40] since the Raspberry GPIO connector is a 40-pin connector."
@@ -169,7 +175,7 @@ class AppConfig:
         # some GPIO pins are reserved and cannot be configured!
         if idx in reserved_gpios:
             raise ValueError(
-                f"Invalid GPIO index {idx}: that GPIO pin is reserved for communication with the Sequent Microsystem HAT. Choose a different GPIO."
+                f"Invalid GPIO index {idx}: that GPIO pin is reserved for communication with the Sequent Microsystem HAT. Choose a different GPIO, or set 'sequent_microsystem_hat.enable: false' if the HAT is not installed."
             )
 
     def populate_defaults_in_list_entry(
@@ -254,6 +260,11 @@ class AppConfig:
             if "i2c_optoisolated_inputs" not in self.config:
                 # empty list: feature disabled
                 self.config["i2c_optoisolated_inputs"] = []
+
+            if self.config["i2c_optoisolated_inputs"] and not self.sequent_microsystem_hat_enable:
+                raise ValueError(
+                    "'i2c_optoisolated_inputs' are sampled by the Sequent Microsystem HAT, so they cannot be configured when 'sequent_microsystem_hat.enable' is false."
+                )
 
             for input_item in self.config["i2c_optoisolated_inputs"]:
                 input_item = self.populate_defaults_in_list_entry(
@@ -457,6 +468,8 @@ class AppConfig:
         print(f"   MQTT publish period: {self.homeassistant_publish_period_sec}s")
         print(f"   Discovery messages: {self.homeassistant_discovery_messages_enable}")
         print(f"   Node ID: {self.homeassistant_discovery_topic_node_id}")
+        print("** Sequent Microsystem HAT")
+        print(f"   Enabled: {self.sequent_microsystem_hat_enable}")
         print("** I2C isolated inputs:")
         if self.optoisolated_inputs_map is not None:
             for k, v in self.optoisolated_inputs_map.items():
@@ -595,6 +608,16 @@ class AppConfig:
         if self.config is None or "log_stats_every" not in self.config:
             return MiscAppDefaults.STATS_LOG_PERIOD_SEC  # default value
         return int(self.config["log_stats_every"])
+
+    @property
+    def sequent_microsystem_hat_enable(self) -> bool:
+        if self.config is None:
+            return True  # default value
+        try:
+            return self.config["sequent_microsystem_hat"]["enable"]
+        except KeyError:
+            # in this case the key is completely missing
+            return True  # default value
 
     #
     # OPTO-ISOLATED INPUTS
