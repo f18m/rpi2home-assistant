@@ -329,6 +329,66 @@ def test_mqtt_password_file_ignored_without_mqtt_user(monkeypatch):
     assert x.mqtt_broker_password is None
 
 
+CFG_OUTPUTS_ON_SEQUENT_HAT_GPIOS = """
+mqtt_broker:
+  host: something
+outputs:
+  - name: out_gpio_2
+    gpio: 2
+    active_low: false
+    home_assistant:
+      device_class: switch
+  - name: out_gpio_3
+    gpio: 3
+    active_low: false
+    home_assistant:
+      device_class: switch
+  - name: out_gpio_11
+    gpio: 11
+    active_low: false
+    home_assistant:
+      device_class: switch
+  - name: out_gpio_26
+    gpio: 26
+    active_low: false
+    home_assistant:
+      device_class: switch
+"""
+
+
+@pytest.mark.unit
+def test_sequent_hat_gpios_are_reserved_by_default(tmpdir):
+    # create config file to test:
+    p = tmpdir.mkdir("cfg").join("testconfig.yaml")
+    p.write(CFG_OUTPUTS_ON_SEQUENT_HAT_GPIOS)
+
+    x = AppConfig()
+    assert x.load(str(p)) == False
+    assert x.sequent_microsystem_hat_enable == True
+
+
+@pytest.mark.unit
+def test_sequent_hat_disabled_frees_its_gpios(tmpdir):
+    # create config file to test:
+    p = tmpdir.mkdir("cfg").join("testconfig.yaml")
+    p.write(CFG_OUTPUTS_ON_SEQUENT_HAT_GPIOS + "sequent_microsystem_hat:\n  enable: false\n")
+
+    x = AppConfig()
+    assert x.load(str(p)) == True
+    assert x.sequent_microsystem_hat_enable == False
+    assert len(x.get_all_outputs()) == 4
+
+
+@pytest.mark.unit
+def test_sequent_hat_disabled_rejects_optoisolated_inputs(tmpdir):
+    # create config file to test:
+    p = tmpdir.mkdir("cfg").join("testconfig.yaml")
+    p.write(CFG_USING_DEFAULTS + "sequent_microsystem_hat:\n  enable: false\n")
+
+    x = AppConfig()
+    assert x.load(str(p)) == False
+
+
 INVALID_INPUTNUM_CFG = """
 mqtt_broker:
   host: something

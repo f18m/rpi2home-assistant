@@ -48,6 +48,17 @@ home_assistant:
 log_stats_every: 30
 
 #
+# ** Sequent Microsystem HAT **
+#
+# By default the Sequent Microsystem 16ch-optoinsulated HAT is assumed to be installed: its GPIO pins
+# (GPIO 2 and 3 for I2C, GPIO 11 for the interrupt line, GPIO 26 for the shutdown pushbutton) are reserved
+# and cannot be used by 'gpio_inputs' or 'outputs', and a long-press on GPIO 26 shuts down the Raspberry.
+# If the HAT is not installed, set 'enable: false' to free those GPIO pins and skip the shutdown button;
+# in that case the 'i2c_optoisolated_inputs' section must be empty or missing.
+sequent_microsystem_hat:
+  enable: true
+
+#
 # ** Opto-isolated Inputs Configuration **
 #
 # These inputs are those sampled by the Sequent Microsystem 16ch-optoinsulated board; they are exposed as binary_sensors

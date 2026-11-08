@@ -17,6 +17,10 @@ In addition to standard GPIOs, _rpi2home-assistant_ **optionally** provides spec
 
 * [Sequent Microsystem 16 opto-insulated inputs HAT](https://sequentmicrosystems.com/collections/all-io-cards/products/16-universal-inputs-card-for-raspberry-pi). This hat allows to sample a wide range of electrical signals (voltages) from 3V-48V AC or DC. _rpi2home-assistant_ exposes the sampled values over MQTT, to ease their integration as (binary) sensors in Home Assistant.
 
+By default the HAT is assumed to be installed, so the GPIO pins it uses (GPIO 2, 3, 11 and 26) are reserved.
+If you don't have the HAT, set `sequent_microsystem_hat.enable: false` in the config file to use those pins
+as regular GPIO inputs or outputs (see the sample [config.yaml](/config.yaml)).
+
 <!--
 Note that Sequent Microsystem board is connecting the pin 37 (GPIO 26) of the Raspberry Pi 
 to a pushbutton. This software monitors this pin, and if pressed for more than the
